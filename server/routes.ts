@@ -3,7 +3,15 @@ import { type Server } from "http";
 import { z } from "zod";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, type Business, type InsertBusiness, type OutreachCampaign } from "@shared/schema";
+import { 
+  CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE,
+  EVENT_TIERS, EVENT_CATEGORIES, EVENT_SOURCES, INTENT_LEVELS, CARTAGENA_VENUES_TO_MONITOR, CONTENT_TYPES,
+  type Business, type InsertBusiness, type OutreachCampaign,
+  type Event, type InsertEvent, type IntentSignal, type InsertIntentSignal,
+  type VenueMonitor, type InsertVenueMonitor, type InstagramPost, type InsertInstagramPost,
+  type AuthorityContent, type InsertAuthorityContent,
+  insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema
+} from "@shared/schema";
 import OpenAI from "openai";
 
 // Validation schemas for batch operations
@@ -629,7 +637,432 @@ export async function registerRoutes(
 
   // Config/metadata
   app.get('/api/config', (req, res) => {
-    res.json({ cities: CITIES, categories: CATEGORIES });
+    res.json({ 
+      cities: CITIES, 
+      categories: CATEGORIES,
+      eventTiers: EVENT_TIERS,
+      eventCategories: EVENT_CATEGORIES,
+      eventSources: EVENT_SOURCES,
+      intentLevels: INTENT_LEVELS,
+      contentTypes: CONTENT_TYPES,
+    });
+  });
+
+  // ==================== EVENTS API ====================
+  app.get('/api/events', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        city: req.query.city as string,
+        category: req.query.category as string,
+        eventTier: req.query.eventTier as string,
+        source: req.query.source as string,
+        isFlagged: req.query.isFlagged === 'true' ? true : undefined,
+        startDateFrom: req.query.startDateFrom ? new Date(req.query.startDateFrom as string) : undefined,
+        startDateTo: req.query.startDateTo ? new Date(req.query.startDateTo as string) : undefined,
+        search: req.query.search as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+      const events = await storage.getEvents(filters);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ message: "Failed to fetch events" });
+    }
+  });
+
+  app.get('/api/events/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getEventStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching event stats:", error);
+      res.status(500).json({ message: "Failed to fetch event stats" });
+    }
+  });
+
+  app.get('/api/events/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const event = await storage.getEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event:", error);
+      res.status(500).json({ message: "Failed to fetch event" });
+    }
+  });
+
+  app.post('/api/events', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertEventSchema.parse(req.body);
+      const event = await storage.createEvent(validated);
+      res.json(event);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      res.status(500).json({ message: "Failed to create event" });
+    }
+  });
+
+  app.patch('/api/events/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const event = await storage.updateEvent(req.params.id, req.body);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ message: "Failed to update event" });
+    }
+  });
+
+  app.delete('/api/events/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteEvent(req.params.id);
+      res.json({ message: "Event deleted" });
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      res.status(500).json({ message: "Failed to delete event" });
+    }
+  });
+
+  // ==================== INTENT SIGNALS API ====================
+  app.get('/api/intent-signals', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        intentLevel: req.query.intentLevel as string,
+        source: req.query.source as string,
+        isProcessed: req.query.isProcessed === 'true' ? true : req.query.isProcessed === 'false' ? false : undefined,
+        isComplaint: req.query.isComplaint === 'true' ? true : undefined,
+        search: req.query.search as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+      const signals = await storage.getIntentSignals(filters);
+      res.json(signals);
+    } catch (error) {
+      console.error("Error fetching intent signals:", error);
+      res.status(500).json({ message: "Failed to fetch intent signals" });
+    }
+  });
+
+  app.get('/api/intent-signals/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const signal = await storage.getIntentSignal(req.params.id);
+      if (!signal) {
+        return res.status(404).json({ message: "Intent signal not found" });
+      }
+      res.json(signal);
+    } catch (error) {
+      console.error("Error fetching intent signal:", error);
+      res.status(500).json({ message: "Failed to fetch intent signal" });
+    }
+  });
+
+  app.post('/api/intent-signals', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertIntentSignalSchema.parse(req.body);
+      const signal = await storage.createIntentSignal(validated);
+      res.json(signal);
+    } catch (error) {
+      console.error("Error creating intent signal:", error);
+      res.status(500).json({ message: "Failed to create intent signal" });
+    }
+  });
+
+  app.patch('/api/intent-signals/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const signal = await storage.updateIntentSignal(req.params.id, req.body);
+      if (!signal) {
+        return res.status(404).json({ message: "Intent signal not found" });
+      }
+      res.json(signal);
+    } catch (error) {
+      console.error("Error updating intent signal:", error);
+      res.status(500).json({ message: "Failed to update intent signal" });
+    }
+  });
+
+  app.delete('/api/intent-signals/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteIntentSignal(req.params.id);
+      res.json({ message: "Intent signal deleted" });
+    } catch (error) {
+      console.error("Error deleting intent signal:", error);
+      res.status(500).json({ message: "Failed to delete intent signal" });
+    }
+  });
+
+  // ==================== VENUE MONITORS API ====================
+  app.get('/api/venue-monitors', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        city: req.query.city as string,
+        tier: req.query.tier as string,
+        category: req.query.category as string,
+        isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
+        priority: req.query.priority ? parseInt(req.query.priority as string) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : undefined,
+      };
+      const venues = await storage.getVenueMonitors(filters);
+      res.json(venues);
+    } catch (error) {
+      console.error("Error fetching venue monitors:", error);
+      res.status(500).json({ message: "Failed to fetch venue monitors" });
+    }
+  });
+
+  app.get('/api/venue-monitors/defaults', isAuthenticated, async (req: any, res) => {
+    try {
+      res.json(CARTAGENA_VENUES_TO_MONITOR);
+    } catch (error) {
+      console.error("Error fetching default venues:", error);
+      res.status(500).json({ message: "Failed to fetch default venues" });
+    }
+  });
+
+  app.get('/api/venue-monitors/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const venue = await storage.getVenueMonitor(req.params.id);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue monitor not found" });
+      }
+      res.json(venue);
+    } catch (error) {
+      console.error("Error fetching venue monitor:", error);
+      res.status(500).json({ message: "Failed to fetch venue monitor" });
+    }
+  });
+
+  app.post('/api/venue-monitors', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertVenueMonitorSchema.parse(req.body);
+      const venue = await storage.createVenueMonitor(validated);
+      res.json(venue);
+    } catch (error) {
+      console.error("Error creating venue monitor:", error);
+      res.status(500).json({ message: "Failed to create venue monitor" });
+    }
+  });
+
+  app.post('/api/venue-monitors/seed-defaults', isAuthenticated, async (req: any, res) => {
+    try {
+      const existing = await storage.getVenueMonitors({});
+      const existingHandles = new Set(existing.map(v => v.instagramHandle));
+      
+      const created: VenueMonitor[] = [];
+      for (const venue of CARTAGENA_VENUES_TO_MONITOR) {
+        if (!existingHandles.has(venue.handle)) {
+          const newVenue = await storage.createVenueMonitor({
+            name: venue.name,
+            instagramHandle: venue.handle,
+            instagramUrl: `https://instagram.com/${venue.handle}`,
+            category: venue.category,
+            tier: venue.tier,
+            city: "Cartagena",
+            priority: venue.priority,
+            keywords: venue.keywords as string[],
+            isActive: true,
+          });
+          created.push(newVenue);
+        }
+      }
+      
+      res.json({ message: `Seeded ${created.length} default venues`, created });
+    } catch (error) {
+      console.error("Error seeding venue monitors:", error);
+      res.status(500).json({ message: "Failed to seed venue monitors" });
+    }
+  });
+
+  app.patch('/api/venue-monitors/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const venue = await storage.updateVenueMonitor(req.params.id, req.body);
+      if (!venue) {
+        return res.status(404).json({ message: "Venue monitor not found" });
+      }
+      res.json(venue);
+    } catch (error) {
+      console.error("Error updating venue monitor:", error);
+      res.status(500).json({ message: "Failed to update venue monitor" });
+    }
+  });
+
+  app.delete('/api/venue-monitors/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteVenueMonitor(req.params.id);
+      res.json({ message: "Venue monitor deleted" });
+    } catch (error) {
+      console.error("Error deleting venue monitor:", error);
+      res.status(500).json({ message: "Failed to delete venue monitor" });
+    }
+  });
+
+  // ==================== INSTAGRAM POSTS API ====================
+  app.get('/api/instagram-posts', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        venueHandle: req.query.venueHandle as string,
+        isEventAnnouncement: req.query.isEventAnnouncement === 'true' ? true : undefined,
+        isProcessed: req.query.isProcessed === 'true' ? true : req.query.isProcessed === 'false' ? false : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+      };
+      const posts = await storage.getInstagramPosts(filters);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching instagram posts:", error);
+      res.status(500).json({ message: "Failed to fetch instagram posts" });
+    }
+  });
+
+  app.patch('/api/instagram-posts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const post = await storage.updateInstagramPost(req.params.id, req.body);
+      if (!post) {
+        return res.status(404).json({ message: "Instagram post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      console.error("Error updating instagram post:", error);
+      res.status(500).json({ message: "Failed to update instagram post" });
+    }
+  });
+
+  // ==================== AUTHORITY CONTENT API ====================
+  app.get('/api/content', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        contentType: req.query.contentType as string,
+        city: req.query.city as string,
+        category: req.query.category as string,
+        status: req.query.status as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+      };
+      const content = await storage.getAuthorityContentList(filters);
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      res.status(500).json({ message: "Failed to fetch content" });
+    }
+  });
+
+  app.get('/api/content/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const content = await storage.getAuthorityContent(req.params.id);
+      if (!content) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      res.status(500).json({ message: "Failed to fetch content" });
+    }
+  });
+
+  app.post('/api/content', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validated = insertAuthorityContentSchema.parse({ ...req.body, userId });
+      const content = await storage.createAuthorityContent(validated);
+      res.json(content);
+    } catch (error) {
+      console.error("Error creating content:", error);
+      res.status(500).json({ message: "Failed to create content" });
+    }
+  });
+
+  app.post('/api/content/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { contentType, city, category, businessIds, prompt: userPrompt } = req.body;
+      
+      // Get businesses if provided for context
+      let businessContext = "";
+      if (businessIds && businessIds.length > 0) {
+        const businesses = await Promise.all(
+          businessIds.slice(0, 5).map((id: string) => storage.getBusiness(id))
+        );
+        businessContext = businesses
+          .filter(Boolean)
+          .map((b: any) => `- ${b.name}: ${b.aiClassification || b.category}, Rating ${b.rating || 'N/A'}`)
+          .join("\n");
+      }
+
+      const contentTypeInfo = CONTENT_TYPES.find(c => c.value === contentType) || { label: "Article" };
+      
+      const prompt = `Generate a ${contentTypeInfo.label} about ${category || "local experiences"} in ${city || "Cartagena"}, Colombia.
+
+${userPrompt ? `USER REQUEST: ${userPrompt}\n` : ""}
+${businessContext ? `FEATURED BUSINESSES:\n${businessContext}\n` : ""}
+
+Create engaging, SEO-optimized content for a luxury travel/concierge platform. The content should:
+1. Be authentic and informative (not generic tourist content)
+2. Include insider tips and local knowledge
+3. Naturally mention featured businesses if provided
+4. Be appropriate for the content type (${contentTypeInfo.label})
+5. Include a compelling title and meta description
+
+OUTPUT JSON:
+{
+  "title": "Compelling title here",
+  "content": "Full article content with markdown formatting",
+  "metaDescription": "SEO meta description under 160 chars",
+  "keywords": ["keyword1", "keyword2", ...]
+}
+
+OUTPUT ONLY VALID JSON.`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+      });
+
+      const result = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      const content = await storage.createAuthorityContent({
+        userId,
+        contentType: contentType || "guide",
+        title: result.title,
+        content: result.content,
+        city: city || "Cartagena",
+        category,
+        relatedBusinessIds: businessIds || [],
+        keywords: result.keywords || [],
+        metaDescription: result.metaDescription,
+        status: "draft",
+      });
+
+      res.json(content);
+    } catch (error) {
+      console.error("Error generating content:", error);
+      res.status(500).json({ message: "Failed to generate content" });
+    }
+  });
+
+  app.patch('/api/content/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const content = await storage.updateAuthorityContent(req.params.id, req.body);
+      if (!content) {
+        return res.status(404).json({ message: "Content not found" });
+      }
+      res.json(content);
+    } catch (error) {
+      console.error("Error updating content:", error);
+      res.status(500).json({ message: "Failed to update content" });
+    }
+  });
+
+  app.delete('/api/content/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteAuthorityContent(req.params.id);
+      res.json({ message: "Content deleted" });
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      res.status(500).json({ message: "Failed to delete content" });
+    }
   });
 
   return httpServer;
