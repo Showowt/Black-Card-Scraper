@@ -34,7 +34,14 @@ export default function BusinessDetail() {
   });
 
   const { data: outreachCampaigns } = useQuery<OutreachCampaign[]>({
-    queryKey: ["/api/outreach", { businessId }],
+    queryKey: ['/api/outreach', 'byBusiness', businessId],
+    queryFn: async ({ queryKey }) => {
+      const bId = queryKey[2] as string;
+      if (!bId) throw new Error('Business ID is required');
+      const res = await fetch(`/api/outreach?businessId=${bId}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch outreach campaigns');
+      return res.json();
+    },
     enabled: !!businessId,
   });
 
@@ -59,7 +66,7 @@ export default function BusinessDetail() {
     },
     onSuccess: () => {
       toast({ title: "Email Generated", description: "AI-powered outreach email is ready" });
-      queryClient.invalidateQueries({ queryKey: ["/api/outreach", { businessId }] });
+      queryClient.invalidateQueries({ queryKey: ['/api/outreach', 'byBusiness', businessId] });
       setEmailDialogOpen(true);
     },
     onError: (error: Error) => {
@@ -313,22 +320,27 @@ export default function BusinessDetail() {
               </CardContent>
             </Card>
 
-            {business.openingHours && Array.isArray(business.openingHours) && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Clock className="h-4 w-4" /> Opening Hours
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-1 text-sm">
-                    {(business.openingHours as string[]).map((hours, i) => (
-                      <li key={i}>{hours}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+            {(() => {
+              const hours = business.openingHours;
+              if (!hours || !Array.isArray(hours)) return null;
+              const hoursArray = hours as string[];
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Clock className="h-4 w-4" /> Opening Hours
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-sm">
+                      {hoursArray.map((h, i) => (
+                        <li key={i}>{String(h)}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
 
           <div className="space-y-6">

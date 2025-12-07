@@ -124,6 +124,12 @@ export const CITIES = [
   { value: "cartagena", label: "Cartagena", coordinates: { lat: 10.3910, lng: -75.4794 } },
   { value: "medellin", label: "Medellín", coordinates: { lat: 6.2442, lng: -75.5812 } },
   { value: "bogota", label: "Bogotá", coordinates: { lat: 4.7110, lng: -74.0721 } },
+  { value: "cali", label: "Cali", coordinates: { lat: 3.4516, lng: -76.5320 } },
+  { value: "barranquilla", label: "Barranquilla", coordinates: { lat: 10.9639, lng: -74.7964 } },
+  { value: "santa_marta", label: "Santa Marta", coordinates: { lat: 11.2404, lng: -74.1990 } },
+  { value: "san_andres", label: "San Andrés", coordinates: { lat: 12.5567, lng: -81.7185 } },
+  { value: "bucaramanga", label: "Bucaramanga", coordinates: { lat: 7.1254, lng: -73.1198 } },
+  { value: "pereira", label: "Pereira", coordinates: { lat: 4.8087, lng: -75.6906 } },
 ] as const;
 
 export const CATEGORIES = [
@@ -132,6 +138,13 @@ export const CATEGORIES = [
   { value: "club", label: "Clubs & Nightlife", googleType: "night_club" },
   { value: "tour_operator", label: "Tour Operators", googleType: "travel_agency" },
   { value: "spa", label: "Spas & Wellness", googleType: "spa" },
+  { value: "bar", label: "Bars & Lounges", googleType: "bar" },
+  { value: "cafe", label: "Cafes & Coffee", googleType: "cafe" },
+  { value: "museum", label: "Museums & Culture", googleType: "museum" },
+  { value: "gym", label: "Gyms & Fitness", googleType: "gym" },
+  { value: "shopping", label: "Shopping", googleType: "shopping_mall" },
+  { value: "car_rental", label: "Car Rental", googleType: "car_rental" },
+  { value: "beauty_salon", label: "Beauty Salons", googleType: "beauty_salon" },
 ] as const;
 
 export const OUTREACH_STATUSES = [

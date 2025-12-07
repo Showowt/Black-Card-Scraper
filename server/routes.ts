@@ -622,9 +622,11 @@ async function scrapeWebsiteMetadata(websiteUrl: string): Promise<Partial<Insert
   try {
     const response = await fetch(websiteUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; BusinessScanner/1.0)',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,es;q=0.8',
       },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
@@ -634,48 +636,158 @@ async function scrapeWebsiteMetadata(websiteUrl: string): Promise<Partial<Insert
     const html = await response.text();
     const metadata: Partial<InsertBusiness> = {};
 
-    const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-    const emails = html.match(emailPattern) || [];
-    const validEmails = emails.filter(e => 
-      !e.includes('example.com') && 
-      !e.includes('domain.com') &&
-      !e.endsWith('.png') &&
-      !e.endsWith('.jpg')
-    );
-    if (validEmails.length > 0) {
-      metadata.email = validEmails[0];
+    // Helper to sanitize extracted values
+    const sanitizeEmail = (email: string): string => {
+      return email
+        .toLowerCase()
+        .trim()
+        .replace(/^["'\s]+|["'\s>]+$/g, '') // Remove quotes, spaces, HTML chars at ends
+        .replace(/[?#].*/g, '') // Remove query strings
+        .split(/[&\s<>]/)[0]; // Take only valid part before invalid chars
+    };
+
+    // Priority 1: Extract emails from mailto: links (most reliable)
+    const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi) || [];
+    const cleanedMailtoEmails = mailtoMatches.map(m => sanitizeEmail(m.replace(/^mailto:/i, '')));
+
+    // Priority 2: Extract emails from href attributes and data attributes  
+    const hrefMatches = html.match(/(?:href|data-email)=["']([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi) || [];
+    const cleanedHrefEmails = hrefMatches.map(m => sanitizeEmail(m.replace(/^(?:href|data-email)=["']?/i, '')));
+
+    // Priority 3: General email pattern matching
+    const generalEmailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const generalEmails = (html.match(generalEmailPattern) || []).map(sanitizeEmail);
+
+    // Combine and filter emails
+    const allEmails = [...cleanedMailtoEmails, ...cleanedHrefEmails, ...generalEmails];
+    const invalidPatterns = [
+      'example.com', 'domain.com', 'test.com', 'email.com', 'yoursite.com',
+      '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.css', '.js',
+      'wixpress.com', 'sentry.io', 'googleapis.com', 'cloudflare.com',
+      'facebook.com', 'twitter.com', 'instagram.com', 'google.com',
+      '@2x.', '@3x.', 'placeholder', 'noreply', 'no-reply'
+    ];
+    
+    // Prioritize business-like emails (info@, contact@, reservas@, ventas@, etc.)
+    const priorityPrefixes = ['info', 'contact', 'contacto', 'reservas', 'reservations', 'ventas', 'sales', 'hola', 'hello', 'admin', 'booking'];
+    
+    const validEmails = allEmails
+      .map(e => e.toLowerCase().trim())
+      .filter(e => !invalidPatterns.some(p => e.includes(p)))
+      .filter(e => e.includes('@') && e.includes('.'))
+      .filter(e => e.length < 60);
+    
+    const uniqueEmails = Array.from(new Set(validEmails));
+    
+    // Sort by priority - business emails first
+    const sortedEmails = uniqueEmails.sort((a, b) => {
+      const aPrefix = a.split('@')[0];
+      const bPrefix = b.split('@')[0];
+      const aIsPriority = priorityPrefixes.some(p => aPrefix.startsWith(p));
+      const bIsPriority = priorityPrefixes.some(p => bPrefix.startsWith(p));
+      if (aIsPriority && !bIsPriority) return -1;
+      if (!aIsPriority && bIsPriority) return 1;
+      return 0;
+    });
+
+    // Final validation - ensure email has proper format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const finalEmail = sortedEmails.find(e => emailRegex.test(e));
+    if (finalEmail) {
+      metadata.email = finalEmail;
     }
 
+    // Extract phone numbers with Colombian and international formats
     const phonePatterns = [
-      /\+57[\s.-]?\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/g,
-      /\(\d{3}\)[\s.-]?\d{3}[\s.-]?\d{4}/g,
+      /\+57[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
+      /\+57[\s.-]?\d{10}/g,
+      /\+1[\s.-]?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
+      /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
       /\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/g,
+      /\+\d{1,3}[\s.-]?\d{6,12}/g,
     ];
+    
     for (const pattern of phonePatterns) {
       const phones = html.match(pattern);
       if (phones && phones.length > 0) {
         const phone = phones[0].replace(/[^\d+]/g, '');
-        if (phone.length >= 10) {
-          metadata.phone = metadata.phone || phone;
+        if (phone.length >= 10 && phone.length <= 15) {
+          if (!metadata.phone) {
+            metadata.phone = phone;
+          }
           break;
         }
       }
     }
 
-    const instagramMatch = html.match(/(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/i);
-    if (instagramMatch && instagramMatch[1] !== 'p' && instagramMatch[1] !== 'reel') {
-      metadata.instagram = instagramMatch[1];
+    // Extract Instagram (improved patterns)
+    const instagramPatterns = [
+      /(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_.]+)/gi,
+      /@([a-zA-Z0-9_.]+)(?:\s*(?:en\s*)?instagram)/gi,
+      /instagram[:\s]*@?([a-zA-Z0-9_.]+)/gi,
+    ];
+    const excludedInstaHandles = ['p', 'reel', 'reels', 'stories', 'explore', 'accounts', 'direct', 'about', 'help', 'share', 'intent'];
+    
+    for (const pattern of instagramPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        // Sanitize: take only alphanumeric, underscore, period and validate
+        const handle = match[0]
+          .replace(/.*[\/=@]/, '')
+          .replace(/["\s<>?&#\/].*/g, '')
+          .replace(/[^a-zA-Z0-9_.]/g, '')
+          .trim();
+        if (handle && handle.length > 1 && handle.length < 30 && !excludedInstaHandles.includes(handle.toLowerCase())) {
+          metadata.instagram = handle;
+          break;
+        }
+      }
     }
 
-    const facebookMatch = html.match(/facebook\.com\/([a-zA-Z0-9.]+)/i);
-    if (facebookMatch && facebookMatch[1] !== 'sharer') {
-      metadata.facebook = `https://facebook.com/${facebookMatch[1]}`;
+    // Extract Facebook (improved)
+    const facebookPatterns = [
+      /facebook\.com\/(?:pages\/)?([a-zA-Z0-9._-]+)/gi,
+      /fb\.com\/([a-zA-Z0-9._-]+)/gi,
+    ];
+    const excludedFbPages = ['sharer', 'share', 'plugins', 'tr', 'dialog', 'login', 'profile.php', 'watch', 'groups'];
+    
+    for (const pattern of facebookPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        // Sanitize: extract only the page name portion
+        const page = match[0]
+          .replace(/.*facebook\.com\/(?:pages\/)?|.*fb\.com\//gi, '')
+          .replace(/[?\/#"'&<>].*/g, '')
+          .replace(/[^a-zA-Z0-9._-]/g, '')
+          .trim();
+        if (page && page.length > 1 && page.length < 50 && !excludedFbPages.includes(page.toLowerCase())) {
+          metadata.facebook = `https://facebook.com/${page}`;
+          break;
+        }
+      }
     }
 
-    const whatsappMatch = html.match(/wa\.me\/(\d+)/i) || html.match(/whatsapp\.com\/send\?phone=(\d+)/i);
-    if (whatsappMatch) {
-      metadata.whatsapp = whatsappMatch[1];
+    // Extract WhatsApp (improved patterns) - use capturing groups
+    const whatsappPatterns = [
+      /wa\.me\/(\d{10,15})/i,
+      /api\.whatsapp\.com\/send\?phone=(\d{10,15})/i,
+      /whatsapp\.com\/send\?phone=(\d{10,15})/i,
+    ];
+    
+    for (const pattern of whatsappPatterns) {
+      const match = html.match(pattern);
+      if (match && match[1]) {
+        // Use capturing group result directly - already contains only digits
+        const number = match[1];
+        if (number.length >= 10 && number.length <= 15) {
+          metadata.whatsapp = number;
+          break;
+        }
+      }
     }
+    
+    // Log what was found for debugging
+    console.log(`Scraped ${websiteUrl}: email=${metadata.email || 'none'}, phone=${metadata.phone || 'none'}, instagram=${metadata.instagram || 'none'}, facebook=${metadata.facebook || 'none'}, whatsapp=${metadata.whatsapp || 'none'}`);
 
     return metadata;
   } catch (error) {

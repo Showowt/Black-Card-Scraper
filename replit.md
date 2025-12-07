@@ -11,10 +11,10 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
 - **APIs**: Google Places API (New), OpenAI
 
 ## Key Features
-1. **Business Scanning**: Scan restaurants, hotels, clubs, tour operators, and spas across Cartagena, Medellín, and Bogotá
+1. **Business Scanning**: Scan restaurants, hotels, clubs, tour operators, spas, cafes, bars, galleries, museums, and theaters across Cartagena, Medellín, Bogotá, Cali, Barranquilla, and Santa Marta
 2. **Batch Scanning**: Scan multiple cities and categories simultaneously with progress tracking
 3. **AI Enrichment**: Automatic scoring, classification, and outreach hook generation
-4. **Website Scraping**: Extract emails, phone numbers, and social media from business websites
+4. **Website Scraping**: Extract emails, phone numbers, and social media from business websites with robust sanitization and validation
 5. **Advanced Filtering**: Filter by AI readiness, minimum score, contact availability (email/website)
 6. **Dashboard**: Stats, filtering, search, and business table with real-time updates
 7. **Business Details**: Contact info, social links, AI insights, outreach generation, website scraping
