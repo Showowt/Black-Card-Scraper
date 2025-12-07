@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Terminal, Play, Loader2, CheckCircle2, XCircle, Clock, 
   Search, Sparkles, Download, Building2, RefreshCw,
-  Layers, Database, FileText, Mail, BarChart3
+  Layers, Database, FileText, Mail, BarChart3, Calendar
 } from "lucide-react";
 import { Link } from "wouter";
 import { CITIES, CATEGORIES } from "@shared/schema";
@@ -227,6 +227,11 @@ export default function Operations() {
             <nav className="flex items-center gap-4 flex-wrap">
               <Link href="/">
                 <Button variant="ghost" size="sm" data-testid="nav-dashboard">Dashboard</Button>
+              </Link>
+              <Link href="/events">
+                <Button variant="ghost" size="sm" data-testid="nav-events">
+                  <Calendar className="h-4 w-4 mr-1" /> Events
+                </Button>
               </Link>
               <Link href="/outreach">
                 <Button variant="ghost" size="sm" data-testid="nav-outreach">

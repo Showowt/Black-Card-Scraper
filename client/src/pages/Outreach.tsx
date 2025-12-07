@@ -17,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Mail, Send, Clock, CheckCircle2, XCircle, Archive, Trash2,
   Copy, ExternalLink, Building2, ChevronRight, Loader2, Sparkles,
-  FileText, Users, TrendingUp, RotateCcw, Terminal, BarChart3
+  FileText, Users, TrendingUp, RotateCcw, Terminal, BarChart3, Calendar
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, OutreachCampaign } from "@shared/schema";
@@ -142,6 +142,11 @@ export default function Outreach() {
             <nav className="flex items-center gap-4 flex-wrap">
               <Link href="/">
                 <Button variant="ghost" size="sm" data-testid="nav-dashboard">Dashboard</Button>
+              </Link>
+              <Link href="/events">
+                <Button variant="ghost" size="sm" data-testid="nav-events">
+                  <Calendar className="h-4 w-4 mr-1" /> Events
+                </Button>
               </Link>
               <Link href="/outreach">
                 <Button variant="secondary" size="sm" data-testid="nav-outreach">
