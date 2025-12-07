@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import BusinessDetail from "@/pages/BusinessDetail";
 import Statistics from "@/pages/Statistics";
+import Outreach from "@/pages/Outreach";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -30,6 +31,7 @@ function Router() {
           <Route path="/" component={Dashboard} />
           <Route path="/business/:id" component={BusinessDetail} />
           <Route path="/statistics" component={Statistics} />
+          <Route path="/outreach" component={Outreach} />
         </>
       )}
       <Route component={NotFound} />

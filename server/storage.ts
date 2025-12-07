@@ -31,8 +31,10 @@ export interface IStorage {
   // Outreach
   getOutreachCampaign(id: string): Promise<OutreachCampaign | undefined>;
   getOutreachCampaigns(businessId?: string): Promise<OutreachCampaign[]>;
+  getAllOutreachCampaigns(status?: string): Promise<(OutreachCampaign & { business?: Business })[]>;
   createOutreachCampaign(campaign: InsertOutreachCampaign): Promise<OutreachCampaign>;
   updateOutreachCampaign(id: string, campaign: Partial<InsertOutreachCampaign>): Promise<OutreachCampaign | undefined>;
+  deleteOutreachCampaign(id: string): Promise<void>;
 }
 
 export interface BusinessFilters {
@@ -276,6 +278,34 @@ export class DatabaseStorage implements IStorage {
       .where(eq(outreachCampaigns.id, id))
       .returning();
     return updated;
+  }
+
+  async getAllOutreachCampaigns(status?: string): Promise<(OutreachCampaign & { business?: Business })[]> {
+    const conditions = [];
+    if (status) {
+      conditions.push(eq(outreachCampaigns.status, status));
+    }
+    
+    const campaigns = conditions.length > 0
+      ? await db.select().from(outreachCampaigns).where(and(...conditions)).orderBy(desc(outreachCampaigns.createdAt))
+      : await db.select().from(outreachCampaigns).orderBy(desc(outreachCampaigns.createdAt));
+    
+    // Join with business data
+    const enrichedCampaigns = await Promise.all(
+      campaigns.map(async (campaign) => {
+        if (campaign.businessId) {
+          const business = await this.getBusiness(campaign.businessId);
+          return { ...campaign, business };
+        }
+        return campaign;
+      })
+    );
+    
+    return enrichedCampaigns;
+  }
+
+  async deleteOutreachCampaign(id: string): Promise<void> {
+    await db.delete(outreachCampaigns).where(eq(outreachCampaigns.id, id));
   }
 }
 

@@ -148,6 +148,11 @@ export default function Dashboard() {
             <Link href="/">
               <Button variant="ghost" size="sm" data-testid="nav-dashboard">Dashboard</Button>
             </Link>
+            <Link href="/outreach">
+              <Button variant="ghost" size="sm" data-testid="nav-outreach">
+                <Mail className="h-4 w-4 mr-1" /> Outreach
+              </Button>
+            </Link>
             <Link href="/statistics">
               <Button variant="ghost" size="sm" data-testid="nav-statistics">
                 <BarChart3 className="h-4 w-4 mr-1" /> Stats
@@ -346,10 +351,10 @@ export default function Dashboard() {
                   Scanning {getCategoryLabel(activeScan.category)} in {getCityLabel(activeScan.city)}...
                 </span>
                 <Badge variant="secondary">
-                  {activeScan.totalFound} found, {activeScan.totalEnriched} enriched
+                  {activeScan.totalFound ?? 0} found, {activeScan.totalEnriched ?? 0} enriched
                 </Badge>
               </div>
-              <Progress value={activeScan.totalFound > 0 ? (activeScan.totalEnriched / activeScan.totalFound) * 100 : 0} />
+              <Progress value={(activeScan.totalFound ?? 0) > 0 ? ((activeScan.totalEnriched ?? 0) / (activeScan.totalFound ?? 1)) * 100 : 0} />
             </CardContent>
           </Card>
         )}

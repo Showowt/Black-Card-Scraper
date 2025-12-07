@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, type Business, type InsertBusiness } from "@shared/schema";
+import { CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, type Business, type InsertBusiness, type OutreachCampaign } from "@shared/schema";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -215,6 +215,68 @@ export async function registerRoutes(
     }
   });
 
+  // Batch AI Enrichment
+  app.post('/api/businesses/enrich/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessIds, filters, limit = 25 } = req.body;
+      
+      let targetBusinesses: Business[] = [];
+      
+      if (businessIds && businessIds.length > 0) {
+        for (const id of businessIds) {
+          const business = await storage.getBusiness(id);
+          if (business && !business.isEnriched) targetBusinesses.push(business);
+        }
+      } else if (filters) {
+        targetBusinesses = await storage.getBusinesses({
+          ...filters,
+          isEnriched: false,
+          limit: limit,
+        });
+      } else {
+        targetBusinesses = await storage.getBusinesses({
+          isEnriched: false,
+          limit: limit,
+        });
+      }
+      
+      if (targetBusinesses.length === 0) {
+        return res.json({ 
+          totalProcessed: 0, 
+          enriched: 0, 
+          errors: 0, 
+          message: "No unenriched businesses found" 
+        });
+      }
+      
+      const results = { enriched: 0, errors: 0, errorDetails: [] as { id: string; error: string }[] };
+      
+      for (const business of targetBusinesses) {
+        try {
+          const enriched = await enrichBusiness(business);
+          await storage.updateBusiness(business.id, enriched);
+          results.enriched++;
+          
+          // Rate limiting between enrichments
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error: any) {
+          results.errors++;
+          results.errorDetails.push({ id: business.id, error: error.message });
+        }
+      }
+      
+      res.json({
+        totalProcessed: targetBusinesses.length,
+        enriched: results.enriched,
+        errors: results.errors,
+        errorDetails: results.errorDetails,
+      });
+    } catch (error) {
+      console.error("Error in batch enrichment:", error);
+      res.status(500).json({ message: "Failed to batch enrich businesses" });
+    }
+  });
+
   // Outreach
   app.get('/api/outreach', isAuthenticated, async (req: any, res) => {
     try {
@@ -249,6 +311,115 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error generating outreach:", error);
       res.status(500).json({ message: "Failed to generate outreach email" });
+    }
+  });
+
+  // Batch outreach generation with streaming progress
+  app.post('/api/outreach/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { businessIds, filters } = req.body;
+      
+      let targetBusinesses: Business[] = [];
+      
+      if (businessIds && businessIds.length > 0) {
+        // Get specific businesses by ID
+        for (const id of businessIds) {
+          const business = await storage.getBusiness(id);
+          if (business) targetBusinesses.push(business);
+        }
+      } else if (filters) {
+        // Get businesses matching filters
+        targetBusinesses = await storage.getBusinesses({
+          ...filters,
+          limit: filters.limit || 50, // Default limit for batch
+        });
+      }
+      
+      if (targetBusinesses.length === 0) {
+        return res.status(400).json({ message: "No businesses found for batch outreach" });
+      }
+      
+      // Filter to only high-value prospects (score >= 60, or all if no scores yet)
+      const prospects = targetBusinesses.filter(b => 
+        b.isEnriched && (b.aiScore === null || b.aiScore >= 60)
+      );
+      
+      if (prospects.length === 0) {
+        return res.status(400).json({ 
+          message: "No enriched high-value businesses found. Enrich businesses first." 
+        });
+      }
+      
+      // Generate outreach for each prospect
+      const results: { success: OutreachCampaign[]; errors: { businessId: string; error: string }[] } = {
+        success: [],
+        errors: [],
+      };
+      
+      for (const business of prospects) {
+        try {
+          // Check if campaign already exists for this business
+          const existingCampaigns = await storage.getOutreachCampaigns(business.id);
+          if (existingCampaigns.length > 0) {
+            // Skip if already has outreach
+            continue;
+          }
+          
+          const email = await generateOutreachEmail(business);
+          const campaign = await storage.createOutreachCampaign({
+            userId,
+            businessId: business.id,
+            emailSubject: email.subject,
+            emailBody: email.body,
+            status: "draft",
+          });
+          results.success.push(campaign);
+          
+          // Rate limiting between generations
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error: any) {
+          results.errors.push({
+            businessId: business.id,
+            error: error.message || "Failed to generate email",
+          });
+        }
+      }
+      
+      res.json({
+        totalProcessed: prospects.length,
+        generated: results.success.length,
+        skipped: prospects.length - results.success.length - results.errors.length,
+        errors: results.errors.length,
+        campaigns: results.success,
+        errorDetails: results.errors,
+      });
+    } catch (error) {
+      console.error("Error in batch outreach:", error);
+      res.status(500).json({ message: "Failed to generate batch outreach" });
+    }
+  });
+
+  // Get all outreach campaigns with filters
+  app.get('/api/outreach/all', isAuthenticated, async (req: any, res) => {
+    try {
+      const status = req.query.status as string;
+      const campaigns = await storage.getAllOutreachCampaigns(status);
+      res.json(campaigns);
+    } catch (error) {
+      console.error("Error fetching all campaigns:", error);
+      res.status(500).json({ message: "Failed to fetch campaigns" });
+    }
+  });
+
+  // Delete outreach campaign
+  app.delete('/api/outreach/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.deleteOutreachCampaign(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting campaign:", error);
+      res.status(500).json({ message: "Failed to delete campaign" });
     }
   });
 
