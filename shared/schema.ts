@@ -145,7 +145,253 @@ export const CATEGORIES = [
   { value: "shopping", label: "Shopping", googleType: "shopping_mall" },
   { value: "car_rental", label: "Car Rental", googleType: "car_rental" },
   { value: "beauty_salon", label: "Beauty Salons", googleType: "beauty_salon" },
+  { value: "boat_charter", label: "Boat Charters", googleType: "boat_rental" },
+  { value: "event_planner", label: "Event Planners", googleType: "event_planner" },
+  { value: "photographer", label: "Photographers", googleType: "photographer" },
+  { value: "videographer", label: "Videographers", googleType: "video_production" },
+  { value: "dj", label: "DJs & Entertainment", googleType: "entertainment_agency" },
+  { value: "chef", label: "Private Chefs", googleType: "caterer" },
+  { value: "real_estate", label: "Real Estate", googleType: "real_estate_agency" },
+  { value: "coworking", label: "Coworking Spaces", googleType: "coworking_space" },
 ] as const;
+
+export const TEXT_SEARCH_SUPPLEMENTS: Record<string, string[]> = {
+  boat_charter: [
+    "yacht charter",
+    "boat rental",
+    "party boat",
+    "catamaran tour",
+    "sailing charter",
+    "island boat tour",
+    "fishing charter",
+  ],
+  chef: [
+    "private chef",
+    "personal chef",
+    "catering service",
+    "chef privado",
+    "chef a domicilio",
+  ],
+  dj: [
+    "dj services",
+    "wedding dj",
+    "event dj",
+    "party dj",
+  ],
+  photographer: [
+    "wedding photographer",
+    "event photographer",
+    "portrait photographer",
+    "fotografo bodas",
+  ],
+  videographer: [
+    "wedding videographer",
+    "event videographer",
+    "video production",
+    "videografo",
+  ],
+  event_planner: [
+    "wedding planner",
+    "event planner",
+    "party planner",
+    "destination wedding",
+    "organizador de eventos",
+  ],
+};
+
+export const VERTICAL_INTELLIGENCE: Record<string, {
+  painPoints: string[];
+  automations: string[];
+  hookAngles: string[];
+}> = {
+  restaurant: {
+    painPoints: [
+      "Reservation chaos across phone, WhatsApp, Instagram DMs",
+      "No-shows costing 15-20% of bookings",
+      "Staff overwhelmed answering the same questions",
+      "Menu updates scattered across platforms",
+      "Review management is manual and slow",
+    ],
+    automations: [
+      "WhatsApp booking bot with confirmation + reminders",
+      "AI receptionist for calls (reservation + FAQ)",
+      "Automated review response system",
+      "Digital menu with real-time updates",
+      "No-show prediction + deposit system",
+    ],
+    hookAngles: ["reservation system", "WhatsApp inquiries", "Google reviews", "no-show problem"],
+  },
+  hotel: {
+    painPoints: [
+      "Guest inquiries 24/7 across multiple channels",
+      "Upsell opportunities missed (tours, dining, spa)",
+      "Check-in/out friction",
+      "OTA dependency eating margins",
+      "Slow response to booking requests",
+    ],
+    automations: [
+      "AI concierge (WhatsApp) for guest requests",
+      "Automated pre-arrival upsell sequences",
+      "Direct booking chatbot to reduce OTA fees",
+      "Review solicitation automation",
+      "Staff task automation (housekeeping, maintenance)",
+    ],
+    hookAngles: ["guest experience", "direct bookings", "OTA commissions", "concierge automation"],
+  },
+  tour_operator: {
+    painPoints: [
+      "Manual booking and itinerary creation",
+      "WhatsApp groups with tourists are chaos",
+      "No-shows and last-minute cancellations",
+      "Difficulty scaling without more staff",
+      "Payment collection is fragmented",
+    ],
+    automations: [
+      "Booking bot with availability + instant confirmation",
+      "Automated itinerary delivery",
+      "Payment integration with reminders",
+      "AI FAQ handler for common questions",
+      "Post-tour review automation",
+    ],
+    hookAngles: ["booking process", "WhatsApp management", "scaling operations", "customer communication"],
+  },
+  boat_charter: {
+    painPoints: [
+      "Inquiry overload via WhatsApp/Instagram",
+      "Complex availability and pricing communication",
+      "Deposits and payment tracking",
+      "Weather-related rescheduling chaos",
+      "Crew coordination",
+    ],
+    automations: [
+      "Instant quote bot with availability checker",
+      "Automated booking + deposit collection",
+      "Weather alert + rescheduling system",
+      "Post-trip review + rebooking automation",
+      "Crew scheduling automation",
+    ],
+    hookAngles: ["booking inquiries", "quote requests", "availability management", "customer experience"],
+  },
+  spa: {
+    painPoints: [
+      "Appointment scheduling across channels",
+      "No-shows without deposits",
+      "Staff scheduling complexity",
+      "Upsell and rebooking missed",
+      "Review management",
+    ],
+    automations: [
+      "WhatsApp booking with reminders",
+      "Deposit collection automation",
+      "Automated rebooking sequences",
+      "Review request automation",
+      "Staff schedule optimization",
+    ],
+    hookAngles: ["appointment bookings", "no-show rate", "client retention", "online presence"],
+  },
+  club: {
+    painPoints: [
+      "Table reservation chaos",
+      "VIP guest management",
+      "Event promotion fragmented",
+      "Guest list management",
+      "Bottle service coordination",
+    ],
+    automations: [
+      "Table reservation bot with deposits",
+      "VIP CRM with automated outreach",
+      "Event promotion automation",
+      "Guest list + check-in system",
+      "Post-event rebooking sequences",
+    ],
+    hookAngles: ["table reservations", "VIP experience", "event promotion", "guest management"],
+  },
+  chef: {
+    painPoints: [
+      "Inquiry management across platforms",
+      "Menu customization discussions are lengthy",
+      "Deposit and payment collection",
+      "Calendar and availability management",
+      "Client follow-up for rebooking",
+    ],
+    automations: [
+      "Inquiry bot with menu options + pricing",
+      "Automated booking with deposits",
+      "Client preference tracking",
+      "Post-event feedback + rebooking",
+      "Social proof automation",
+    ],
+    hookAngles: ["booking process", "client inquiries", "menu consultations", "client management"],
+  },
+  photographer: {
+    painPoints: [
+      "Inquiry response time",
+      "Portfolio sharing is manual",
+      "Contract and payment collection",
+      "Scheduling across multiple shoots",
+      "Delivery timeline communication",
+    ],
+    automations: [
+      "Inquiry bot with portfolio + pricing",
+      "Automated contract + deposit flow",
+      "Scheduling automation",
+      "Delivery notification system",
+      "Review + referral automation",
+    ],
+    hookAngles: ["inquiry management", "booking process", "client communication", "portfolio showcase"],
+  },
+  videographer: {
+    painPoints: [
+      "Project scoping takes multiple calls",
+      "Delivery timeline management",
+      "Revision request handling",
+      "Payment milestones",
+      "Client communication during production",
+    ],
+    automations: [
+      "Project scoping bot with packages",
+      "Automated milestone updates",
+      "Revision request system",
+      "Payment automation",
+      "Review + referral sequences",
+    ],
+    hookAngles: ["project inquiries", "client communication", "booking workflow", "delivery process"],
+  },
+  event_planner: {
+    painPoints: [
+      "Lead qualification takes forever",
+      "Vendor coordination is manual",
+      "Budget tracking across vendors",
+      "Client update communication",
+      "Post-event follow-up",
+    ],
+    automations: [
+      "Lead qualification bot with budget + vision",
+      "Vendor CRM with automated outreach",
+      "Budget tracking dashboard",
+      "Client update automation",
+      "Testimonial + referral system",
+    ],
+    hookAngles: ["lead qualification", "client management", "vendor coordination", "event workflow"],
+  },
+  dj: {
+    painPoints: [
+      "Booking inquiries scattered",
+      "Song request management",
+      "Contract and deposit collection",
+      "Equipment logistics",
+      "Building consistent bookings",
+    ],
+    automations: [
+      "Booking bot with availability + pricing",
+      "Song request collection system",
+      "Contract + deposit automation",
+      "Event prep checklist automation",
+      "Review + rebooking sequences",
+    ],
+    hookAngles: ["booking process", "client inquiries", "event coordination", "online presence"],
+  },
+};
 
 export const OUTREACH_STATUSES = [
   { value: "pending", label: "Pending", color: "gray" },

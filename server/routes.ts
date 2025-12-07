@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { CITIES, CATEGORIES, type Business, type InsertBusiness } from "@shared/schema";
+import { CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, type Business, type InsertBusiness } from "@shared/schema";
 import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -458,6 +458,44 @@ async function searchGooglePlaces(cityData: typeof CITIES[number], categoryData:
   return data.places || [];
 }
 
+// Text search for categories with limited Places API coverage
+async function textSearchGooglePlaces(cityData: typeof CITIES[number], query: string, maxResults: number = 10) {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Places API key not configured");
+  }
+
+  const searchUrl = 'https://places.googleapis.com/v1/places:searchText';
+  
+  const response = await fetch(searchUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.priceLevel,places.location,places.googleMapsUri,places.regularOpeningHours,places.photos',
+    },
+    body: JSON.stringify({
+      textQuery: `${query} ${cityData.label}`,
+      locationBias: {
+        circle: {
+          center: { latitude: cityData.coordinates.lat, longitude: cityData.coordinates.lng },
+          radius: 15000,
+        },
+      },
+      maxResultCount: Math.min(maxResults, 20),
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error(`Text search error for "${query}":`, error);
+    return [];
+  }
+
+  const data = await response.json();
+  return data.places || [];
+}
+
 async function processScan(
   scanId: string, 
   cityData: typeof CITIES[number], 
@@ -466,7 +504,30 @@ async function processScan(
   maxResults: number
 ) {
   try {
-    const places = await searchGooglePlaces(cityData, categoryData, maxResults);
+    // Standard nearby search
+    let places = await searchGooglePlaces(cityData, categoryData, maxResults);
+    
+    // For categories with limited Places API coverage, also do text searches
+    const textSearchQueries = TEXT_SEARCH_SUPPLEMENTS[categoryData.value];
+    if (textSearchQueries && textSearchQueries.length > 0) {
+      console.log(`Running ${textSearchQueries.length} text searches for ${categoryData.value} in ${cityData.label}`);
+      
+      for (const query of textSearchQueries.slice(0, 3)) { // Limit to 3 queries to control costs
+        const textResults = await textSearchGooglePlaces(cityData, query, 5);
+        places = places.concat(textResults);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
+      }
+      
+      // Deduplicate by place ID
+      const seenIds = new Set<string>();
+      places = places.filter((p: any) => {
+        if (!p.id || seenIds.has(p.id)) return false;
+        seenIds.add(p.id);
+        return true;
+      });
+      
+      console.log(`Found ${places.length} unique places after text search for ${categoryData.value}`);
+    }
     
     await storage.updateScan(scanId, { totalFound: places.length });
 
@@ -587,22 +648,48 @@ Respond ONLY with valid JSON, no markdown.`;
 }
 
 async function generateOutreachEmail(business: Business): Promise<{ subject: string; body: string }> {
-  const prompt = `Generate a professional outreach email for a luxury travel platform reaching out to this business for partnership.
+  // Get vertical intelligence for this category
+  const verticalIntel = VERTICAL_INTELLIGENCE[business.category] || {
+    painPoints: ["Customer inquiries across multiple channels", "Manual booking and scheduling", "Follow-up and retention is inconsistent"],
+    automations: ["AI-powered inquiry handling", "Automated booking system", "Customer follow-up sequences"],
+    hookAngles: ["customer communication", "booking process", "online presence"],
+  };
 
-Business: ${business.name}
-Category: ${business.category}
-City: ${business.city}
-AI Hook: ${business.aiOutreachHook || 'None'}
-Classification: ${business.aiClassification || business.category}
-Summary: ${business.aiSummary || 'None'}
+  const prompt = `Generate a personalized cold outreach email for an AI automation agency targeting this business.
 
-Create a personalized, professional email that:
-1. References something specific about their business
-2. Explains the partnership value proposition
-3. Includes a clear call-to-action
-4. Is concise (under 200 words)
+BUSINESS:
+- Name: ${business.name}
+- Type: ${business.aiClassification || business.category}
+- City: ${business.city}
+- Website: ${business.website || "None"}
+- Rating: ${business.rating || "N/A"} (${business.reviewCount || 0} reviews)
+- Has Instagram: ${!!business.instagram}
+- Has WhatsApp: ${!!business.whatsapp}
+- AI Summary: ${business.aiSummary || "Local business"}
+- Outreach Hook: ${business.aiOutreachHook || ""}
 
-Respond with JSON containing "subject" and "body" fields only.`;
+VERTICAL INTELLIGENCE FOR ${business.category.toUpperCase()}:
+- Common Pain Points: ${JSON.stringify(verticalIntel.painPoints.slice(0, 3))}
+- Relevant Automations: ${JSON.stringify(verticalIntel.automations.slice(0, 3))}
+- Hook Angles: ${JSON.stringify(verticalIntel.hookAngles)}
+
+REQUIREMENTS:
+1. Subject line: Under 50 chars, specific to their business
+2. Opening: Reference something specific about THEIR business (not generic)
+3. Pain point: Pick ONE pain point most relevant to their situation
+4. Solution: One specific automation that solves it
+5. CTA: Free 15-min audit call
+6. Length: Under 120 words total
+7. No buzzwords like "leverage", "synergy", "game-changer"
+8. Sound human, not like a template
+
+OUTPUT JSON:
+{
+    "subject": "Subject line here",
+    "body": "Full email body here"
+}
+
+OUTPUT ONLY VALID JSON.`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
