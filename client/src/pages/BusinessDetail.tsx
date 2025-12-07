@@ -40,7 +40,8 @@ export default function BusinessDetail() {
 
   const enrichMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/businesses/${businessId}/enrich`, { method: "POST" });
+      const res = await apiRequest("POST", `/api/businesses/${businessId}/enrich`);
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Enrichment Complete", description: "Business has been analyzed with AI" });
@@ -53,10 +54,8 @@ export default function BusinessDetail() {
 
   const generateEmailMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/outreach/generate", {
-        method: "POST",
-        body: JSON.stringify({ businessId }),
-      });
+      const res = await apiRequest("POST", "/api/outreach/generate", { businessId });
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Email Generated", description: "AI-powered outreach email is ready" });
@@ -70,10 +69,8 @@ export default function BusinessDetail() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async (status: string) => {
-      return await apiRequest(`/api/businesses/${businessId}/outreach-status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      });
+      const res = await apiRequest("PATCH", `/api/businesses/${businessId}/outreach-status`, { status });
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Status Updated" });
@@ -86,7 +83,8 @@ export default function BusinessDetail() {
 
   const scrapeMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/businesses/${businessId}/scrape`, { method: "POST" });
+      const res = await apiRequest("POST", `/api/businesses/${businessId}/scrape`);
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Scrape Complete", description: "Website metadata extracted successfully" });

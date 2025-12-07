@@ -86,10 +86,8 @@ export default function Dashboard() {
 
   const scanMutation = useMutation({
     mutationFn: async (data: { city: string; category: string; enableAI: boolean }) => {
-      return await apiRequest("/api/scan", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest("POST", "/api/scan", data);
+      return res.json();
     },
     onSuccess: () => {
       toast({ title: "Scan Started", description: "Business scan is now in progress" });
@@ -103,10 +101,8 @@ export default function Dashboard() {
 
   const batchScanMutation = useMutation({
     mutationFn: async (data: { cities: string[]; categories: string[]; enableAI: boolean }) => {
-      return await apiRequest("/api/scan/batch", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest("POST", "/api/scan/batch", data);
+      return res.json();
     },
     onSuccess: (response: any) => {
       toast({ title: "Batch Scan Started", description: `Started ${response.scanIds?.length || 0} scans` });
