@@ -474,6 +474,19 @@ async function processScan(
     for (const place of places) {
       const existing = place.id ? await storage.getBusinessByPlaceId(place.id) : null;
       
+      // Parse price level - Google returns strings like "PRICE_LEVEL_FREE", "PRICE_LEVEL_INEXPENSIVE", etc.
+      const parsePriceLevel = (priceStr: string | undefined): number | null => {
+        if (!priceStr) return null;
+        const priceLevels: Record<string, number> = {
+          'PRICE_LEVEL_FREE': 0,
+          'PRICE_LEVEL_INEXPENSIVE': 1,
+          'PRICE_LEVEL_MODERATE': 2,
+          'PRICE_LEVEL_EXPENSIVE': 3,
+          'PRICE_LEVEL_VERY_EXPENSIVE': 4,
+        };
+        return priceLevels[priceStr] ?? null;
+      };
+
       const businessData: InsertBusiness = {
         placeId: place.id,
         name: place.displayName?.text || 'Unknown',
@@ -482,9 +495,9 @@ async function processScan(
         address: place.formattedAddress,
         phone: place.internationalPhoneNumber || place.nationalPhoneNumber,
         website: place.websiteUri,
-        rating: place.rating,
-        reviewCount: place.userRatingCount,
-        priceLevel: place.priceLevel ? parseInt(place.priceLevel.replace('PRICE_LEVEL_', '')) : null,
+        rating: place.rating ? parseFloat(place.rating) : null,
+        reviewCount: place.userRatingCount ? parseInt(place.userRatingCount) : null,
+        priceLevel: parsePriceLevel(place.priceLevel),
         latitude: place.location?.latitude,
         longitude: place.location?.longitude,
         googleMapsUrl: place.googleMapsUri,
@@ -493,21 +506,26 @@ async function processScan(
       };
 
       let business: Business;
-      if (existing) {
-        business = (await storage.updateBusiness(existing.id, businessData))!;
-      } else {
-        business = await storage.createBusiness(businessData);
-      }
-
-      if (enableAI && !business.isEnriched) {
-        try {
-          const enriched = await enrichBusiness(business);
-          await storage.updateBusiness(business.id, enriched);
-          enrichedCount++;
-          await storage.updateScan(scanId, { totalEnriched: enrichedCount });
-        } catch (err) {
-          console.error(`Failed to enrich ${business.name}:`, err);
+      try {
+        if (existing) {
+          business = (await storage.updateBusiness(existing.id, businessData))!;
+        } else {
+          business = await storage.createBusiness(businessData);
         }
+
+        if (enableAI && !business.isEnriched) {
+          try {
+            const enriched = await enrichBusiness(business);
+            await storage.updateBusiness(business.id, enriched);
+            enrichedCount++;
+            await storage.updateScan(scanId, { totalEnriched: enrichedCount });
+          } catch (err) {
+            console.error(`Failed to enrich ${business.name}:`, err);
+          }
+        }
+      } catch (err: any) {
+        console.error(`Failed to save business ${businessData.name}:`, err.message);
+        // Continue processing other businesses
       }
     }
 

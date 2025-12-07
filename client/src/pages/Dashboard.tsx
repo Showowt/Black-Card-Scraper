@@ -59,7 +59,7 @@ export default function Dashboard() {
   const [batchCategories, setBatchCategories] = useState<string[]>([]);
 
   // Build URL with query params for filtering
-  const buildBusinessesUrl = () => {
+  const businessesUrl = (() => {
     const params = new URLSearchParams();
     if (filterCity && filterCity !== "all") params.append("city", filterCity);
     if (filterCategory && filterCategory !== "all") params.append("category", filterCategory);
@@ -70,10 +70,10 @@ export default function Dashboard() {
     if (hasWebsiteFilter) params.append("hasWebsite", "true");
     const queryString = params.toString();
     return queryString ? `/api/businesses?${queryString}` : "/api/businesses";
-  };
+  })();
 
   const { data: businesses, isLoading: loadingBusinesses } = useQuery<Business[]>({
-    queryKey: [buildBusinessesUrl()],
+    queryKey: [businessesUrl],
   });
 
   const { data: stats, isLoading: loadingStats } = useQuery<BusinessStats>({
