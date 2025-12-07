@@ -3,10 +3,16 @@ import {
   type Business, type InsertBusiness,
   type Scan, type InsertScan,
   type OutreachCampaign, type InsertOutreachCampaign,
-  users, businesses, scans, outreachCampaigns
+  type Event, type InsertEvent,
+  type IntentSignal, type InsertIntentSignal,
+  type VenueMonitor, type InsertVenueMonitor,
+  type InstagramPost, type InsertInstagramPost,
+  type AuthorityContent, type InsertAuthorityContent,
+  users, businesses, scans, outreachCampaigns,
+  events, intentSignals, venueMonitors, instagramPosts, authorityContent
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, like, and, or, gte, lte, sql, count } from "drizzle-orm";
+import { eq, desc, asc, like, and, or, gte, lte, sql, count, isNull, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -35,6 +41,41 @@ export interface IStorage {
   createOutreachCampaign(campaign: InsertOutreachCampaign): Promise<OutreachCampaign>;
   updateOutreachCampaign(id: string, campaign: Partial<InsertOutreachCampaign>): Promise<OutreachCampaign | undefined>;
   deleteOutreachCampaign(id: string): Promise<void>;
+  
+  // Events
+  getEvent(id: string): Promise<Event | undefined>;
+  getEvents(filters?: EventFilters): Promise<Event[]>;
+  createEvent(event: InsertEvent): Promise<Event>;
+  updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined>;
+  deleteEvent(id: string): Promise<void>;
+  getEventStats(): Promise<EventStats>;
+  
+  // Intent Signals
+  getIntentSignal(id: string): Promise<IntentSignal | undefined>;
+  getIntentSignals(filters?: IntentSignalFilters): Promise<IntentSignal[]>;
+  createIntentSignal(signal: InsertIntentSignal): Promise<IntentSignal>;
+  updateIntentSignal(id: string, signal: Partial<InsertIntentSignal>): Promise<IntentSignal | undefined>;
+  deleteIntentSignal(id: string): Promise<void>;
+  
+  // Venue Monitors
+  getVenueMonitor(id: string): Promise<VenueMonitor | undefined>;
+  getVenueMonitors(filters?: VenueMonitorFilters): Promise<VenueMonitor[]>;
+  createVenueMonitor(venue: InsertVenueMonitor): Promise<VenueMonitor>;
+  updateVenueMonitor(id: string, venue: Partial<InsertVenueMonitor>): Promise<VenueMonitor | undefined>;
+  deleteVenueMonitor(id: string): Promise<void>;
+  
+  // Instagram Posts
+  getInstagramPost(id: string): Promise<InstagramPost | undefined>;
+  getInstagramPosts(filters?: InstagramPostFilters): Promise<InstagramPost[]>;
+  createInstagramPost(post: InsertInstagramPost): Promise<InstagramPost>;
+  updateInstagramPost(id: string, post: Partial<InsertInstagramPost>): Promise<InstagramPost | undefined>;
+  
+  // Authority Content
+  getAuthorityContent(id: string): Promise<AuthorityContent | undefined>;
+  getAuthorityContentList(filters?: ContentFilters): Promise<AuthorityContent[]>;
+  createAuthorityContent(content: InsertAuthorityContent): Promise<AuthorityContent>;
+  updateAuthorityContent(id: string, content: Partial<InsertAuthorityContent>): Promise<AuthorityContent | undefined>;
+  deleteAuthorityContent(id: string): Promise<void>;
 }
 
 export interface BusinessFilters {
@@ -65,6 +106,63 @@ export interface BusinessStats {
   withPhone: number;
   avgScore: number;
   enriched: number;
+}
+
+export interface EventFilters {
+  city?: string;
+  category?: string;
+  eventTier?: string;
+  source?: string;
+  isFlagged?: boolean;
+  startDateFrom?: Date;
+  startDateTo?: Date;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface EventStats {
+  total: number;
+  byCity: Record<string, number>;
+  byCategory: Record<string, number>;
+  byTier: Record<string, number>;
+  bySource: Record<string, number>;
+  upcoming: number;
+  flagged: number;
+}
+
+export interface IntentSignalFilters {
+  intentLevel?: string;
+  source?: string;
+  isProcessed?: boolean;
+  isComplaint?: boolean;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface VenueMonitorFilters {
+  city?: string;
+  tier?: string;
+  category?: string;
+  isActive?: boolean;
+  priority?: number;
+  limit?: number;
+}
+
+export interface InstagramPostFilters {
+  venueHandle?: string;
+  isEventAnnouncement?: boolean;
+  isProcessed?: boolean;
+  limit?: number;
+}
+
+export interface ContentFilters {
+  contentType?: string;
+  city?: string;
+  category?: string;
+  status?: string;
+  limit?: number;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -306,6 +404,225 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOutreachCampaign(id: string): Promise<void> {
     await db.delete(outreachCampaigns).where(eq(outreachCampaigns.id, id));
+  }
+
+  // Events
+  async getEvent(id: string): Promise<Event | undefined> {
+    const [event] = await db.select().from(events).where(eq(events.id, id));
+    return event;
+  }
+
+  async getEvents(filters?: EventFilters): Promise<Event[]> {
+    const conditions = [];
+    
+    if (filters?.city) conditions.push(eq(events.city, filters.city));
+    if (filters?.category) conditions.push(eq(events.category, filters.category));
+    if (filters?.eventTier) conditions.push(eq(events.eventTier, filters.eventTier));
+    if (filters?.source) conditions.push(eq(events.source, filters.source));
+    if (filters?.isFlagged !== undefined) conditions.push(eq(events.isFlagged, filters.isFlagged));
+    if (filters?.startDateFrom) conditions.push(gte(events.startDate, filters.startDateFrom));
+    if (filters?.startDateTo) conditions.push(lte(events.startDate, filters.startDateTo));
+    if (filters?.search) {
+      conditions.push(or(
+        like(events.name, `%${filters.search}%`),
+        like(events.description, `%${filters.search}%`)
+      ));
+    }
+
+    let query = db.select().from(events);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(asc(events.startDate)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    if (filters?.offset) query = query.offset(filters.offset) as any;
+
+    return await query;
+  }
+
+  async createEvent(event: InsertEvent): Promise<Event> {
+    const [created] = await db.insert(events).values(event).returning();
+    return created;
+  }
+
+  async updateEvent(id: string, event: Partial<InsertEvent>): Promise<Event | undefined> {
+    const [updated] = await db.update(events).set({ ...event, lastUpdated: new Date() }).where(eq(events.id, id)).returning();
+    return updated;
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    await db.delete(events).where(eq(events.id, id));
+  }
+
+  async getEventStats(): Promise<EventStats> {
+    const allEvents = await db.select().from(events);
+    const now = new Date();
+    
+    const stats: EventStats = {
+      total: allEvents.length,
+      byCity: {},
+      byCategory: {},
+      byTier: {},
+      bySource: {},
+      upcoming: 0,
+      flagged: 0,
+    };
+
+    for (const e of allEvents) {
+      stats.byCity[e.city] = (stats.byCity[e.city] || 0) + 1;
+      if (e.category) stats.byCategory[e.category] = (stats.byCategory[e.category] || 0) + 1;
+      if (e.eventTier) stats.byTier[e.eventTier] = (stats.byTier[e.eventTier] || 0) + 1;
+      stats.bySource[e.source] = (stats.bySource[e.source] || 0) + 1;
+      if (e.startDate > now) stats.upcoming++;
+      if (e.isFlagged) stats.flagged++;
+    }
+
+    return stats;
+  }
+
+  // Intent Signals
+  async getIntentSignal(id: string): Promise<IntentSignal | undefined> {
+    const [signal] = await db.select().from(intentSignals).where(eq(intentSignals.id, id));
+    return signal;
+  }
+
+  async getIntentSignals(filters?: IntentSignalFilters): Promise<IntentSignal[]> {
+    const conditions = [];
+    
+    if (filters?.intentLevel) conditions.push(eq(intentSignals.intentLevel, filters.intentLevel));
+    if (filters?.source) conditions.push(eq(intentSignals.source, filters.source));
+    if (filters?.isProcessed !== undefined) conditions.push(eq(intentSignals.isProcessed, filters.isProcessed));
+    if (filters?.isComplaint !== undefined) conditions.push(eq(intentSignals.isComplaint, filters.isComplaint));
+    if (filters?.search) {
+      conditions.push(or(
+        like(intentSignals.title, `%${filters.search}%`),
+        like(intentSignals.content, `%${filters.search}%`)
+      ));
+    }
+
+    let query = db.select().from(intentSignals);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(intentSignals.scrapedAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    if (filters?.offset) query = query.offset(filters.offset) as any;
+
+    return await query;
+  }
+
+  async createIntentSignal(signal: InsertIntentSignal): Promise<IntentSignal> {
+    const [created] = await db.insert(intentSignals).values(signal).returning();
+    return created;
+  }
+
+  async updateIntentSignal(id: string, signal: Partial<InsertIntentSignal>): Promise<IntentSignal | undefined> {
+    const [updated] = await db.update(intentSignals).set(signal).where(eq(intentSignals.id, id)).returning();
+    return updated;
+  }
+
+  async deleteIntentSignal(id: string): Promise<void> {
+    await db.delete(intentSignals).where(eq(intentSignals.id, id));
+  }
+
+  // Venue Monitors
+  async getVenueMonitor(id: string): Promise<VenueMonitor | undefined> {
+    const [venue] = await db.select().from(venueMonitors).where(eq(venueMonitors.id, id));
+    return venue;
+  }
+
+  async getVenueMonitors(filters?: VenueMonitorFilters): Promise<VenueMonitor[]> {
+    const conditions = [];
+    
+    if (filters?.city) conditions.push(eq(venueMonitors.city, filters.city));
+    if (filters?.tier) conditions.push(eq(venueMonitors.tier, filters.tier));
+    if (filters?.category) conditions.push(eq(venueMonitors.category, filters.category));
+    if (filters?.isActive !== undefined) conditions.push(eq(venueMonitors.isActive, filters.isActive));
+    if (filters?.priority) conditions.push(lte(venueMonitors.priority, filters.priority));
+
+    let query = db.select().from(venueMonitors);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(asc(venueMonitors.priority)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+
+    return await query;
+  }
+
+  async createVenueMonitor(venue: InsertVenueMonitor): Promise<VenueMonitor> {
+    const [created] = await db.insert(venueMonitors).values(venue).returning();
+    return created;
+  }
+
+  async updateVenueMonitor(id: string, venue: Partial<InsertVenueMonitor>): Promise<VenueMonitor | undefined> {
+    const [updated] = await db.update(venueMonitors).set(venue).where(eq(venueMonitors.id, id)).returning();
+    return updated;
+  }
+
+  async deleteVenueMonitor(id: string): Promise<void> {
+    await db.delete(venueMonitors).where(eq(venueMonitors.id, id));
+  }
+
+  // Instagram Posts
+  async getInstagramPost(id: string): Promise<InstagramPost | undefined> {
+    const [post] = await db.select().from(instagramPosts).where(eq(instagramPosts.id, id));
+    return post;
+  }
+
+  async getInstagramPosts(filters?: InstagramPostFilters): Promise<InstagramPost[]> {
+    const conditions = [];
+    
+    if (filters?.venueHandle) conditions.push(eq(instagramPosts.venueHandle, filters.venueHandle));
+    if (filters?.isEventAnnouncement !== undefined) conditions.push(eq(instagramPosts.isEventAnnouncement, filters.isEventAnnouncement));
+    if (filters?.isProcessed !== undefined) conditions.push(eq(instagramPosts.isProcessed, filters.isProcessed));
+
+    let query = db.select().from(instagramPosts);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(instagramPosts.discoveredAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+
+    return await query;
+  }
+
+  async createInstagramPost(post: InsertInstagramPost): Promise<InstagramPost> {
+    const [created] = await db.insert(instagramPosts).values(post).returning();
+    return created;
+  }
+
+  async updateInstagramPost(id: string, post: Partial<InsertInstagramPost>): Promise<InstagramPost | undefined> {
+    const [updated] = await db.update(instagramPosts).set(post).where(eq(instagramPosts.id, id)).returning();
+    return updated;
+  }
+
+  // Authority Content
+  async getAuthorityContent(id: string): Promise<AuthorityContent | undefined> {
+    const [content] = await db.select().from(authorityContent).where(eq(authorityContent.id, id));
+    return content;
+  }
+
+  async getAuthorityContentList(filters?: ContentFilters): Promise<AuthorityContent[]> {
+    const conditions = [];
+    
+    if (filters?.contentType) conditions.push(eq(authorityContent.contentType, filters.contentType));
+    if (filters?.city) conditions.push(eq(authorityContent.city, filters.city));
+    if (filters?.category) conditions.push(eq(authorityContent.category, filters.category));
+    if (filters?.status) conditions.push(eq(authorityContent.status, filters.status));
+
+    let query = db.select().from(authorityContent);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(authorityContent.createdAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+
+    return await query;
+  }
+
+  async createAuthorityContent(content: InsertAuthorityContent): Promise<AuthorityContent> {
+    const [created] = await db.insert(authorityContent).values(content).returning();
+    return created;
+  }
+
+  async updateAuthorityContent(id: string, content: Partial<InsertAuthorityContent>): Promise<AuthorityContent | undefined> {
+    const [updated] = await db.update(authorityContent).set({ ...content, updatedAt: new Date() }).where(eq(authorityContent.id, id)).returning();
+    return updated;
+  }
+
+  async deleteAuthorityContent(id: string): Promise<void> {
+    await db.delete(authorityContent).where(eq(authorityContent.id, id));
   }
 }
 
