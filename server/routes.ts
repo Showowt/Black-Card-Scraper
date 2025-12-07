@@ -1,9 +1,35 @@
 import type { Express } from "express";
 import { type Server } from "http";
+import { z } from "zod";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, type Business, type InsertBusiness, type OutreachCampaign } from "@shared/schema";
 import OpenAI from "openai";
+
+// Validation schemas for batch operations
+const BatchEnrichSchema = z.object({
+  businessIds: z.array(z.string().uuid()).min(1).optional(),
+  filters: z.object({
+    city: z.string().optional(),
+    category: z.string().optional(),
+  }).optional(),
+  limit: z.number().min(1).max(100).default(25),
+}).refine(
+  data => (data.businessIds && data.businessIds.length > 0) || data.filters !== undefined || data.limit,
+  { message: "Must provide businessIds, filters, or limit" }
+);
+
+const BatchOutreachSchema = z.object({
+  businessIds: z.array(z.string().uuid()).min(1).optional(),
+  filters: z.object({
+    city: z.string().optional(),
+    category: z.string().optional(),
+    limit: z.number().min(1).max(100).default(50),
+  }).optional(),
+}).refine(
+  data => (data.businessIds && data.businessIds.length > 0) || data.filters !== undefined,
+  { message: "Must provide businessIds or filters" }
+);
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -218,7 +244,15 @@ export async function registerRoutes(
   // Batch AI Enrichment
   app.post('/api/businesses/enrich/batch', isAuthenticated, async (req: any, res) => {
     try {
-      const { businessIds, filters, limit = 25 } = req.body;
+      // Validate input
+      const parseResult = BatchEnrichSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request", 
+          errors: parseResult.error.errors 
+        });
+      }
+      const { businessIds, filters, limit } = parseResult.data;
       
       let targetBusinesses: Business[] = [];
       
@@ -318,7 +352,16 @@ export async function registerRoutes(
   app.post('/api/outreach/batch', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { businessIds, filters } = req.body;
+      
+      // Validate input
+      const parseResult = BatchOutreachSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid request", 
+          errors: parseResult.error.errors 
+        });
+      }
+      const { businessIds, filters } = parseResult.data;
       
       let targetBusinesses: Business[] = [];
       

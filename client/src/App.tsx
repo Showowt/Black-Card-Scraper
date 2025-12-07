@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import BusinessDetail from "@/pages/BusinessDetail";
 import Statistics from "@/pages/Statistics";
 import Outreach from "@/pages/Outreach";
+import Operations from "@/pages/Operations";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/business/:id" component={BusinessDetail} />
           <Route path="/statistics" component={Statistics} />
           <Route path="/outreach" component={Outreach} />
+          <Route path="/operations" component={Operations} />
         </>
       )}
       <Route component={NotFound} />

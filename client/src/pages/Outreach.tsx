@@ -17,7 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Mail, Send, Clock, CheckCircle2, XCircle, Archive, Trash2,
   Copy, ExternalLink, Building2, ChevronRight, Loader2, Sparkles,
-  FileText, Users, TrendingUp, ArrowLeft, RotateCcw
+  FileText, Users, TrendingUp, RotateCcw, Terminal, BarChart3
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, OutreachCampaign } from "@shared/schema";
@@ -133,18 +133,33 @@ export default function Outreach() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
+              <Building2 className="h-7 w-7 text-primary" />
+              <span className="text-lg font-medium">Black Card Scanner</span>
+            </div>
+            
+            <nav className="flex items-center gap-4 flex-wrap">
               <Link href="/">
-                <Button variant="ghost" size="icon" data-testid="button-back-dashboard">
-                  <ArrowLeft className="h-4 w-4" />
+                <Button variant="ghost" size="sm" data-testid="nav-dashboard">Dashboard</Button>
+              </Link>
+              <Link href="/outreach">
+                <Button variant="secondary" size="sm" data-testid="nav-outreach">
+                  <Mail className="h-4 w-4 mr-1" /> Outreach
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-xl font-semibold">Outreach Management</h1>
-                <p className="text-sm text-muted-foreground">Manage AI-generated outreach campaigns</p>
-              </div>
-            </div>
+              <Link href="/operations">
+                <Button variant="ghost" size="sm" data-testid="nav-operations">
+                  <Terminal className="h-4 w-4 mr-1" /> Operations
+                </Button>
+              </Link>
+              <Link href="/statistics">
+                <Button variant="ghost" size="sm" data-testid="nav-statistics">
+                  <BarChart3 className="h-4 w-4 mr-1" /> Stats
+                </Button>
+              </Link>
+            </nav>
+            
             <div className="flex items-center gap-2">
               <Dialog open={batchDialogOpen} onOpenChange={setBatchDialogOpen}>
                 <DialogTrigger asChild>
