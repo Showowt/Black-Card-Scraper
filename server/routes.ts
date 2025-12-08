@@ -18,6 +18,11 @@ import {
   handleObjection,
   draftResponse,
   analyzeConversation,
+  analyzeReviews,
+  personalizeFromInstagram,
+  generateProposal,
+  analyzeVoiceNote,
+  deepScan,
 } from "./claudeCopilot";
 import {
   analyzeBusinessSignals,
@@ -954,6 +959,115 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error analyzing conversation:", error);
       res.status(500).json({ message: "Failed to analyze conversation" });
+    }
+  });
+
+  // Claude Copilot - Review Intelligence
+  app.post('/api/copilot/reviews', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, reviews } = req.body;
+      
+      if (!businessId || !reviews || !Array.isArray(reviews) || reviews.length === 0) {
+        return res.status(400).json({ message: "businessId and reviews array are required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await analyzeReviews(business, reviews);
+      res.json(result);
+    } catch (error) {
+      console.error("Error analyzing reviews:", error);
+      res.status(500).json({ message: "Failed to analyze reviews" });
+    }
+  });
+
+  // Claude Copilot - Instagram Personalization
+  app.post('/api/copilot/personalize', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, instagramContent } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await personalizeFromInstagram(business, instagramContent || {});
+      res.json(result);
+    } catch (error) {
+      console.error("Error personalizing from Instagram:", error);
+      res.status(500).json({ message: "Failed to personalize from Instagram" });
+    }
+  });
+
+  // Claude Copilot - Generate Proposal
+  app.post('/api/copilot/proposal', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, tier } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const selectedTier = tier || "core";
+      if (!["starter", "core", "flagship"].includes(selectedTier)) {
+        return res.status(400).json({ message: "tier must be starter, core, or flagship" });
+      }
+      
+      const result = await generateProposal(business, selectedTier as "starter" | "core" | "flagship");
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating proposal:", error);
+      res.status(500).json({ message: "Failed to generate proposal" });
+    }
+  });
+
+  // Claude Copilot - Voice Note Analysis
+  app.post('/api/copilot/voice', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, transcript } = req.body;
+      
+      if (!businessId || !transcript) {
+        return res.status(400).json({ message: "businessId and transcript are required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await analyzeVoiceNote(business, transcript);
+      res.json(result);
+    } catch (error) {
+      console.error("Error analyzing voice note:", error);
+      res.status(500).json({ message: "Failed to analyze voice note" });
+    }
+  });
+
+  // Claude Copilot - Deep Scan
+  app.get('/api/copilot/deep-scan/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = deepScan(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error performing deep scan:", error);
+      res.status(500).json({ message: "Failed to perform deep scan" });
     }
   });
 

@@ -3,6 +3,11 @@ import {
   PSYCHOLOGY_FRAMEWORKS,
   OBJECTION_PATTERNS,
   VERTICAL_INTELLIGENCE,
+  VERTICAL_DEEP_INTEL,
+  IDENTITY_TRANSFORMATION,
+  BEHAVIORAL_ECONOMICS,
+  NEUROSCIENCE_NLP,
+  FRAMEWORK_CREDENTIALS,
   type Business,
 } from "@shared/schema";
 
@@ -42,8 +47,114 @@ interface ResponseDraftResult {
   warnings: string[];
 }
 
+// NEW: Review Intelligence Result
+export interface ReviewIntelligenceResult {
+  hooks: string[];
+  painPointsDetected: string[];
+  positiveThemes: string[];
+  negativeThemes: string[];
+  competitorMentions: string[];
+  ownerResponsiveness: string;
+  outreachAngle: string;
+  suggestedOpener: string;
+}
+
+// NEW: Personalization from IG Content Result
+export interface PersonalizationResult {
+  contentThemes: string[];
+  brandVoice: string;
+  targetAudience: string;
+  recentActivity: string[];
+  hooks: string[];
+  personalizedOpener: string;
+  doNotMention: string[];
+}
+
+// NEW: Proposal Generation Result
+export interface ProposalResult {
+  executiveSummary: string;
+  problemStatement: string;
+  solution: {
+    name: string;
+    description: string;
+    features: string[];
+  };
+  investment: {
+    setup: string;
+    monthly: string;
+    roi: string;
+  };
+  timeline: string;
+  nextSteps: string[];
+  guarantees: string[];
+}
+
+// NEW: Voice Note Analysis Result
+export interface VoiceNoteAnalysisResult {
+  transcriptSummary: string;
+  sentiment: string;
+  keyPoints: string[];
+  questionsAsked: string[];
+  objections: string[];
+  interestLevel: number;
+  suggestedResponse: string;
+  urgency: string;
+}
+
+// NEW: Deep Scan Result with enhanced intelligence
+export interface DeepScanResult {
+  vertical: string;
+  painPoints: string[];
+  revenueLeakage: string[];
+  recommendedSolutions: {
+    starter: { name: string; desc: string; roi: string }[];
+    core: { name: string; desc: string; roi: string }[];
+    flagship: { name: string; desc: string; roi: string; price_range: string };
+  };
+  ownerPsychology: {
+    fears: string[];
+    wants: string[];
+    objections: string[];
+    leverage: string;
+  };
+  identityTransformation: {
+    current: string;
+    aspirational: string;
+    gapStatement: string;
+    transformation: string;
+  };
+  urgencyFactors: string[];
+  competitorIntel: string[];
+}
+
 function getVerticalIntelligence(category: string) {
   return VERTICAL_INTELLIGENCE[category] || VERTICAL_INTELLIGENCE.restaurant;
+}
+
+function getVerticalDeepIntel(category: string) {
+  const cat = category?.toLowerCase() || "";
+  if (cat.includes("restaurant") || cat.includes("cafe") || cat.includes("bar")) return VERTICAL_DEEP_INTEL.restaurant;
+  if (cat.includes("hotel") || cat.includes("hostel") || cat.includes("lodging")) return VERTICAL_DEEP_INTEL.hotel;
+  if (cat.includes("concierge")) return VERTICAL_DEEP_INTEL.concierge;
+  if (cat.includes("villa") || cat.includes("rental")) return VERTICAL_DEEP_INTEL.villa_rental;
+  if (cat.includes("tour") || cat.includes("guide") || cat.includes("excursion")) return VERTICAL_DEEP_INTEL.tour_operator;
+  if (cat.includes("spa") || cat.includes("wellness") || cat.includes("massage")) return VERTICAL_DEEP_INTEL.spa;
+  if (cat.includes("club") || cat.includes("nightlife") || cat.includes("disco")) return VERTICAL_DEEP_INTEL.club;
+  if (cat.includes("boat") || cat.includes("yacht") || cat.includes("charter")) return VERTICAL_DEEP_INTEL.boat_charter;
+  return VERTICAL_DEEP_INTEL.restaurant;
+}
+
+function getIdentityTransformation(category: string) {
+  const cat = category?.toLowerCase() || "";
+  if (cat.includes("restaurant") || cat.includes("cafe") || cat.includes("bar")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.restaurant;
+  if (cat.includes("hotel") || cat.includes("hostel") || cat.includes("lodging")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.hotel;
+  if (cat.includes("concierge")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.concierge;
+  if (cat.includes("villa") || cat.includes("rental")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.villa_rental;
+  if (cat.includes("tour") || cat.includes("guide") || cat.includes("excursion")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.tour_operator;
+  if (cat.includes("spa") || cat.includes("wellness") || cat.includes("massage")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.spa;
+  if (cat.includes("club") || cat.includes("nightlife") || cat.includes("disco")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.club;
+  if (cat.includes("boat") || cat.includes("yacht") || cat.includes("charter")) return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.boat_charter;
+  return IDENTITY_TRANSFORMATION.identity_triggers_by_vertical.restaurant;
 }
 
 function selectPsychologyFramework(business: Business): PsychologyFramework {
@@ -370,4 +481,391 @@ Return JSON:
     console.error("Error analyzing conversation:", error);
     throw error;
   }
+}
+
+// NEW: Review Intelligence - Analyze Google reviews for outreach hooks
+export async function analyzeReviews(
+  business: Business,
+  reviews: string[]
+): Promise<ReviewIntelligenceResult> {
+  const verticalData = getVerticalDeepIntel(business.category);
+  
+  const systemPrompt = `You are a sales intelligence analyst specializing in mining Google reviews for outreach opportunities.
+Your goal is to find HOOKS - specific things mentioned in reviews that can be used to personalize outreach.
+
+Business Context:
+- Name: ${business.name}
+- Category: ${business.category}
+- City: ${business.city}
+- Rating: ${business.rating || "unknown"}
+
+Common pain points for this vertical:
+${verticalData.pain_points.slice(0, 5).map((p) => `- ${p}`).join("\n")}
+
+Owner psychology insights:
+- Fears: ${verticalData.owner_psychology.fears.slice(0, 2).join(", ")}
+- Wants: ${verticalData.owner_psychology.wants.slice(0, 2).join(", ")}`;
+
+  const userPrompt = `Analyze these Google reviews for ${business.name} and extract outreach intelligence:
+
+${reviews.map((r, i) => `Review ${i + 1}: ${r}`).join("\n\n")}
+
+Return JSON:
+{
+  "hooks": ["Specific details from reviews that can be used as conversation starters"],
+  "pain_points_detected": ["Pain points visible in reviews (service delays, booking issues, etc.)"],
+  "positive_themes": ["What customers love that we should acknowledge"],
+  "negative_themes": ["Recurring complaints that suggest automation opportunities"],
+  "competitor_mentions": ["Any competitors mentioned in reviews"],
+  "owner_responsiveness": "Analysis of how owner responds to reviews (fast/slow, defensive/professional)",
+  "outreach_angle": "Best angle for outreach based on review analysis",
+  "suggested_opener": "A personalized Spanish opener that references something specific from reviews"
+}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const textContent = response.content.find((c) => c.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      throw new Error("No text response from Claude");
+    }
+
+    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    return {
+      hooks: result.hooks || [],
+      painPointsDetected: result.pain_points_detected || [],
+      positiveThemes: result.positive_themes || [],
+      negativeThemes: result.negative_themes || [],
+      competitorMentions: result.competitor_mentions || [],
+      ownerResponsiveness: result.owner_responsiveness || "unknown",
+      outreachAngle: result.outreach_angle || "",
+      suggestedOpener: result.suggested_opener || "",
+    };
+  } catch (error) {
+    console.error("Error analyzing reviews:", error);
+    throw error;
+  }
+}
+
+// NEW: Personalization from Instagram Content
+export async function personalizeFromInstagram(
+  business: Business,
+  instagramContent: {
+    bio?: string;
+    recentPosts?: string[];
+    followerCount?: number;
+    postFrequency?: string;
+  }
+): Promise<PersonalizationResult> {
+  const verticalData = getVerticalDeepIntel(business.category);
+  const identityData = getIdentityTransformation(business.category);
+  
+  const systemPrompt = `You are a social media analyst extracting personalization hooks from Instagram content.
+Your goal is to understand their brand voice and find specific details for personalized outreach.
+
+Business Context:
+- Name: ${business.name}
+- Category: ${business.category}
+- City: ${business.city}
+
+Identity Transformation Insights:
+- Current State: ${identityData.current}
+- Aspirational State: ${identityData.aspirational}
+- Gap Statement: ${identityData.gap_statement}`;
+
+  const userPrompt = `Analyze this Instagram content for ${business.name}:
+
+Bio: ${instagramContent.bio || "Not available"}
+Followers: ${instagramContent.followerCount || "Unknown"}
+Post Frequency: ${instagramContent.postFrequency || "Unknown"}
+
+Recent Posts:
+${(instagramContent.recentPosts || []).map((p, i) => `Post ${i + 1}: ${p}`).join("\n")}
+
+Return JSON:
+{
+  "content_themes": ["Main themes/topics they post about"],
+  "brand_voice": "Description of their brand voice (casual, professional, luxury, etc.)",
+  "target_audience": "Who they seem to be targeting",
+  "recent_activity": ["Notable recent activities, events, promotions"],
+  "hooks": ["Specific details from IG that can be used in outreach"],
+  "personalized_opener": "A Spanish opener that references something specific from their IG",
+  "do_not_mention": ["Topics to avoid based on their content"]
+}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 1536,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const textContent = response.content.find((c) => c.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      throw new Error("No text response from Claude");
+    }
+
+    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    return {
+      contentThemes: result.content_themes || [],
+      brandVoice: result.brand_voice || "",
+      targetAudience: result.target_audience || "",
+      recentActivity: result.recent_activity || [],
+      hooks: result.hooks || [],
+      personalizedOpener: result.personalized_opener || "",
+      doNotMention: result.do_not_mention || [],
+    };
+  } catch (error) {
+    console.error("Error personalizing from Instagram:", error);
+    throw error;
+  }
+}
+
+// NEW: Proposal Generation
+export async function generateProposal(
+  business: Business,
+  selectedTier: "starter" | "core" | "flagship" = "core"
+): Promise<ProposalResult> {
+  const verticalData = getVerticalDeepIntel(business.category);
+  const identityData = getIdentityTransformation(business.category);
+  const solutions = verticalData.ai_solutions;
+  
+  const selectedSolution = selectedTier === "flagship" 
+    ? solutions.flagship
+    : selectedTier === "starter"
+    ? solutions.starter[0]
+    : solutions.core[0];
+
+  const systemPrompt = `You are a sales proposal writer creating compelling proposals for Colombian hospitality businesses.
+Your proposals combine psychology, ROI calculation, and clear next steps.
+
+Business Context:
+- Name: ${business.name}
+- Category: ${business.category}
+- City: ${business.city}
+- Rating: ${business.rating || "unknown"}
+- Review Count: ${business.reviewCount || "unknown"}
+
+${FRAMEWORK_CREDENTIALS.credibility_statements[0]}
+
+Identity Transformation:
+- Current: ${identityData.current}
+- Aspirational: ${identityData.aspirational}
+- Transformation: ${identityData.transformation}
+
+Psychology Principles to Apply:
+- Loss Aversion: ${BEHAVIORAL_ECONOMICS.loss_aversion.principle}
+- Social Proof: ${BEHAVIORAL_ECONOMICS.social_proof.principle}
+- Scarcity: ${BEHAVIORAL_ECONOMICS.scarcity_effect.principle}`;
+
+  const userPrompt = `Generate a proposal for ${business.name} for this solution:
+Solution: ${JSON.stringify(selectedSolution)}
+
+Revenue Leakage Points:
+${verticalData.revenue_leakage.map((r) => `- ${r}`).join("\n")}
+
+Return JSON:
+{
+  "executive_summary": "2-3 sentence summary of the problem and solution, using loss aversion framing",
+  "problem_statement": "Detailed problem statement with specific numbers and pain points",
+  "solution": {
+    "name": "Solution name",
+    "description": "What it does and how",
+    "features": ["Feature 1", "Feature 2", "Feature 3"]
+  },
+  "investment": {
+    "setup": "One-time setup cost",
+    "monthly": "Monthly cost",
+    "roi": "Expected ROI or savings"
+  },
+  "timeline": "Implementation timeline",
+  "next_steps": ["Step 1", "Step 2", "Step 3"],
+  "guarantees": ["Guarantee 1", "Guarantee 2"]
+}
+
+Write in professional Spanish.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const textContent = response.content.find((c) => c.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      throw new Error("No text response from Claude");
+    }
+
+    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    return {
+      executiveSummary: result.executive_summary || "",
+      problemStatement: result.problem_statement || "",
+      solution: result.solution || { name: "", description: "", features: [] },
+      investment: result.investment || { setup: "", monthly: "", roi: "" },
+      timeline: result.timeline || "",
+      nextSteps: result.next_steps || [],
+      guarantees: result.guarantees || [],
+    };
+  } catch (error) {
+    console.error("Error generating proposal:", error);
+    throw error;
+  }
+}
+
+// NEW: Voice Note Analysis
+export async function analyzeVoiceNote(
+  business: Business,
+  transcript: string
+): Promise<VoiceNoteAnalysisResult> {
+  const verticalData = getVerticalDeepIntel(business.category);
+  
+  const systemPrompt = `You are a sales analyst reviewing voice note transcripts from prospects.
+Your goal is to identify sentiment, key points, objections, and craft the perfect response.
+
+Business Context:
+- Name: ${business.name}
+- Category: ${business.category}
+- City: ${business.city}
+
+Owner Psychology Insights:
+- Common Fears: ${verticalData.owner_psychology.fears.join(", ")}
+- Common Objections: ${verticalData.owner_psychology.objections.join(", ")}
+- Leverage Point: ${verticalData.owner_psychology.leverage}`;
+
+  const userPrompt = `Analyze this voice note transcript from ${business.name}:
+
+"${transcript}"
+
+Return JSON:
+{
+  "transcript_summary": "Brief summary of what they said",
+  "sentiment": "positive/neutral/negative/interested/skeptical/frustrated",
+  "key_points": ["Main points they made"],
+  "questions_asked": ["Questions they asked that need answers"],
+  "objections": ["Objections or concerns raised"],
+  "interest_level": 0-100,
+  "suggested_response": "Draft response in Spanish addressing their points (for WhatsApp voice note or text)",
+  "urgency": "high/medium/low - how quickly should we respond"
+}`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 1536,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const textContent = response.content.find((c) => c.type === "text");
+    if (!textContent || textContent.type !== "text") {
+      throw new Error("No text response from Claude");
+    }
+
+    const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No JSON found in response");
+    }
+
+    const result = JSON.parse(jsonMatch[0]);
+
+    return {
+      transcriptSummary: result.transcript_summary || "",
+      sentiment: result.sentiment || "neutral",
+      keyPoints: result.key_points || [],
+      questionsAsked: result.questions_asked || [],
+      objections: result.objections || [],
+      interestLevel: result.interest_level || 50,
+      suggestedResponse: result.suggested_response || "",
+      urgency: result.urgency || "medium",
+    };
+  } catch (error) {
+    console.error("Error analyzing voice note:", error);
+    throw error;
+  }
+}
+
+// NEW: Deep Scan - Enhanced vertical intelligence
+export function deepScan(business: Business): DeepScanResult {
+  const verticalData = getVerticalDeepIntel(business.category);
+  const identityData = getIdentityTransformation(business.category);
+  
+  // Generate urgency factors based on current date and business context
+  const now = new Date();
+  const month = now.getMonth();
+  const urgencyFactors: string[] = [];
+  
+  // Seasonal urgency
+  if (month >= 10 || month <= 1) {
+    urgencyFactors.push("High season is here - every day without automation costs real money");
+  } else if (month >= 8 && month <= 10) {
+    urgencyFactors.push("High season starts in weeks - implementation takes time");
+  }
+  
+  // Review-based urgency
+  if (business.rating && business.rating < 4.0) {
+    urgencyFactors.push("Low rating is actively hurting bookings right now");
+  }
+  if (business.reviewCount && business.reviewCount < 50) {
+    urgencyFactors.push("Not enough reviews for tourist trust - need review automation");
+  }
+  
+  // Digital presence urgency
+  if (!business.website) {
+    urgencyFactors.push("No website means invisible to online searches");
+  }
+  if (!business.instagram) {
+    urgencyFactors.push("No Instagram means no social proof for tourists");
+  }
+  
+  // Competitor intel based on city
+  const competitorIntel: string[] = [];
+  if (business.city?.toLowerCase().includes("cartagena")) {
+    competitorIntel.push("Top Cartagena venues are rapidly adopting AI automation");
+    competitorIntel.push("Walled City competition is fierce - differentiation is key");
+  } else if (business.city?.toLowerCase().includes("medellin")) {
+    competitorIntel.push("Medellin's digital nomad scene expects instant responses");
+    competitorIntel.push("Younger operators are tech-savvy and adopting automation");
+  }
+  
+  return {
+    vertical: business.category || "restaurant",
+    painPoints: verticalData.pain_points,
+    revenueLeakage: verticalData.revenue_leakage,
+    recommendedSolutions: verticalData.ai_solutions,
+    ownerPsychology: verticalData.owner_psychology,
+    identityTransformation: {
+      current: identityData.current,
+      aspirational: identityData.aspirational,
+      gapStatement: identityData.gap_statement,
+      transformation: identityData.transformation,
+    },
+    urgencyFactors,
+    competitorIntel,
+  };
 }
