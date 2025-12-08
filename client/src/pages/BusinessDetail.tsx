@@ -14,9 +14,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Building2, ArrowLeft, Phone, Mail, Globe, MapPin, Star, 
-  ExternalLink, Clock, Zap, RefreshCw, Copy, Check, LogOut, Search
+  ExternalLink, Clock, Zap, RefreshCw, Copy, Check, LogOut, Search,
+  AlertTriangle, Target, DollarSign, Shield, Heart, Clock3, Sparkles, Send
 } from "lucide-react";
 import { SiInstagram, SiFacebook, SiWhatsapp } from "react-icons/si";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Business, OutreachCampaign } from "@shared/schema";
 import { CITIES, CATEGORIES, OUTREACH_STATUSES } from "@shared/schema";
 
@@ -27,6 +30,8 @@ export default function BusinessDetail() {
   const businessId = params?.id;
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [ultimateScripts, setUltimateScripts] = useState<any>(null);
+  const [scriptsDialogOpen, setScriptsDialogOpen] = useState(false);
 
   const { data: business, isLoading } = useQuery<Business>({
     queryKey: ["/api/businesses", businessId],
@@ -99,6 +104,44 @@ export default function BusinessDetail() {
     },
     onError: (error: Error) => {
       toast({ title: "Scrape Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const { data: signalAnalysis } = useQuery<{
+    detectedSignals: string[];
+    detectedProblem: string;
+    customOffer: string;
+    monthlyLoss: number;
+    lossExplanation: string;
+    identityStatement: string;
+    fearTrigger: string;
+    desireTrigger: string;
+    urgencyAngle: string;
+  }>({
+    queryKey: ['/api/ultimate-outreach/analyze', businessId],
+    queryFn: async () => {
+      const res = await fetch(`/api/ultimate-outreach/analyze/${businessId}`, { credentials: 'include' });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!businessId && !!business?.isEnriched,
+  });
+
+  const generateUltimateMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/ultimate-outreach/generate", { businessId });
+      return res.json();
+    },
+    onSuccess: (result) => {
+      setUltimateScripts(result.scripts);
+      setScriptsDialogOpen(true);
+      queryClient.invalidateQueries({ predicate: (query) => 
+        String(query.queryKey[0]).includes("/api/outreach") || String(query.queryKey[0]).includes("/api/ultimate")
+      });
+      toast({ title: "Ultimate Scripts Generated", description: "Multi-channel scripts ready" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Generation Failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -394,6 +437,95 @@ export default function BusinessDetail() {
               </CardContent>
             </Card>
 
+            {signalAnalysis && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" /> Signal Intelligence
+                    </CardTitle>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => generateUltimateMutation.mutate()}
+                      disabled={generateUltimateMutation.isPending}
+                      data-testid="button-generate-ultimate"
+                    >
+                      {generateUltimateMutation.isPending ? (
+                        <><RefreshCw className="h-4 w-4 mr-1 animate-spin" /> Generating...</>
+                      ) : (
+                        <><Sparkles className="h-4 w-4 mr-1" /> Generate Scripts</>
+                      )}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 rounded-md bg-destructive/5 border border-destructive/20">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-destructive">Problem Detected</p>
+                        <p className="text-sm mt-1" data-testid="text-detected-problem">{signalAnalysis.detectedProblem}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 rounded-md bg-primary/5 border border-primary/20">
+                    <div className="flex items-start gap-2">
+                      <Target className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-primary">Custom Offer</p>
+                        <p className="text-sm mt-1" data-testid="text-custom-offer">{signalAnalysis.customOffer}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 rounded-md bg-amber-500/5 border border-amber-500/20">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-amber-600" />
+                      <div>
+                        <p className="text-lg font-bold text-amber-700" data-testid="text-monthly-loss">
+                          ${signalAnalysis.monthlyLoss.toLocaleString()}/month
+                        </p>
+                        <p className="text-xs text-muted-foreground">potential loss</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Shield className="h-3 w-3 text-blue-600" />
+                        <span className="text-xs font-medium text-blue-700">Identity</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{signalAnalysis.identityStatement}</p>
+                    </div>
+                    <div className="p-2 rounded-md bg-red-500/10 border border-red-500/20">
+                      <div className="flex items-center gap-1 mb-1">
+                        <AlertTriangle className="h-3 w-3 text-red-600" />
+                        <span className="text-xs font-medium text-red-700">Fear</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{signalAnalysis.fearTrigger}</p>
+                    </div>
+                    <div className="p-2 rounded-md bg-green-500/10 border border-green-500/20">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Heart className="h-3 w-3 text-green-600" />
+                        <span className="text-xs font-medium text-green-700">Desire</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{signalAnalysis.desireTrigger}</p>
+                    </div>
+                    <div className="p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
+                      <div className="flex items-center gap-1 mb-1">
+                        <Clock3 className="h-3 w-3 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-700">Urgency</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{signalAnalysis.urgencyAngle}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between gap-2">
@@ -466,6 +598,131 @@ export default function BusinessDetail() {
           </div>
         </div>
       </main>
+
+      <Dialog open={scriptsDialogOpen} onOpenChange={setScriptsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              {business?.name} - Ultimate Outreach Scripts
+            </DialogTitle>
+          </DialogHeader>
+          
+          {ultimateScripts && (
+            <ScrollArea className="max-h-[60vh]">
+              <Tabs defaultValue="whatsapp" className="w-full">
+                <TabsList className="w-full grid grid-cols-4">
+                  <TabsTrigger value="whatsapp" className="flex items-center gap-1">
+                    <SiWhatsapp className="w-4 h-4" /> WhatsApp
+                  </TabsTrigger>
+                  <TabsTrigger value="instagram" className="flex items-center gap-1">
+                    <SiInstagram className="w-4 h-4" /> Instagram
+                  </TabsTrigger>
+                  <TabsTrigger value="email" className="flex items-center gap-1">
+                    <Mail className="w-4 h-4" /> Email
+                  </TabsTrigger>
+                  <TabsTrigger value="followups" className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" /> Follow-ups
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="whatsapp" className="mt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">WhatsApp Message</span>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => copyToClipboard(ultimateScripts.whatsappScript)}>
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                        {ultimateScripts.whatsappLink && (
+                          <Button size="sm" asChild>
+                            <a href={ultimateScripts.whatsappLink} target="_blank" rel="noopener">
+                              <Send className="w-3 h-3 mr-1" /> Open WhatsApp
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-md font-mono">
+                      {ultimateScripts.whatsappScript}
+                    </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="instagram" className="mt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Instagram DM</span>
+                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(ultimateScripts.instagramDm)}>
+                        <Copy className="w-3 h-3 mr-1" /> Copy
+                      </Button>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-md font-mono">
+                      {ultimateScripts.instagramDm}
+                    </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="email" className="mt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Email</span>
+                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(`Subject: ${ultimateScripts.emailSubject}\n\n${ultimateScripts.emailBody}`)}>
+                        <Copy className="w-3 h-3 mr-1" /> Copy All
+                      </Button>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Subject</span>
+                      <p className="text-sm font-medium">{ultimateScripts.emailSubject}</p>
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm bg-muted p-4 rounded-md font-mono">
+                      {ultimateScripts.emailBody}
+                    </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="followups" className="mt-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Day 3 Follow-up</span>
+                        <Button size="sm" variant="outline" onClick={() => copyToClipboard(ultimateScripts.followUpDay3)}>
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                      </div>
+                      <pre className="whitespace-pre-wrap text-sm bg-muted p-3 rounded-md font-mono">
+                        {ultimateScripts.followUpDay3}
+                      </pre>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Day 7 Follow-up</span>
+                        <Button size="sm" variant="outline" onClick={() => copyToClipboard(ultimateScripts.followUpDay7)}>
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                      </div>
+                      <pre className="whitespace-pre-wrap text-sm bg-muted p-3 rounded-md font-mono">
+                        {ultimateScripts.followUpDay7}
+                      </pre>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Day 14 Follow-up</span>
+                        <Button size="sm" variant="outline" onClick={() => copyToClipboard(ultimateScripts.followUpDay14)}>
+                          <Copy className="w-3 h-3 mr-1" /> Copy
+                        </Button>
+                      </div>
+                      <pre className="whitespace-pre-wrap text-sm bg-muted p-3 rounded-md font-mono">
+                        {ultimateScripts.followUpDay14}
+                      </pre>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -654,6 +654,22 @@ export async function registerRoutes(
     }
   });
 
+  // Ultimate Outreach - Analyze endpoint (alias for compatibility)
+  app.get('/api/ultimate-outreach/analyze/:businessId', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const analysis = analyzeBusinessSignals(business);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error analyzing business signals:", error);
+      res.status(500).json({ message: "Failed to analyze business signals" });
+    }
+  });
+
   // Ultimate Outreach - Get outreach-ready businesses with signal analysis
   app.get('/api/ultimate-outreach', isAuthenticated, async (req: any, res) => {
     try {
