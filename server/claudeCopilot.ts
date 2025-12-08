@@ -6,9 +6,10 @@ import {
   type Business,
 } from "@shared/schema";
 
+// Use user's Claude API key from secrets, fallback to Replit AI Integrations
 const anthropic = new Anthropic({
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
+  apiKey: process.env.Claude_API_ || process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
+  baseURL: process.env.Claude_API_ ? "https://api.anthropic.com" : process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
 });
 
 type PsychologyFramework = keyof typeof PSYCHOLOGY_FRAMEWORKS;
