@@ -63,13 +63,22 @@ export default function VenueMonitors() {
     queryKey: [venuesUrl],
   });
 
+  const invalidateVenueQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/venue-monitors');
+      }
+    });
+  };
+
   const deleteVenueMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/venue-monitors/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Venue Deleted" });
-      queryClient.invalidateQueries({ queryKey: ["/api/venue-monitors"] });
+      invalidateVenueQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
@@ -82,7 +91,7 @@ export default function VenueMonitors() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/venue-monitors"] });
+      invalidateVenueQueries();
     },
   });
 
@@ -412,7 +421,12 @@ function AddVenueDialog({ onClose }: { onClose: () => void }) {
     },
     onSuccess: () => {
       toast({ title: "Venue Added", description: "Venue monitor created successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/venue-monitors"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/venue-monitors');
+        }
+      });
       onClose();
     },
     onError: (error: Error) => {

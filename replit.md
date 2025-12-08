@@ -62,6 +62,9 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
     Dashboard.tsx   # Main dashboard with business table
     BusinessDetail.tsx # Individual business view
     Events.tsx      # Event discovery pipeline with tier filtering
+    IntentSignals.tsx # Reddit/forum intent signal monitoring
+    VenueMonitors.tsx # Instagram venue tracking for event announcements
+    AuthorityContent.tsx # AI-powered content generation with OpenAI
     Statistics.tsx  # Analytics dashboard
     Outreach.tsx    # Outreach campaign management
     Operations.tsx  # CLI-style batch operations panel

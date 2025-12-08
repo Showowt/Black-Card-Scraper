@@ -75,14 +75,22 @@ export default function IntentSignals() {
     queryKey: ["/api/intent-signals/stats"],
   });
 
+  const invalidateSignalQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/intent-signals');
+      }
+    });
+  };
+
   const deleteSignalMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/intent-signals/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Signal Deleted" });
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals/stats"] });
+      invalidateSignalQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
@@ -95,8 +103,7 @@ export default function IntentSignals() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals/stats"] });
+      invalidateSignalQueries();
     },
   });
 
@@ -584,8 +591,12 @@ function AddSignalDialog({ onClose }: { onClose: () => void }) {
     },
     onSuccess: () => {
       toast({ title: "Signal Added", description: "Intent signal created successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/intent-signals/stats"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/intent-signals');
+        }
+      });
       onClose();
     },
     onError: (error: Error) => {

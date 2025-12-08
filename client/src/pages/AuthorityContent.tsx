@@ -64,13 +64,22 @@ export default function AuthorityContentPage() {
     queryKey: [contentUrl],
   });
 
+  const invalidateContentQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/content');
+      }
+    });
+  };
+
   const deleteContentMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/content/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Content Deleted" });
-      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+      invalidateContentQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
@@ -87,7 +96,7 @@ export default function AuthorityContentPage() {
     },
     onSuccess: () => {
       toast({ title: "Status Updated" });
-      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+      invalidateContentQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Update Failed", description: error.message, variant: "destructive" });
@@ -415,7 +424,12 @@ function GenerateContentDialog({ onClose }: { onClose: () => void }) {
     },
     onSuccess: (data) => {
       toast({ title: "Content Generated", description: `Created: ${data.title}` });
-      queryClient.invalidateQueries({ queryKey: ["/api/content"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/content');
+        }
+      });
       onClose();
     },
     onError: (error: Error) => {

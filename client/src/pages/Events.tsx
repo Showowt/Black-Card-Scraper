@@ -64,14 +64,22 @@ export default function Events() {
     queryKey: ["/api/events/stats"],
   });
 
+  const invalidateEventQueries = () => {
+    queryClient.invalidateQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && key.startsWith('/api/events');
+      }
+    });
+  };
+
   const deleteEventMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/events/${id}`);
     },
     onSuccess: () => {
       toast({ title: "Event Deleted" });
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/events/stats"] });
+      invalidateEventQueries();
     },
     onError: (error: Error) => {
       toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
@@ -84,8 +92,7 @@ export default function Events() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/events/stats"] });
+      invalidateEventQueries();
     },
   });
 
@@ -423,8 +430,12 @@ function AddEventForm({ onSuccess }: { onSuccess: () => void }) {
     },
     onSuccess: () => {
       toast({ title: "Event Added" });
-      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/events/stats"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/events');
+        }
+      });
       onSuccess();
     },
     onError: (error: Error) => {
