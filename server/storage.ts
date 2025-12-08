@@ -53,6 +53,7 @@ export interface IStorage {
   // Intent Signals
   getIntentSignal(id: string): Promise<IntentSignal | undefined>;
   getIntentSignals(filters?: IntentSignalFilters): Promise<IntentSignal[]>;
+  getIntentSignalStats(): Promise<IntentSignalStats>;
   createIntentSignal(signal: InsertIntentSignal): Promise<IntentSignal>;
   updateIntentSignal(id: string, signal: Partial<InsertIntentSignal>): Promise<IntentSignal | undefined>;
   deleteIntentSignal(id: string): Promise<void>;
@@ -139,6 +140,15 @@ export interface IntentSignalFilters {
   search?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface IntentSignalStats {
+  total: number;
+  byIntentLevel: Record<string, number>;
+  bySource: Record<string, number>;
+  processed: number;
+  unprocessed: number;
+  complaints: number;
 }
 
 export interface VenueMonitorFilters {
@@ -519,6 +529,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteIntentSignal(id: string): Promise<void> {
     await db.delete(intentSignals).where(eq(intentSignals.id, id));
+  }
+
+  async getIntentSignalStats(): Promise<IntentSignalStats> {
+    const allSignals = await db.select().from(intentSignals);
+    
+    const stats: IntentSignalStats = {
+      total: allSignals.length,
+      byIntentLevel: {},
+      bySource: {},
+      processed: 0,
+      unprocessed: 0,
+      complaints: 0,
+    };
+
+    for (const signal of allSignals) {
+      stats.byIntentLevel[signal.intentLevel] = (stats.byIntentLevel[signal.intentLevel] || 0) + 1;
+      stats.bySource[signal.source] = (stats.bySource[signal.source] || 0) + 1;
+      if (signal.isProcessed) stats.processed++;
+      else stats.unprocessed++;
+      if (signal.isComplaint) stats.complaints++;
+    }
+
+    return stats;
   }
 
   // Venue Monitors

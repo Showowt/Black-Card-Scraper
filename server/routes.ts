@@ -759,6 +759,16 @@ export async function registerRoutes(
     }
   });
 
+  app.get('/api/intent-signals/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getIntentSignalStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching intent signal stats:", error);
+      res.status(500).json({ message: "Failed to fetch intent signal stats" });
+    }
+  });
+
   app.get('/api/intent-signals/:id', isAuthenticated, async (req: any, res) => {
     try {
       const signal = await storage.getIntentSignal(req.params.id);
