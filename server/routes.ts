@@ -696,7 +696,13 @@ export async function registerRoutes(
 
   app.post('/api/events', isAuthenticated, async (req: any, res) => {
     try {
-      const validated = insertEventSchema.parse(req.body);
+      // Transform date strings to Date objects before validation
+      const body = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      const validated = insertEventSchema.parse(body);
       const event = await storage.createEvent(validated);
       res.json(event);
     } catch (error) {
@@ -707,7 +713,12 @@ export async function registerRoutes(
 
   app.patch('/api/events/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const event = await storage.updateEvent(req.params.id, req.body);
+      // Transform date strings to Date objects if present
+      const body = { ...req.body };
+      if (body.startDate) body.startDate = new Date(body.startDate);
+      if (body.endDate) body.endDate = new Date(body.endDate);
+      
+      const event = await storage.updateEvent(req.params.id, body);
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
