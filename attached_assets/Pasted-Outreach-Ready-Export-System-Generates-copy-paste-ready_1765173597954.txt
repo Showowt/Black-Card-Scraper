@@ -1,0 +1,139 @@
+Outreach-Ready Export System.
+Generates copy-paste ready outreach with direct links.
+Optimized for Colombian market (WhatsApp-first).
+"""
+import csv
+import json
+from datetime import datetime
+from pathlib import Path
+
+from models import Business
+from services.deep_scan import BusinessDeepScan
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# COLOMBIA CHANNEL STRATEGY
+# ═══════════════════════════════════════════════════════════════════════════
+# 
+# REALITY CHECK:
+# - WhatsApp = 90% of Colombian business communication
+# - BUT cold WhatsApp feels invasive, high block rate
+# - Instagram DM = warmer entry point, can reference content
+# - Email = formal follow-up, proposals, documentation
+#
+# WINNING SEQUENCE:
+# 1. Instagram DM (warm up, low friction)
+# 2. WhatsApp (after IG response OR as follow-up)
+# 3. Email (formal proposals, documentation)
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+CHANNEL_STRATEGY = {
+    "sequence": ["instagram", "whatsapp", "email"],
+    "timing": {
+        "instagram_to_whatsapp": "24-48 hours after IG DM (or immediately if they respond)",
+        "whatsapp_to_email": "After WhatsApp conversation starts",
+        "follow_up_spacing": "3 days, 7 days, 14 days",
+    },
+    "rules": {
+        "instagram": [
+            "Reference something SPECIFIC from their feed",
+            "Ask a question, don't pitch",
+            "Keep under 25 words",
+            "Sound like a human, not a marketer",
+        ],
+        "whatsapp": [
+            "Only after IG warm-up OR if you have legitimate reason",
+            "Keep under 40 words",
+            "Voice note can work better than text (shows effort)",
+            "Send during business hours (9am-6pm Colombia time)",
+        ],
+        "email": [
+            "For formal proposals after initial contact",
+            "Include ROI numbers and specifics",
+            "Attach case study or audit",
+        ],
+    },
+}
+
+
+def generate_wa_link(phone: str, message: str = "") -> str:
+    """Generate WhatsApp click-to-chat link."""
+    # Clean phone number
+    clean = "".join(filter(str.isdigit, phone))
+    if not clean.startswith("57"):
+        clean = "57" + clean
+    
+    if message:
+        from urllib.parse import quote
+        return f"https://wa.me/{clean}?text={quote(message)}"
+    return f"https://wa.me/{clean}"
+
+
+def generate_ig_link(handle: str) -> str:
+    """Generate Instagram profile link."""
+    clean = handle.replace("@", "").strip()
+    return f"https://instagram.com/{clean}"
+
+
+def generate_maps_link(business_name: str, city: str) -> str:
+    """Generate Google Maps search link."""
+    from urllib.parse import quote
+    query = f"{business_name} {city} Colombia"
+    return f"https://www.google.com/maps/search/{quote(query)}"
+
+
+class OutreachReadyExporter:
+    """
+    Export businesses with pre-filled, copy-paste ready outreach.
+    Includes direct links to WhatsApp, Instagram, and Google Maps.
+    """
+    
+    def __init__(self, output_dir: str = "outreach_ready"):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+    
+    def export_single(self, business: Business, scan: BusinessDeepScan) -> dict:
+        """Create outreach-ready package for a single business."""
+        
+        # Build direct links
+        wa_link = ""
+        wa_link_with_msg = ""
+        if business.contact.whatsapp:
+            wa_link = generate_wa_link(business.contact.whatsapp)
+            wa_link_with_msg = generate_wa_link(business.contact.whatsapp, scan.whatsapp_opener)
+        elif business.contact.phone:
+            wa_link = generate_wa_link(business.contact.phone)
+            wa_link_with_msg = generate_wa_link(business.contact.phone, scan.whatsapp_opener)
+        
+        ig_link = ""
+        if business.socials.instagram:
+            ig_link = generate_ig_link(business.socials.instagram)
+        
+        maps_link = generate_maps_link(business.name, business.city)
+        
+        return {
+            # Business Info
+            "business_name": business.name,
+            "category": business.category.value,
+            "city": business.city,
+            "rating": business.rating,
+            "review_count": business.review_count,
+            "opportunity_score": business.ai_opportunity_score,
+            
+            # Direct Links (click to open)
+            "instagram_link": ig_link,
+            "whatsapp_link": wa_link,
+            "whatsapp_link_prefilled": wa_link_with_msg,
+            "website": business.website or "",
+            "google_maps": maps_link,
+            
+            # Contact Info
+            "phone": business.contact.phone or "",
+            "email": business.contact.email or "",
+            "instagram_handle": business.socials.instagram or "",
+            
+            # Pre-Written Outreach (copy-paste ready)
+            "ig_dm_script": scan.instagram_dm,
+            "whatsapp_script": scan.whatsapp_opener,
+            "email_s...

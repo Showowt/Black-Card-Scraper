@@ -1,0 +1,150 @@
+Event data models for the discovery pipeline.
+"""
+from datetime import datetime
+from enum import Enum
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class EventSource(str, Enum):
+    EVENTBRITE = "eventbrite"
+    RESIDENT_ADVISOR = "resident_advisor"
+    SHOTGUN = "shotgun"
+    INSTAGRAM = "instagram"
+    MANUAL = "manual"
+
+
+class EventTier(str, Enum):
+    ULTRA_PREMIUM = "ultra_premium"  # $200+ or invite-only
+    PREMIUM = "premium"              # $80-200
+    MID_TIER = "mid_tier"            # $30-80
+    BUDGET = "budget"                # Under $30
+    FREE = "free"
+    UNKNOWN = "unknown"
+
+
+class EventCategory(str, Enum):
+    NIGHTCLUB = "nightclub"
+    CONCERT = "concert"
+    FESTIVAL = "festival"
+    BOAT_PARTY = "boat_party"
+    POOL_PARTY = "pool_party"
+    ROOFTOP = "rooftop"
+    PRIVATE_DINNER = "private_dinner"
+    WELLNESS = "wellness"
+    CULTURAL = "cultural"
+    NETWORKING = "networking"
+    OTHER = "other"
+
+
+class TicketTier(BaseModel):
+    name: str
+    price: float
+    currency: str = "COP"
+    price_usd: Optional[float] = None
+    available: bool = True
+    quantity_remaining: Optional[int] = None
+
+
+class Artist(BaseModel):
+    name: str
+    headliner: bool = False
+    genre: Optional[str] = None
+    instagram: Optional[str] = None
+    spotify_monthly: Optional[int] = None
+
+
+class Venue(BaseModel):
+    name: str
+    address: Optional[str] = None
+    city: str = "Cartagena"
+    neighborhood: Optional[str] = None
+    capacity: Optional[int] = None
+    venue_tier: Optional[str] = None
+    instagram: Optional[str] = None
+    website: Optional[str] = None
+
+
+class Event(BaseModel):
+    id: Optional[str] = None
+    source: EventSource
+    external_id: str
+    url: str
+    name: str
+    description: Optional[str] = None
+    start_date: datetime
+    end_date: Optional[datetime] = None
+    doors_time: Optional[str] = None
+    venue: Optional[Venue] = None
+    city: str = "Cartagena"
+    category: EventCategory = EventCategory.OTHER
+    tags: list[str] = Field(default_factory=list)
+    artists: list[Artist] = Field(default_factory=list)
+    headliners: list[str] = Field(default_factory=list)
+    ticket_tiers: list[TicketTier] = Field(default_factory=list)
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    currency: str = "COP"
+    is_sold_out: bool = False
+    tickets_url: Optional[str] = None
+    capacity: Optional[int] = None
+    attendee_count: Optional[int] = None
+    event_tier: EventTier = EventTier.UNKNOWN
+    tier_signals: list[str] = Field(default_factory=list)
+    image_url: Optional[str] = None
+    discovered_at: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    is_flagged: bool = False
+    notes: Optional[str] = None
+    
+    def calculate_tier(self) -> EventTier:
+        signals = []
+        if self.max_price:
+            usd_price = self.max_price / 4000 if self.currency == "COP" else self.max_price
+            if usd_price >= 200:
+                signals.append("price_ultra_premium")
+                self.tier_signals = signals
+                return EventTier.ULTRA_PREMIUM
+            elif usd_price >= 80:
+                signals.append("price_premium")
+            elif usd_price >= 30:
+                signals.append("price_mid")
+            elif usd_price > 0:
+                signals.append("price_budget")
+        
+        if self.venue and self.venue.venue_tier == "luxury":
+            signals.append("luxury_venue")
+        
+        for artist in self.artists:
+            if artist.spotify_monthly and artist.spotify_monthly > 1000000:
+                signals.append(f"major_artist_{artist.name}")
+        
+        if self.category in [EventCategory.BOAT_PARTY, EventCategory.PRIVATE_DINNER]:
+            signals.append("exclusive_category")
+        
+        premium_keywords = ["vip", "exclusive", "luxury", "private", "black card", "platinum"]
+        text = f"{self.name} {self.description or ''}".lower()
+        for kw in premium_keywords:
+            if kw in text:
+                signals.append(f"keyword_{kw}")
+        
+        self.tier_signals = signals
+        
+        if "price_ultra_premium" in signals or len([s for s in signals if "major_artist" in s]) >= 2:
+            return EventTier.ULTRA_PREMIUM
+        elif "price_premium" in signals or "luxury_venue" in signals or "exclusive_category" in signals:
+            return EventTier.PREMIUM
+        elif "price_mid" in signals:
+            return EventTier.MID_TIER
+        elif self.min_price == 0:
+            return EventTier.FREE
+        else:
+            return EventTier.BUDGET
+    
+    def should_flag(self) -> bool:
+        if self.event_tier in [EventTier.ULTRA_PREMIUM, EventTier.PREMIUM]:
+            return True
+        for artist in self.artists:
+            if artist.spotify_monthly and artist.spotify_monthly > 500000:
+                return True
+        if self.category in [EventCategory.BOAT_PARTY,...

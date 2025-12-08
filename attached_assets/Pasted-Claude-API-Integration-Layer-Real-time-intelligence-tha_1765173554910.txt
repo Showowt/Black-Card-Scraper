@@ -1,0 +1,138 @@
+Claude API Integration Layer.
+Real-time intelligence that 10x's outreach effectiveness.
+
+USE CASES:
+1. Response Drafting - They reply, Claude crafts perfect follow-up
+2. Review Intelligence - Deep analysis of Google reviews for hooks
+3. Real-Time Personalization - Analyze their latest IG/content, generate perfect DM
+4. Objection Handling - Real-time reframes when they push back
+5. Proposal Generation - Custom proposals from conversation context
+6. Voice Note Response - Transcribe their voice note, draft reply
+"""
+import os
+import json
+import httpx
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+CLAUDE_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+CLAUDE_MODEL = "claude-sonnet-4-20250514"  # Fast + smart for real-time use
+CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+
+# Psychology context injected into every call
+PSYCHOLOGY_CONTEXT = """You are Phil McGill's AI co-pilot for sales outreach in Colombian hospitality.
+
+METHODOLOGY: 47 years combined sales psychology research. 1,400+ client transformations. $4.7M results.
+
+CORE FRAMEWORKS TO APPLY:
+1. NEUROSCIENCE: Emotional brain decides, logical brain justifies. Always trigger emotion FIRST.
+2. NLP: Use presuppositions ("When you implement..."), embedded commands, pattern interrupts.
+3. BEHAVIORAL ECONOMICS: Loss aversion (2.5x), anchoring, social proof, scarcity, reciprocity.
+4. IDENTITY TRANSFORMATION: They're not buying AI, they're becoming who they want to be.
+
+VOICE: Confident, sharp, early-30s energy. No fluff. Direct but warm. Consultant, not salesman.
+LANGUAGE: Spanish for WhatsApp (Colombian casual). English for formal/LinkedIn.
+
+RULES:
+- Frame everything as LOSS prevention, not gain acquisition
+- Use specific numbers, never vague claims
+- Reference their specific business/situation
+- Keep WhatsApp under 40 words
+- Sound human, never robotic"""
+
+
+class ClaudeClient:
+    """Async Claude API client for real-time intelligence."""
+    
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or CLAUDE_API_KEY
+        self.headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+    
+    async def complete(
+        self,
+        prompt: str,
+        system: str = PSYCHOLOGY_CONTEXT,
+        max_tokens: int = 1024,
+        temperature: float = 0.7,
+    ) -> str:
+        """Send completion request to Claude."""
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                CLAUDE_API_URL,
+                headers=self.headers,
+                json={
+                    "model": CLAUDE_MODEL,
+                    "max_tokens": max_tokens,
+                    "system": system,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": temperature,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["content"][0]["text"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 1. RESPONSE DRAFTING
+# ═══════════════════════════════════════════════════════════════════════════
+# They reply to your outreach. Claude crafts the perfect follow-up.
+
+async def draft_response(
+    their_message: str,
+    conversation_history: list[dict],
+    business_context: dict,
+    channel: str = "whatsapp",  # whatsapp, instagram, email
+) -> dict:
+    """
+    Draft the perfect response to their reply.
+    
+    Args:
+        their_message: What they just said
+        conversation_history: Previous messages [{"role": "me/them", "text": "..."}]
+        business_context: {name, category, city, pain_points, score}
+        channel: whatsapp, instagram, email
+    
+    Returns:
+        {response: str, tone: str, next_action: str, psychology_used: list}
+    """
+    client = ClaudeClient()
+    
+    history_text = "\n".join([
+        f"{'Phil' if m['role'] == 'me' else 'Them'}: {m['text']}"
+        for m in conversation_history[-5:]  # Last 5 messages
+    ])
+    
+    prompt = f"""CONTEXT:
+Business: {business_context.get('name')} ({business_context.get('category')}) in {business_context.get('city')}
+Known pain points: {business_context.get('pain_points', 'Unknown')}
+Opportunity score: {business_context.get('score', 'Unknown')}/100
+Channel: {channel}
+
+CONVERSATION HISTORY:
+{history_text}
+
+THEIR LATEST MESSAGE:
+"{their_message}"
+
+TASK:
+Draft the perfect response that moves this conversation toward a meeting/call.
+
+Consider:
+- What's their emotional state? (interested, skeptical, busy, curious)
+- What objection might be forming?
+- What's the right psychology lever for this moment?
+- What's the natural next step?
+
+OUTPUT FORMAT (JSON):
+{{
+    "response": "Th...

@@ -1,0 +1,153 @@
+Phil McGill Authority Content Generator.
+Creates LinkedIn posts, insights, case study frameworks for positioning.
+"""
+import json
+from datetime import datetime
+from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from config import get_settings
+
+
+PHIL_BRAND_VOICE = """
+Phil McGill - Colombia's AI Authority
+
+Voice characteristics:
+- Confident but not arrogant
+- Sharp insights, no fluff
+- Uses specific examples and numbers
+- References Colombian market specifically
+- Early-30s high-performance energy
+- Speaks from experience, not theory
+- Premium positioning without being unapproachable
+
+Content pillars:
+1. AI automation for local businesses (practical, ROI-focused)
+2. The future of hospitality/tourism tech
+3. Behind-the-scenes of building in Colombia
+4. Contrarian takes on AI hype vs. reality
+5. Case studies and transformations
+
+Never:
+- Generic AI takes everyone is posting
+- Buzzwords without substance
+- Bragging without teaching
+- Anything that sounds like ChatGPT wrote it
+"""
+
+# Content templates by type
+CONTENT_TYPES = {
+    "insight": {
+        "structure": "Hook (contrarian or surprising) → Observation → Implication → Your take → CTA",
+        "length": "150-250 words",
+        "example_hooks": [
+            "Everyone's talking about AI. Nobody's talking about...",
+            "I audited 50 {category} businesses in {city}. Here's what I found:",
+            "The biggest lie about AI automation:",
+            "Why 90% of 'AI solutions' fail in Colombia:",
+        ],
+    },
+    "case_study": {
+        "structure": "Before state → Problem → Solution → Results → Takeaway",
+        "length": "200-300 words",
+        "example_hooks": [
+            "This {category} was losing $X/month. Here's what we fixed:",
+            "From 50 to 200 bookings/week. No extra staff.",
+            "{business_type} owner was working 70 hours. Now it's 30.",
+        ],
+    },
+    "market_insight": {
+        "structure": "Observation about Colombia → Why it matters → Opportunity → What smart operators are doing",
+        "length": "150-200 words",
+        "example_hooks": [
+            "Something weird is happening in {city}...",
+            "The Colombia AI market in 2024:",
+            "Why {city} is the best place to build AI businesses right now:",
+        ],
+    },
+    "tactical": {
+        "structure": "Problem → Step-by-step solution → Result → Offer to help",
+        "length": "200-300 words",
+        "example_hooks": [
+            "How to automate {process} in 48 hours:",
+            "The exact system I use for {outcome}:",
+            "Stop doing {bad_practice}. Do this instead:",
+        ],
+    },
+    "personal_journey": {
+        "structure": "Moment/lesson → Context → What I learned → How it applies to you",
+        "length": "150-250 words",
+        "example_hooks": [
+            "I almost made a huge mistake...",
+            "Lesson from my first {X} in Colombia:",
+            "What nobody tells you about building in LatAm:",
+        ],
+    },
+}
+
+
+class ContentPiece(BaseModel):
+    """Generated content piece."""
+    content_type: str
+    hook: str
+    body: str
+    cta: str
+    hashtags: list[str] = Field(default_factory=list)
+    best_time_to_post: str = ""
+    full_post: str = ""
+
+
+class AuthorityContentGenerator:
+    """Generate authority-building content for Phil."""
+    
+    def __init__(self):
+        settings = get_settings()
+        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.model = "gpt-4o"
+    
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+    async def generate_linkedin_post(
+        self,
+        content_type: str,
+        topic: str,
+        city: str = "Cartagena",
+        include_data: dict = None,
+    ) -> ContentPiece:
+        """Generate a LinkedIn post in Phil's voice."""
+        template = CONTENT_TYPES.get(content_type, CONTENT_TYPES["insight"])
+        
+        prompt = f"""{PHIL_BRAND_VOICE}
+
+Generate a LinkedIn post for Phil McGill.
+
+TYPE: {content_type}
+STRUCTURE: {template['structure']}
+LENGTH: {template['length']}
+
+TOPIC: {topic}
+CITY CONTEXT: {city}, Colombia
+
+{"ADDITIONAL DATA: " + json.dumps(include_data) if include_data else ""}
+
+REQUIREMENTS:
+1. Start with a HOOK that stops the scroll (first line is everything)
+2. Use Phil's voice - confident, sharp, specific
+3. Include at least one specific number or example
+4. Reference Colombia/Latin America where natural
+5. End with a soft CTA (not salesy)
+6. NO emojis in the main text (maybe 1-2 at the end)
+7. Use line breaks for readability
+8. Make it feel like Phil actually wrote this, not AI
+
+OUTPUT JSON:
+{{
+    "hook": "First 1-2 lines that stop the scroll",
+    "body": "Main content",
+    "cta": "Closing call to action",
+    "hashtags": ["3-5 relevant hashtags"],
+    "best_time_to_post": "Day and time recommendation",
+    "full_post": "Complete post ready to copy-paste"
+}}
+
+OUTPUT O...

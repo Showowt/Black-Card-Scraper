@@ -1,0 +1,142 @@
+Supabase storage service.
+Handles all database operations for business data.
+"""
+from datetime import datetime
+from supabase import create_client, Client
+from config import get_settings
+from models import Business, DataSource, BusinessCategory
+
+
+class SupabaseStorage:
+    """Storage layer using Supabase."""
+    
+    def __init__(self):
+        settings = get_settings()
+        self.client: Client = create_client(
+            settings.supabase_url,
+            settings.supabase_key,
+        )
+        self.table = "businesses"
+    
+    async def upsert(self, business: Business) -> dict:
+        """
+        Insert or update a business.
+        Uses (source, external_id) as unique key.
+        """
+        data = business.to_supabase_dict()
+        data["updated_at"] = datetime.utcnow().isoformat()
+        
+        result = self.client.table(self.table).upsert(
+            data,
+            on_conflict="source,external_id",
+        ).execute()
+        
+        return result.data[0] if result.data else {}
+    
+    async def upsert_batch(self, businesses: list[Business]) -> list[dict]:
+        """Batch upsert multiple businesses."""
+        records = []
+        for biz in businesses:
+            data = biz.to_supabase_dict()
+            data["updated_at"] = datetime.utcnow().isoformat()
+            records.append(data)
+        
+        result = self.client.table(self.table).upsert(
+            records,
+            on_conflict="source,external_id",
+        ).execute()
+        
+        return result.data
+    
+    async def get_by_id(self, id: str) -> Business | None:
+        """Get a business by its Supabase ID."""
+        result = self.client.table(self.table).select("*").eq("id", id).execute()
+        if result.data:
+            return self._from_db(result.data[0])
+        return None
+    
+    async def get_by_external_id(self, source: DataSource, external_id: str) -> Business | None:
+        """Get a business by source and external ID."""
+        result = (
+            self.client.table(self.table)
+            .select("*")
+            .eq("source", source.value)
+            .eq("external_id", external_id)
+            .execute()
+        )
+        if result.data:
+            return self._from_db(result.data[0])
+        return None
+    
+    async def search(
+        self,
+        city: str | None = None,
+        category: BusinessCategory | None = None,
+        min_score: int | None = None,
+        has_email: bool | None = None,
+        has_website: bool | None = None,
+        outreach_status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Business]:
+        """Search businesses with filters."""
+        query = self.client.table(self.table).select("*")
+        
+        if city:
+            query = query.eq("city", city)
+        if category:
+            query = query.eq("category", category.value)
+        if min_score:
+            query = query.gte("ai_opportunity_score", min_score)
+        if has_email:
+            query = query.neq("contact->email", None)
+        if has_website:
+            query = query.neq("website", None)
+        if outreach_status:
+            query = query.eq("outreach_status", outreach_status)
+        
+        query = query.order("ai_opportunity_score", desc=True)
+        query = query.range(offset, offset + limit - 1)
+        
+        result = query.execute()
+        return [self._from_db(row) for row in result.data]
+    
+    async def get_stats(self, city: str | None = None) -> dict:
+        """Get aggregate statistics."""
+        query = self.client.table(self.table).select("*", count="exact")
+        if city:
+            query = query.eq("city", city)
+        
+        result = query.execute()
+        total = result.count or 0
+        
+        # Category breakdown
+        categories = {}
+        for row in result.data:
+            cat = row.get("category", "other")
+            categories[cat] = categories.get(cat, 0) + 1
+        
+        # Readiness breakdown
+        readiness = {"high": 0, "medium": 0, "low": 0, "unknown": 0}
+        for row in result.data:
+            r = row.get("ai_readiness", "unknown")
+            readiness[r] = readiness.get(r, 0) + 1
+        
+        # Outreach breakdown
+        outreach = {}
+        for row in result.data:
+            status = row.get("outreach_status") or "not_started"
+            outreach[status] = outreach.get(status, 0) + 1
+        
+        # Average score
+        scores = [row.get("ai_opportunity_score", 0) for row in result.data if row.get("ai_opportunity_score")]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        return {
+            "total": total,
+            "by_category": categories,
+            "by_readiness": readiness,
+            "by_outreach_status": outreach,
+            "average_opportunity_score": round(avg_score, 1),
+            "with_email": sum(1 for r in result.data if r.get("contact", {}).get("email")),
+            "with_website": sum(1 for r in result.da...

@@ -1,0 +1,165 @@
+Venue Instagram Monitoring.
+
+REALITY CHECK:
+- Instagram scraping is against ToS and will get you blocked
+- Official Instagram Graph API requires business account connection
+- Best approach: RSS feeds via third-party services + manual monitoring
+
+This module provides:
+1. A list of venues to monitor
+2. Integration with RSS-to-Instagram services
+3. A framework for storing Instagram post alerts
+"""
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field
+
+
+class VenueToMonitor(BaseModel):
+    """A venue whose Instagram we want to track."""
+    name: str
+    instagram_handle: str
+    instagram_url: str
+    category: str  # nightclub, hotel, restaurant, boat
+    tier: str  # luxury, upscale, standard
+    city: str = "Cartagena"
+    priority: int = 1  # 1 = highest priority
+    
+    # RSS integration
+    rss_feed_url: Optional[str] = None  # If using a service like RSS.app or Feedity
+    
+    # Monitoring config
+    keywords: list[str] = Field(default_factory=list)  # Alert on these words
+    is_active: bool = True
+
+
+class InstagramPost(BaseModel):
+    """An Instagram post detected from a venue."""
+    id: str
+    venue_handle: str
+    venue_name: str
+    
+    # Content
+    caption: Optional[str] = None
+    image_url: Optional[str] = None
+    post_url: str
+    
+    # Detection
+    is_event_announcement: bool = False
+    detected_event_name: Optional[str] = None
+    detected_date: Optional[str] = None
+    detected_keywords: list[str] = Field(default_factory=list)
+    
+    # Metadata
+    posted_at: Optional[datetime] = None
+    discovered_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Status
+    is_processed: bool = False
+    notes: Optional[str] = None
+
+
+# Cartagena venues to monitor - prioritized by event frequency + tier
+CARTAGENA_VENUES = [
+    # Nightclubs
+    VenueToMonitor(
+        name="Alquimico",
+        instagram_handle="alquimico",
+        instagram_url="https://instagram.com/alquimico",
+        category="rooftop_bar",
+        tier="luxury",
+        priority=1,
+        keywords=["event", "party", "dj", "live", "show", "fiesta", "especial"],
+    ),
+    VenueToMonitor(
+        name="La Movida",
+        instagram_handle="lamovida",
+        instagram_url="https://instagram.com/lamovida",
+        category="nightclub",
+        tier="luxury",
+        priority=1,
+        keywords=["fiesta", "party", "dj", "presenta", "evento"],
+    ),
+    VenueToMonitor(
+        name="El Arsenal",
+        instagram_handle="elarsenalctg",
+        instagram_url="https://instagram.com/elarsenalctg",
+        category="nightclub",
+        tier="luxury",
+        priority=1,
+        keywords=["party", "night", "evento", "presenta"],
+    ),
+    VenueToMonitor(
+        name="Cafe del Mar",
+        instagram_handle="cafedelmarcartagena",
+        instagram_url="https://instagram.com/cafedelmarcartagena",
+        category="rooftop_bar",
+        tier="upscale",
+        priority=2,
+        keywords=["sunset", "party", "dj", "live", "music"],
+    ),
+    
+    # Beach Clubs
+    VenueToMonitor(
+        name="Bagatelle",
+        instagram_handle="bagatellecolombia",
+        instagram_url="https://instagram.com/bagatellecolombia",
+        category="beach_club",
+        tier="luxury",
+        priority=1,
+        keywords=["party", "brunch", "dj", "pool", "event"],
+    ),
+    
+    # Boat parties
+    VenueToMonitor(
+        name="La Passion Cartagena",
+        instagram_handle="lapassioncartagena",
+        instagram_url="https://instagram.com/lapassioncartagena",
+        category="boat_party",
+        tier="luxury",
+        priority=1,
+        keywords=["party", "boat", "sunset", "tour", "privado"],
+    ),
+    VenueToMonitor(
+        name="Sibarita",
+        instagram_handle="sibaritacartagena",
+        instagram_url="https://instagram.com/sibaritacartagena",
+        category="boat_party",
+        tier="upscale",
+        priority=2,
+        keywords=["tour", "island", "boat", "party"],
+    ),
+    
+    # Hotels with events
+    VenueToMonitor(
+        name="Sofitel Legend Santa Clara",
+        instagram_handle="sofitelcartagena",
+        instagram_url="https://instagram.com/sofitelcartagena",
+        category="hotel",
+        tier="luxury",
+        priority=2,
+        keywords=["event", "new year", "christmas", "gala", "dinner"],
+    ),
+    VenueToMonitor(
+        name="Casa San Agustin",
+        instagram_handle="casasanagustin",
+        instagram_url="https://instagram.com/casasanagustin",
+        category="hotel",
+        tier="luxury",
+        priority=2,
+        keywords=["event", "dinner", "experience"],
+    ),
+    VenueToMonitor(
+        name="Tcherassi Hotel",
+        instagram_handle="tcherassihotel",
+        instagram_url="https://instagram.com/tcherassihotel",
+        category="hotel",
+        tier="luxury",
+        priority=2,
+        keywords=["event", "experience", "exclusive"],
+    ),
+    
+    # Restaurants that host events
+    VenueToMonitor(
+        name="Carmen Cartagena",
+  ...

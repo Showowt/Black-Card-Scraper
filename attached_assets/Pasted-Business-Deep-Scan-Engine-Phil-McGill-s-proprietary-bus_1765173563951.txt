@@ -1,0 +1,89 @@
+Business Deep Scan™ Engine.
+Phil McGill's proprietary business analysis system.
+Identifies pain points, revenue leakage, and AI opportunities.
+"""
+import json
+from datetime import datetime
+from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from config import get_settings
+from models import Business, BusinessCategory
+
+
+# Phil's voice configuration
+PHIL_VOICE = {
+    "tone": "confident but calm, sharp, premium, high-value, strategic, no fluff",
+    "positioning": "the premium quiet expert who already knows their business better than they do",
+    "approach": "consultant with absolute confidence, not salesy",
+}
+
+# City-specific targeting priorities (from mission doc)
+CITY_PRIORITIES = {
+    "Cartagena": {
+        "priority_verticals": ["restaurant", "club", "bar", "spa", "hotel", "tour_operator", "boat_charter"],
+        "market_context": "Tourism-driven, high-spend visitors, WhatsApp-heavy communication, seasonal peaks",
+        "decision_maker": "Usually owner-operator, values relationships, skeptical of tech unless shown ROI",
+    },
+    "Medellín": {
+        "priority_verticals": ["restaurant", "gym", "spa", "coworking", "real_estate", "photographer"],
+        "market_context": "Digital nomad hub, lifestyle businesses, younger owners, more tech-savvy",
+        "decision_maker": "Often younger entrepreneurs, open to innovation, price-conscious but value quality",
+    },
+    "Bogotá": {
+        "priority_verticals": ["real_estate", "restaurant", "hotel", "event_planner", "chef"],
+        "market_context": "Corporate hub, larger businesses, formal sales cycles, higher budgets",
+        "decision_maker": "Professional managers, need ROI proof, longer decision cycles",
+    },
+}
+
+# Vertical-specific pain points and AI solutions (expanded from mission)
+VERTICAL_DEEP_INTEL = {
+    "restaurant": {
+        "pain_points": [
+            "WhatsApp reservation chaos - messages lost, double bookings, no confirmation system",
+            "No-shows eating 15-20% of revenue with zero deposit collection",
+            "Staff answering same questions 50x/day (hours, menu, location, parking)",
+            "Google reviews piling up unanswered, killing SEO and trust",
+            "Menu updates scattered across 5 platforms, always out of sync",
+            "No customer database - regulars treated same as first-timers",
+            "Peak hour phone overflow - missed reservations = missed revenue",
+        ],
+        "revenue_leakage": [
+            "No-shows: $500-2000/month in lost covers",
+            "Missed calls during rush: 10-20 lost reservations/week",
+            "No upsell system: wine pairings, private dining, events",
+            "Zero rebooking automation: customers forget to return",
+            "Bad review responses: each unanswered review costs future customers",
+        ],
+        "ai_solutions": {
+            "starter": [
+                {"name": "WhatsApp Auto-Responder", "desc": "Instant replies to inquiries 24/7", "roi": "Capture 30% more inquiries"},
+                {"name": "Google Review Bot", "desc": "Auto-respond to all reviews within 2 hours", "roi": "Improve rating by 0.3 stars"},
+                {"name": "FAQ Chatbot", "desc": "Answer hours/menu/location instantly", "roi": "Save 2hrs staff time daily"},
+            ],
+            "core": [
+                {"name": "Smart Reservation System", "desc": "WhatsApp booking with confirmations + reminders", "roi": "Cut no-shows by 60%"},
+                {"name": "Deposit Collection Bot", "desc": "Automated payment links for large parties", "roi": "Eliminate no-show losses"},
+                {"name": "Customer Memory System", "desc": "Track preferences, anniversaries, VIP status", "roi": "Increase repeat visits 25%"},
+            ],
+            "flagship": {
+                "name": "AI Restaurant Command Center",
+                "desc": "Unified inbox (WhatsApp, Instagram, calls) + reservation management + review automation + customer CRM",
+                "roi": "Full operational automation - run front-of-house with 50% less staff overhead",
+                "price_range": "$3,000-8,000 setup + $500/month",
+            },
+        },
+        "owner_psychology": {
+            "fears": ["Technology breaking during service", "Losing personal touch with guests", "Staff not adopting new systems"],
+            "wants": ["More free time", "Consistent bookings", "Less phone chaos", "Higher revenue without more staff"],
+            "objections": ["We're too small for this", "Our customers prefer personal service", "We tried tech before and it failed"],
+            "leverage": "Show them their competitors are already automating. FOMO is real in hospitality.",
+        },
+    },
+    "hotel": {
+        "pain_points": [
+            "Guest inquiries 24/7 across WhatsApp, email, OTAs - impossible to keep up",
+            "OTA commissions eating 15-25% of every booking",
+            "Upsell op...
