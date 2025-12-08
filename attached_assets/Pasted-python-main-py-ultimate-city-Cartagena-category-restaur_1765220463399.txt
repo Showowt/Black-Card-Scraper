@@ -1,0 +1,98 @@
+python main.py ultimate --city Cartagena --category restaurant --min-score 60 --limit 30
+```
+
+**Output:**
+- `ultimate_outreach/dashboard.html` - Interactive dashboard with everything
+- `ultimate_outreach/outreach_data.csv` - CSV for tracking
+
+---
+
+### How It Decides What to Pitch
+
+The system analyzes signals and picks the RIGHT offer:
+
+**Restaurant Signals:**
+| Signal | Detected Problem | Your Offer |
+|--------|------------------|------------|
+| No website | No online booking | AI booking bot via WhatsApp |
+| Low review response | Reputation damage | Review monitoring + AI responses |
+| Has WhatsApp but manual | Owner drowning | WhatsApp AI assistant |
+| High reviews (200+) | Popular but chaotic | Full operational automation |
+
+**Hotel Signals:**
+| Signal | Detected Problem | Your Offer |
+|--------|------------------|------------|
+| OTA dependent | Paying 15-25% commission | Direct booking system + AI concierge |
+| Slow response | Losing to faster competitors | 24/7 AI concierge |
+| No upsells | Missing ancillary revenue | Automated pre-arrival upsell sequence |
+
+**Concierge Signals:**
+| Signal | Detected Problem | Your Offer |
+|--------|------------------|------------|
+| No client database | Preferences in head/WhatsApp | AI client preference system |
+| Vendor chaos | Manual coordination hell | Vendor coordination automation |
+| 24/7 expectation | Burning out | AI first-response system |
+
+**+ Tour Operator, Boat Charter, Villa Rental** - all have specific offer matrices.
+
+---
+
+### What the Dashboard Shows
+
+For each business card:
+```
+┌─────────────────────────────────────────────────────────────┐
+│  LA VITROLA                                        [85]     │
+│  📍 Cartagena | 🏷️ restaurant | ⭐ 4.7 (1,250 reviews)     │
+│  📸 @lavitrola_cartagena                                   │
+│                                                             │
+│  [📸 Instagram] [💬 WhatsApp] [🌐 Website] [📍 Maps]       │
+│                                                             │
+│  🔴 THEIR PROBLEM:                                          │
+│  No online reservation system - losing bookings to          │
+│  competitors with instant booking                           │
+│  [$2,000-4,000/month]                                       │
+│                                                             │
+│  ✅ YOUR OFFER:                                             │
+│  AI-powered booking bot that handles reservations           │
+│  24/7 via WhatsApp                                          │
+│  Quick Win: Automated confirmation + reminder system        │
+│                                                             │
+│  [Instagram DM] [WhatsApp] [Email] [Follow-ups]            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Hey! Noticed La Vitrola is doing great (1,250+      │   │
+│  │ reviews 🔥). Quick q - are you handling all those   │   │
+│  │ booking inquiries manually or do you have           │   │
+│  │ something automated?                        [COPY]  │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Instagram Discovery
+
+The system tries multiple sources:
+
+1. **Existing data** - From Google Places API or website scrape (HIGH confidence)
+2. **Website scraping** - Looks for IG links on their site (HIGH confidence)
+3. **Generated handles** - Creates likely handles like `lavitrola`, `lavitrola_cartagena` (LOW confidence - verify before sending)
+
+**Dashboard shows confidence:**
+- `📸 @lavitrola` = Found and verified
+- `❌ No Instagram found` = Couldn't find, you'll need to search manually
+
+---
+
+### The Outreach Flow Now
+```
+1. Run: python main.py scan -c Cartagena -cat restaurant
+2. Run: python main.py ultimate -c Cartagena --min-score 70
+3. Open: ultimate_outreach/dashboard.html
+4. For each business:
+   - See their SPECIFIC problem
+   - See YOUR custom offer
+   - Click Instagram → Copy DM → Paste → Send
+   - OR Click WhatsApp (pre-filled) → Send
+5. Track responses
+6. Use follow-ups on Day 3, 7, 14
