@@ -13,6 +13,12 @@ import {
   insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema
 } from "@shared/schema";
 import OpenAI from "openai";
+import {
+  generateMultiChannelScripts,
+  handleObjection,
+  draftResponse,
+  analyzeConversation,
+} from "./claudeCopilot";
 
 // Validation schemas for batch operations
 const BatchEnrichSchema = z.object({
@@ -501,6 +507,195 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error updating outreach status:", error);
       res.status(500).json({ message: "Failed to update outreach status" });
+    }
+  });
+
+  // Multi-channel outreach with Claude AI
+  app.post('/api/outreach/multi-channel', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { businessId, framework } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const scripts = await generateMultiChannelScripts(business, framework);
+      
+      // Create or update campaign with multi-channel scripts
+      const existingCampaigns = await storage.getOutreachCampaigns(businessId);
+      let campaign;
+      
+      if (existingCampaigns.length > 0) {
+        campaign = await storage.updateOutreachCampaign(existingCampaigns[0].id, {
+          ...scripts,
+          status: "draft",
+        });
+      } else {
+        campaign = await storage.createOutreachCampaign({
+          userId,
+          businessId,
+          ...scripts,
+          status: "draft",
+        });
+      }
+      
+      res.json({ campaign, scripts });
+    } catch (error) {
+      console.error("Error generating multi-channel scripts:", error);
+      res.status(500).json({ message: "Failed to generate multi-channel scripts" });
+    }
+  });
+
+  // Batch multi-channel outreach
+  app.post('/api/outreach/multi-channel/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { businessIds, filters, limit = 10 } = req.body;
+      
+      let targetBusinesses: Business[] = [];
+      
+      if (businessIds && businessIds.length > 0) {
+        for (const id of businessIds) {
+          const business = await storage.getBusiness(id);
+          if (business) targetBusinesses.push(business);
+        }
+      } else if (filters) {
+        targetBusinesses = await storage.getBusinesses({
+          ...filters,
+          limit: limit,
+        });
+      }
+      
+      // Filter to enriched businesses with contact info
+      const prospects = targetBusinesses.filter(b => 
+        b.isEnriched && (b.phone || b.whatsapp || b.instagram)
+      ).slice(0, limit);
+      
+      if (prospects.length === 0) {
+        return res.status(400).json({ 
+          message: "No businesses found with contact info. Enrich and scrape websites first." 
+        });
+      }
+      
+      const results: { success: any[]; errors: { businessId: string; error: string }[] } = {
+        success: [],
+        errors: [],
+      };
+      
+      for (const business of prospects) {
+        try {
+          const scripts = await generateMultiChannelScripts(business);
+          
+          const existingCampaigns = await storage.getOutreachCampaigns(business.id);
+          let campaign;
+          
+          if (existingCampaigns.length > 0) {
+            campaign = await storage.updateOutreachCampaign(existingCampaigns[0].id, {
+              ...scripts,
+            });
+          } else {
+            campaign = await storage.createOutreachCampaign({
+              userId,
+              businessId: business.id,
+              ...scripts,
+              status: "draft",
+            });
+          }
+          
+          results.success.push({ business: business.name, campaign });
+          
+          // Rate limiting between AI calls
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error: any) {
+          results.errors.push({
+            businessId: business.id,
+            error: error.message || "Failed to generate scripts",
+          });
+        }
+      }
+      
+      res.json({
+        totalProcessed: prospects.length,
+        generated: results.success.length,
+        errors: results.errors.length,
+        results: results.success,
+        errorDetails: results.errors,
+      });
+    } catch (error) {
+      console.error("Error in batch multi-channel outreach:", error);
+      res.status(500).json({ message: "Failed to generate batch multi-channel outreach" });
+    }
+  });
+
+  // Claude Copilot - Draft Response
+  app.post('/api/copilot/respond', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, theirMessage, conversationHistory, intent } = req.body;
+      
+      if (!businessId || !theirMessage) {
+        return res.status(400).json({ message: "businessId and theirMessage are required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await draftResponse(theirMessage, business, conversationHistory, intent);
+      res.json(result);
+    } catch (error) {
+      console.error("Error drafting response:", error);
+      res.status(500).json({ message: "Failed to draft response" });
+    }
+  });
+
+  // Claude Copilot - Handle Objection
+  app.post('/api/copilot/objection', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, theirMessage, conversationHistory } = req.body;
+      
+      if (!businessId || !theirMessage) {
+        return res.status(400).json({ message: "businessId and theirMessage are required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await handleObjection(theirMessage, business, conversationHistory);
+      res.json(result);
+    } catch (error) {
+      console.error("Error handling objection:", error);
+      res.status(500).json({ message: "Failed to handle objection" });
+    }
+  });
+
+  // Claude Copilot - Analyze Conversation
+  app.post('/api/copilot/analyze', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId, conversationHistory } = req.body;
+      
+      if (!businessId || !conversationHistory) {
+        return res.status(400).json({ message: "businessId and conversationHistory are required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = await analyzeConversation(conversationHistory, business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error analyzing conversation:", error);
+      res.status(500).json({ message: "Failed to analyze conversation" });
     }
   });
 
