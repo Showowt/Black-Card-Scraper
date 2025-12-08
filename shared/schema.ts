@@ -78,6 +78,14 @@ export const outreachCampaigns = pgTable("outreach_campaigns", {
   businessId: varchar("business_id", { length: 255 }).references(() => businesses.id),
   emailSubject: text("email_subject"),
   emailBody: text("email_body"),
+  whatsappScript: text("whatsapp_script"),
+  whatsappLink: text("whatsapp_link"),
+  instagramDm: text("instagram_dm"),
+  followUpDay3: text("follow_up_day_3"),
+  followUpDay7: text("follow_up_day_7"),
+  followUpDay14: text("follow_up_day_14"),
+  psychologyFramework: text("psychology_framework"),
+  channel: text("channel").default("whatsapp"),
   status: text("status").default("draft"),
   sentAt: timestamp("sent_at"),
   respondedAt: timestamp("responded_at"),
@@ -658,3 +666,103 @@ export const CONTENT_TYPES = [
   { value: "itinerary", label: "Itinerary" },
   { value: "review", label: "Review Roundup" },
 ] as const;
+
+// Outreach channels
+export const OUTREACH_CHANNELS = [
+  { value: "whatsapp", label: "WhatsApp", icon: "MessageCircle" },
+  { value: "instagram", label: "Instagram DM", icon: "Instagram" },
+  { value: "email", label: "Email", icon: "Mail" },
+] as const;
+
+// Psychology frameworks for sales messaging
+export const PSYCHOLOGY_FRAMEWORKS = {
+  loss_aversion: {
+    name: "Loss Aversion",
+    description: "People fear losing more than they desire gaining",
+    triggers: ["mientras competidores", "perdiendo", "sin automatizar", "quedándose atrás"],
+    spanish_templates: [
+      "Mientras {competitor_hint} automatiza, ¿cuántos clientes potenciales se pierden en tu DM sin respuesta?",
+      "Vi que tus competidores ya usan asistentes de IA. ¿Te preocupa quedarte atrás?",
+      "Cada mensaje sin respuesta en las noches es un cliente que eligió otro lugar."
+    ]
+  },
+  social_proof: {
+    name: "Social Proof",
+    description: "People follow the actions of others",
+    triggers: ["otros restaurantes", "competidores usan", "en Cartagena ya"],
+    spanish_templates: [
+      "3 restaurantes de tu zona en {city} ya usan nuestro asistente de WhatsApp. ¿Quieres ver cómo les va?",
+      "El mes pasado ayudamos a un {category} similar a reducir no-shows en 40%.",
+      "Pregúntale a {reference_business} cómo cambió su operación con automatización."
+    ]
+  },
+  reciprocity: {
+    name: "Reciprocity",
+    description: "People feel obligated to return favors",
+    triggers: ["gratis", "sin compromiso", "análisis", "auditoría"],
+    spanish_templates: [
+      "Hice un análisis rápido de tu flujo de reservas. ¿Te mando los hallazgos gratis?",
+      "Tengo 3 ideas específicas para {business_name}. ¿Te las comparto sin compromiso?",
+      "Vi algo en tu Instagram que podría mejorar fácil. ¿Te cuento?"
+    ]
+  },
+  scarcity: {
+    name: "Scarcity",
+    description: "Limited availability increases perceived value",
+    triggers: ["cupos limitados", "solo este mes", "piloto", "pocos lugares"],
+    spanish_templates: [
+      "Solo trabajo con 2 negocios por ciudad para mantener resultados. Tengo 1 cupo en {city}.",
+      "Estamos en fase piloto con precios especiales. Se cierra este viernes.",
+      "Buscamos 1 {category} en {city} para caso de estudio con descuento del 50%."
+    ]
+  }
+} as const;
+
+// Objection responses for Claude Copilot
+export const OBJECTION_PATTERNS = {
+  price: {
+    triggers: ["caro", "costoso", "no tengo presupuesto", "muy caro", "precio", "expensive"],
+    framework: "loss_aversion",
+    response_angles: [
+      "Calculate lost revenue from unanswered messages",
+      "Compare cost to hiring a human assistant",
+      "Offer pilot/trial period to demonstrate ROI"
+    ]
+  },
+  time: {
+    triggers: ["no tengo tiempo", "muy ocupado", "después", "luego", "later", "busy"],
+    framework: "scarcity",
+    response_angles: [
+      "Emphasize quick 15-minute setup",
+      "Highlight time savings after implementation",
+      "Offer to handle everything with minimal input"
+    ]
+  },
+  skepticism: {
+    triggers: ["no creo", "no funciona", "suena raro", "scam", "estafa"],
+    framework: "social_proof",
+    response_angles: [
+      "Share specific case studies with numbers",
+      "Offer reference call with similar business",
+      "Propose no-commitment trial"
+    ]
+  },
+  existing_solution: {
+    triggers: ["ya tengo", "uso otra cosa", "ya tenemos", "already have"],
+    framework: "reciprocity",
+    response_angles: [
+      "Ask about current pain points",
+      "Offer free audit of current setup",
+      "Position as complement, not replacement"
+    ]
+  },
+  not_now: {
+    triggers: ["ahora no", "más adelante", "después de temporada", "not now"],
+    framework: "scarcity",
+    response_angles: [
+      "Highlight cost of waiting (lost bookings)",
+      "Mention limited availability",
+      "Offer to schedule future implementation"
+    ]
+  }
+} as const;
