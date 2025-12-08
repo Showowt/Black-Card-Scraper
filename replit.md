@@ -13,7 +13,7 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
 ## Key Features
 
 ### Core Business Intelligence
-1. **Business Scanning**: Scan restaurants, hotels, clubs, tour operators, spas, cafes, bars, galleries, museums, theaters, boat charters, private chefs, DJs, photographers, videographers, and event planners across Cartagena, Medellín, Bogotá, Cali, Barranquilla, and Santa Marta
+1. **Business Scanning**: Scan restaurants, hotels, clubs, tour operators, spas, cafes, bars, galleries, museums, theaters, boat charters, private chefs, DJs, photographers, videographers, event planners, **concierge services, villa rentals, and luxury transportation** across Cartagena, Medellín, Bogotá, Cali, Barranquilla, Santa Marta, San Andrés, Bucaramanga, and Pereira
 2. **Batch Scanning**: Scan multiple cities and categories simultaneously with progress tracking
 3. **AI Enrichment**: Automatic scoring, classification, and outreach hook generation using vertical intelligence
 4. **Website Scraping**: Extract emails, phone numbers, and social media from business websites with robust sanitization and validation
