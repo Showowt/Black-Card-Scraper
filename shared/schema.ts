@@ -91,6 +91,15 @@ export const outreachCampaigns = pgTable("outreach_campaigns", {
   respondedAt: timestamp("responded_at"),
   convertedAt: timestamp("converted_at"),
   notes: text("notes"),
+  detectedProblem: text("detected_problem"),
+  customOffer: text("custom_offer"),
+  monthlyLoss: integer("monthly_loss"),
+  lossExplanation: text("loss_explanation"),
+  identityStatement: text("identity_statement"),
+  fearTrigger: text("fear_trigger"),
+  desireTrigger: text("desire_trigger"),
+  urgencyAngle: text("urgency_angle"),
+  detectedSignals: text("detected_signals").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -505,6 +514,198 @@ export const AI_READINESS_LEVELS = [
   { value: "medium", label: "Medium", color: "amber", minScore: 40 },
   { value: "low", label: "Low", color: "red", minScore: 0 },
 ] as const;
+
+export const SIGNAL_OFFER_MATRIX: Record<string, {
+  signals: { condition: string; priority: number }[];
+  offer: string;
+  monthlyLoss: { min: number; max: number; explanation: string };
+}[]> = {
+  restaurant: [
+    {
+      signals: [{ condition: "no_website", priority: 1 }, { condition: "low_reviews", priority: 2 }],
+      offer: "AI Booking Bot + Review Management System",
+      monthlyLoss: { min: 2000, max: 5000, explanation: "Lost reservations + missed review responses" },
+    },
+    {
+      signals: [{ condition: "no_instagram", priority: 1 }],
+      offer: "WhatsApp Booking System + Social Presence Setup",
+      monthlyLoss: { min: 1500, max: 3000, explanation: "No social discovery = invisible to tourists" },
+    },
+    {
+      signals: [{ condition: "slow_response", priority: 1 }],
+      offer: "24/7 AI Receptionist for Reservations + FAQ",
+      monthlyLoss: { min: 3000, max: 6000, explanation: "Delayed responses lose 60% of booking inquiries" },
+    },
+  ],
+  hotel: [
+    {
+      signals: [{ condition: "ota_dependent", priority: 1 }],
+      offer: "Direct Booking Chatbot to Cut OTA Commissions",
+      monthlyLoss: { min: 5000, max: 15000, explanation: "15-25% OTA fees on every booking" },
+    },
+    {
+      signals: [{ condition: "no_whatsapp", priority: 1 }],
+      offer: "WhatsApp Concierge for 24/7 Guest Requests",
+      monthlyLoss: { min: 2000, max: 4000, explanation: "Missed upsell opportunities + poor reviews" },
+    },
+    {
+      signals: [{ condition: "low_rating", priority: 1 }],
+      offer: "Automated Review Response + Guest Recovery System",
+      monthlyLoss: { min: 3000, max: 8000, explanation: "Each 0.1 rating drop = 5-9% revenue loss" },
+    },
+  ],
+  concierge: [
+    {
+      signals: [{ condition: "no_crm", priority: 1 }],
+      offer: "Client Preference Database + Vendor Coordination System",
+      monthlyLoss: { min: 4000, max: 10000, explanation: "Can't scale beyond current capacity" },
+    },
+    {
+      signals: [{ condition: "manual_vendor", priority: 1 }],
+      offer: "Vendor CRM with Instant Availability Checks",
+      monthlyLoss: { min: 2000, max: 5000, explanation: "Hours wasted on vendor coordination" },
+    },
+    {
+      signals: [{ condition: "no_after_hours", priority: 1 }],
+      offer: "After-Hours Auto-Response with Smart Escalation",
+      monthlyLoss: { min: 3000, max: 7000, explanation: "3am requests going unanswered" },
+    },
+  ],
+  villa_rental: [
+    {
+      signals: [{ condition: "multi_platform", priority: 1 }],
+      offer: "Multi-Channel Inquiry Bot + Cross-Platform Sync",
+      monthlyLoss: { min: 3000, max: 8000, explanation: "Double bookings + slow response across platforms" },
+    },
+    {
+      signals: [{ condition: "no_guest_tracking", priority: 1 }],
+      offer: "VIP Guest Preference CRM for Repeat Visitors",
+      monthlyLoss: { min: 2000, max: 5000, explanation: "No loyalty = guests go to competitors" },
+    },
+  ],
+  transportation: [
+    {
+      signals: [{ condition: "manual_dispatch", priority: 1 }],
+      offer: "Real-Time Booking Bot + Driver Assignment Automation",
+      monthlyLoss: { min: 2000, max: 6000, explanation: "Idle fleet time + missed bookings" },
+    },
+    {
+      signals: [{ condition: "no_tracking", priority: 1 }],
+      offer: "Client Trip Updates + Automated Payment System",
+      monthlyLoss: { min: 1500, max: 3000, explanation: "Poor client experience = no referrals" },
+    },
+  ],
+  tour_operator: [
+    {
+      signals: [{ condition: "manual_booking", priority: 1 }],
+      offer: "Instant Booking Bot + Automated Itinerary Delivery",
+      monthlyLoss: { min: 2500, max: 6000, explanation: "Lost bookings during off-hours" },
+    },
+    {
+      signals: [{ condition: "no_payment_system", priority: 1 }],
+      offer: "Payment Integration with Reminders + No-Show Protection",
+      monthlyLoss: { min: 2000, max: 4000, explanation: "No-shows costing 15-20% of bookings" },
+    },
+  ],
+  spa: [
+    {
+      signals: [{ condition: "no_deposit", priority: 1 }],
+      offer: "Booking System with Deposits + Automated Reminders",
+      monthlyLoss: { min: 1500, max: 4000, explanation: "No-shows destroying appointment slots" },
+    },
+    {
+      signals: [{ condition: "no_rebooking", priority: 1 }],
+      offer: "Automated Rebooking Sequences + Review Collection",
+      monthlyLoss: { min: 1000, max: 3000, explanation: "Missing repeat business opportunities" },
+    },
+  ],
+  club: [
+    {
+      signals: [{ condition: "manual_reservations", priority: 1 }],
+      offer: "Table Reservation Bot with VIP Deposits",
+      monthlyLoss: { min: 3000, max: 10000, explanation: "Lost table revenue + VIP friction" },
+    },
+    {
+      signals: [{ condition: "no_vip_crm", priority: 1 }],
+      offer: "VIP Guest CRM with Automated Outreach",
+      monthlyLoss: { min: 2000, max: 5000, explanation: "VIPs going to competitors" },
+    },
+  ],
+  boat_charter: [
+    {
+      signals: [{ condition: "inquiry_overload", priority: 1 }],
+      offer: "Instant Quote Bot with Availability Checker",
+      monthlyLoss: { min: 3000, max: 8000, explanation: "Slow quotes = lost charters" },
+    },
+    {
+      signals: [{ condition: "no_automation", priority: 1 }],
+      offer: "Automated Booking + Weather Alert System",
+      monthlyLoss: { min: 2000, max: 5000, explanation: "Rescheduling chaos + deposit issues" },
+    },
+  ],
+};
+
+export const PSYCHOLOGY_HOOKS: Record<string, {
+  identity: string;
+  fear: string;
+  desire: string;
+  urgency: string;
+}> = {
+  restaurant: {
+    identity: "You're the restaurateur who delivers unforgettable dining experiences",
+    fear: "Every unanswered reservation inquiry is a table going to your competitor tonight",
+    desire: "Imagine every guest getting instant confirmation and showing up on time",
+    urgency: "Peak season starts in 2 weeks - will you be ready?",
+  },
+  hotel: {
+    identity: "You're the hotelier who creates legendary guest experiences",
+    fear: "OTAs are taking 25% of every booking - that's YOUR profit walking out the door",
+    desire: "Direct bookings flooding in while guests rave about your instant service",
+    urgency: "High season pricing changes in 30 days - lock in direct bookings now",
+  },
+  concierge: {
+    identity: "You're the fixer who makes impossible things happen",
+    fear: "That 3am WhatsApp from a VIP guest - and you're asleep",
+    desire: "Scale to 50 clients without hiring. Every guest thinks they're your only guest",
+    urgency: "Wedding season is 6 weeks away - can you really handle 10 more events?",
+  },
+  villa_rental: {
+    identity: "You're the villa host who creates vacation perfection",
+    fear: "A double-booking disaster waiting to happen across Airbnb, VRBO, and direct",
+    desire: "Premium guests finding you directly, paying full price, coming back yearly",
+    urgency: "Your competitors just upgraded their booking systems",
+  },
+  transportation: {
+    identity: "You're the transport pro who delivers flawless VIP experiences",
+    fear: "A driver no-show with a client's airport pickup - reputation destroyed",
+    desire: "Fleet fully utilized, clients tracked, tips automated, reviews flowing",
+    urgency: "Conference season brings 3x booking volume - can your current system handle it?",
+  },
+  tour_operator: {
+    identity: "You're the guide who creates transformative experiences",
+    fear: "Tourists booking with competitors because you took 2 hours to respond",
+    desire: "Instant booking confirmation while you're guiding - no missed opportunities",
+    urgency: "Cruise ship season starts next month with 10,000 tourists arriving",
+  },
+  spa: {
+    identity: "You're the wellness expert who transforms stressed guests into regulars",
+    fear: "Empty appointment slots because no-shows didn't leave deposits",
+    desire: "Fully booked calendar with clients who show up, tip well, and rebook",
+    urgency: "Resort partnerships want committed vendors - show you're ready",
+  },
+  club: {
+    identity: "You're the nightlife king who creates the experiences everyone talks about",
+    fear: "VIPs going to the competition because your table booking is too slow",
+    desire: "Bottle service flowing, VIP database growing, repeat guests automatic",
+    urgency: "NYE is 8 weeks away - is your reservation system ready for the rush?",
+  },
+  boat_charter: {
+    identity: "You're the captain who creates unforgettable ocean memories",
+    fear: "Perfect weather day with the boat empty because quotes took too long",
+    desire: "Every inquiry gets instant pricing, deposits flow, calendar fills itself",
+    urgency: "Carnaval week demand will 5x - don't leave money on the table",
+  },
+};
 
 // Event Discovery Schema
 export const events = pgTable("events", {
