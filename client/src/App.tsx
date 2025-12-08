@@ -10,6 +10,8 @@ import Dashboard from "@/pages/Dashboard";
 import BusinessDetail from "@/pages/BusinessDetail";
 import Statistics from "@/pages/Statistics";
 import Outreach from "@/pages/Outreach";
+import OutreachReady from "@/pages/OutreachReady";
+import Copilot from "@/pages/Copilot";
 import Operations from "@/pages/Operations";
 import Events from "@/pages/Events";
 import IntentSignals from "@/pages/IntentSignals";
@@ -37,6 +39,8 @@ function Router() {
           <Route path="/business/:id" component={BusinessDetail} />
           <Route path="/statistics" component={Statistics} />
           <Route path="/outreach" component={Outreach} />
+          <Route path="/outreach-ready" component={OutreachReady} />
+          <Route path="/copilot" component={Copilot} />
           <Route path="/operations" component={Operations} />
           <Route path="/events" component={Events} />
           <Route path="/intent-signals" component={IntentSignals} />

@@ -21,7 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Building2, Search, Download, BarChart3, Mail, Phone, Globe, 
   MapPin, Star, Zap, RefreshCw, ExternalLink, ChevronRight,
-  Users, TrendingUp, LogOut, Filter, Layers, Terminal, Calendar
+  Users, TrendingUp, LogOut, Filter, Layers, Terminal, Calendar,
+  MessageCircle, Brain
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, Scan } from "@shared/schema";
@@ -153,9 +154,14 @@ export default function Dashboard() {
                 <Calendar className="h-4 w-4 mr-1" /> Events
               </Button>
             </Link>
-            <Link href="/outreach">
-              <Button variant="ghost" size="sm" data-testid="nav-outreach">
-                <Mail className="h-4 w-4 mr-1" /> Outreach
+            <Link href="/outreach-ready">
+              <Button variant="ghost" size="sm" data-testid="nav-outreach-ready">
+                <MessageCircle className="h-4 w-4 mr-1" /> Outreach
+              </Button>
+            </Link>
+            <Link href="/copilot">
+              <Button variant="ghost" size="sm" data-testid="nav-copilot">
+                <Brain className="h-4 w-4 mr-1" /> Copilot
               </Button>
             </Link>
             <Link href="/operations">
