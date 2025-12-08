@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Brain, MessageSquare, Mic, FileText, Search, Send, Loader2, 
   Lightbulb, AlertTriangle, Target, DollarSign, TrendingUp, Zap,
-  CheckCircle2, XCircle, Copy, Check
+  CheckCircle2, XCircle, Copy, Check, RefreshCw
 } from "lucide-react";
 import { SiInstagram } from "react-icons/si";
 import type { Business } from "@shared/schema";
@@ -54,9 +54,40 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
   const [reviews, setReviews] = useState("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [proposalTier, setProposalTier] = useState<"starter" | "core" | "flagship">("starter");
+  const [deepScanData, setDeepScanData] = useState<DeepScanResult | null>(null);
 
-  const { data: deepScanData, isLoading: deepScanLoading } = useQuery<DeepScanResult>({
-    queryKey: ['/api/copilot/deep-scan', business.id],
+  // Load cached deep scan data from localStorage on mount
+  useEffect(() => {
+    const cached = localStorage.getItem(`deepScan_${business.id}`);
+    if (cached) {
+      try {
+        setDeepScanData(JSON.parse(cached));
+      } catch (e) {
+        console.error("Failed to parse cached deep scan data");
+      }
+    }
+  }, [business.id]);
+
+  const deepScanMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/copilot/deep-scan/${business.id}`, { 
+        credentials: 'include' 
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to fetch deep scan');
+      }
+      return res.json();
+    },
+    onSuccess: (data: DeepScanResult) => {
+      setDeepScanData(data);
+      // Cache to localStorage for persistence across page refreshes
+      localStorage.setItem(`deepScan_${business.id}`, JSON.stringify(data));
+      toast({ title: "Deep Scan Complete", description: "Vertical intelligence loaded" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Deep Scan Failed", description: error.message, variant: "destructive" });
+    },
   });
 
   const respondMutation = useMutation({
@@ -197,7 +228,23 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
           </TabsList>
 
           <TabsContent value="deep-scan">
-            {deepScanLoading ? (
+            <div className="mb-4">
+              <Button 
+                onClick={() => deepScanMutation.mutate()} 
+                disabled={deepScanMutation.isPending}
+                data-testid="button-run-deep-scan"
+              >
+                {deepScanMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : deepScanData ? (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                ) : (
+                  <Search className="h-4 w-4 mr-2" />
+                )}
+                {deepScanData ? "Refresh Deep Scan" : "Run Deep Scan"}
+              </Button>
+            </div>
+            {deepScanMutation.isPending ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
@@ -335,8 +382,14 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
                 </div>
               </ScrollArea>
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                No deep scan data available
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-2">
+                  Click "Run Deep Scan" to analyze this business
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Get vertical-specific pain points, psychology insights, and recommended solutions
+                </p>
               </div>
             )}
           </TabsContent>
