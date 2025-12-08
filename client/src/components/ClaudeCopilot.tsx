@@ -53,7 +53,7 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [reviews, setReviews] = useState("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [proposalTier, setProposalTier] = useState<"starter" | "core" | "flagship">("core");
+  const [proposalTier, setProposalTier] = useState<"starter" | "core" | "flagship">("starter");
 
   const { data: deepScanData, isLoading: deepScanLoading } = useQuery<DeepScanResult>({
     queryKey: ['/api/copilot/deep-scan', business.id],
