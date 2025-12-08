@@ -19,6 +19,11 @@ import {
   draftResponse,
   analyzeConversation,
 } from "./claudeCopilot";
+import {
+  analyzeBusinessSignals,
+  generateMultiChannelScripts as generateSignalScripts,
+  generateUltimateOutreach,
+} from "./signalEngine";
 
 // Validation schemas for batch operations
 const BatchEnrichSchema = z.object({
@@ -630,6 +635,232 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error in batch multi-channel outreach:", error);
       res.status(500).json({ message: "Failed to generate batch multi-channel outreach" });
+    }
+  });
+
+  // Ultimate Outreach - Signal-based analysis for a single business
+  app.get('/api/ultimate-outreach/:businessId', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = generateUltimateOutreach(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error getting ultimate outreach:", error);
+      res.status(500).json({ message: "Failed to get ultimate outreach analysis" });
+    }
+  });
+
+  // Ultimate Outreach - Get outreach-ready businesses with signal analysis
+  app.get('/api/ultimate-outreach', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        city: req.query.city as string,
+        category: req.query.category as string,
+        limit: parseInt(req.query.limit as string) || 50,
+      };
+      
+      // Get enriched businesses with contact info
+      const businesses = await storage.getBusinesses({
+        ...filters,
+        isEnriched: true,
+      });
+      
+      // Filter to those with WhatsApp, phone, or Instagram
+      const outreachReady = businesses.filter(b => 
+        b.whatsapp || b.phone || b.instagram
+      );
+      
+      // Analyze each business with signal engine
+      const analyzed = outreachReady.map(business => {
+        const analysis = analyzeBusinessSignals(business);
+        return {
+          business,
+          analysis,
+        };
+      });
+      
+      // Sort by monthly loss (highest first)
+      analyzed.sort((a, b) => (b.analysis.monthlyLoss || 0) - (a.analysis.monthlyLoss || 0));
+      
+      res.json({
+        total: analyzed.length,
+        businesses: analyzed,
+      });
+    } catch (error) {
+      console.error("Error getting ultimate outreach list:", error);
+      res.status(500).json({ message: "Failed to get ultimate outreach list" });
+    }
+  });
+
+  // Ultimate Outreach - Generate and save campaign with signal intelligence
+  app.post('/api/ultimate-outreach/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { businessId, senderName } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Carlos");
+      
+      // Check for existing campaign
+      const existingCampaigns = await storage.getOutreachCampaigns(businessId);
+      let campaign;
+      
+      if (existingCampaigns.length > 0) {
+        campaign = await storage.updateOutreachCampaign(existingCampaigns[0].id, {
+          ...scripts,
+          detectedProblem: analysis.detectedProblem,
+          customOffer: analysis.customOffer,
+          monthlyLoss: analysis.monthlyLoss,
+          lossExplanation: analysis.lossExplanation,
+          identityStatement: analysis.identityStatement,
+          fearTrigger: analysis.fearTrigger,
+          desireTrigger: analysis.desireTrigger,
+          urgencyAngle: analysis.urgencyAngle,
+          detectedSignals: analysis.detectedSignals,
+          status: "draft",
+        });
+      } else {
+        campaign = await storage.createOutreachCampaign({
+          userId,
+          businessId,
+          ...scripts,
+          detectedProblem: analysis.detectedProblem,
+          customOffer: analysis.customOffer,
+          monthlyLoss: analysis.monthlyLoss,
+          lossExplanation: analysis.lossExplanation,
+          identityStatement: analysis.identityStatement,
+          fearTrigger: analysis.fearTrigger,
+          desireTrigger: analysis.desireTrigger,
+          urgencyAngle: analysis.urgencyAngle,
+          detectedSignals: analysis.detectedSignals,
+          status: "draft",
+        });
+      }
+      
+      res.json({ campaign, analysis, scripts });
+    } catch (error) {
+      console.error("Error generating ultimate outreach:", error);
+      res.status(500).json({ message: "Failed to generate ultimate outreach" });
+    }
+  });
+
+  // Ultimate Outreach - Batch generate campaigns with signal intelligence
+  app.post('/api/ultimate-outreach/batch', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { businessIds, filters, limit = 20, senderName } = req.body;
+      
+      let targetBusinesses: Business[] = [];
+      
+      if (businessIds && businessIds.length > 0) {
+        for (const id of businessIds) {
+          const business = await storage.getBusiness(id);
+          if (business) targetBusinesses.push(business);
+        }
+      } else if (filters) {
+        targetBusinesses = await storage.getBusinesses({
+          ...filters,
+          isEnriched: true,
+          limit: limit,
+        });
+      } else {
+        targetBusinesses = await storage.getBusinesses({
+          isEnriched: true,
+          limit: limit,
+        });
+      }
+      
+      // Filter to those with contact info
+      const prospects = targetBusinesses.filter(b => 
+        b.whatsapp || b.phone || b.instagram
+      ).slice(0, limit);
+      
+      if (prospects.length === 0) {
+        return res.status(400).json({ 
+          message: "No businesses found with contact info. Enrich and scrape websites first." 
+        });
+      }
+      
+      const results: { success: any[]; errors: { businessId: string; error: string }[] } = {
+        success: [],
+        errors: [],
+      };
+      
+      for (const business of prospects) {
+        try {
+          const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Carlos");
+          
+          const existingCampaigns = await storage.getOutreachCampaigns(business.id);
+          let campaign;
+          
+          if (existingCampaigns.length > 0) {
+            campaign = await storage.updateOutreachCampaign(existingCampaigns[0].id, {
+              ...scripts,
+              detectedProblem: analysis.detectedProblem,
+              customOffer: analysis.customOffer,
+              monthlyLoss: analysis.monthlyLoss,
+              lossExplanation: analysis.lossExplanation,
+              identityStatement: analysis.identityStatement,
+              fearTrigger: analysis.fearTrigger,
+              desireTrigger: analysis.desireTrigger,
+              urgencyAngle: analysis.urgencyAngle,
+              detectedSignals: analysis.detectedSignals,
+            });
+          } else {
+            campaign = await storage.createOutreachCampaign({
+              userId,
+              businessId: business.id,
+              ...scripts,
+              detectedProblem: analysis.detectedProblem,
+              customOffer: analysis.customOffer,
+              monthlyLoss: analysis.monthlyLoss,
+              lossExplanation: analysis.lossExplanation,
+              identityStatement: analysis.identityStatement,
+              fearTrigger: analysis.fearTrigger,
+              desireTrigger: analysis.desireTrigger,
+              urgencyAngle: analysis.urgencyAngle,
+              detectedSignals: analysis.detectedSignals,
+              status: "draft",
+            });
+          }
+          
+          results.success.push({ 
+            business: business.name, 
+            monthlyLoss: analysis.monthlyLoss,
+            customOffer: analysis.customOffer,
+            campaign 
+          });
+        } catch (error: any) {
+          results.errors.push({
+            businessId: business.id,
+            error: error.message || "Failed to generate",
+          });
+        }
+      }
+      
+      res.json({
+        totalProcessed: prospects.length,
+        generated: results.success.length,
+        errors: results.errors.length,
+        totalMonthlyLoss: results.success.reduce((sum, r) => sum + (r.monthlyLoss || 0), 0),
+        results: results.success,
+        errorDetails: results.errors,
+      });
+    } catch (error) {
+      console.error("Error in batch ultimate outreach:", error);
+      res.status(500).json({ message: "Failed to generate batch ultimate outreach" });
     }
   });
 
