@@ -13,6 +13,7 @@ import Outreach from "@/pages/Outreach";
 import Operations from "@/pages/Operations";
 import Events from "@/pages/Events";
 import IntentSignals from "@/pages/IntentSignals";
+import VenueMonitors from "@/pages/VenueMonitors";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,6 +39,7 @@ function Router() {
           <Route path="/operations" component={Operations} />
           <Route path="/events" component={Events} />
           <Route path="/intent-signals" component={IntentSignals} />
+          <Route path="/venue-monitors" component={VenueMonitors} />
         </>
       )}
       <Route component={NotFound} />
