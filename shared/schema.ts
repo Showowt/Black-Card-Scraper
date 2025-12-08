@@ -161,6 +161,9 @@ export const CATEGORIES = [
   { value: "chef", label: "Private Chefs", googleType: "caterer" },
   { value: "real_estate", label: "Real Estate", googleType: "real_estate_agency" },
   { value: "coworking", label: "Coworking Spaces", googleType: "coworking_space" },
+  { value: "concierge", label: "Concierge Services", googleType: "travel_agency" },
+  { value: "villa_rental", label: "Villa Rentals", googleType: "lodging" },
+  { value: "transportation", label: "Luxury Transportation", googleType: "car_rental" },
 ] as const;
 
 export const TEXT_SEARCH_SUPPLEMENTS: Record<string, string[]> = {
@@ -204,6 +207,35 @@ export const TEXT_SEARCH_SUPPLEMENTS: Record<string, string[]> = {
     "party planner",
     "destination wedding",
     "organizador de eventos",
+  ],
+  concierge: [
+    "concierge service",
+    "luxury concierge",
+    "villa concierge",
+    "travel concierge",
+    "personal assistant",
+    "fixer service",
+    "servicio concierge",
+    "asistente personal",
+    "lifestyle management",
+  ],
+  villa_rental: [
+    "luxury villa rental",
+    "vacation villa",
+    "villa rental",
+    "casa de lujo",
+    "alquiler de villa",
+    "beachfront villa",
+    "private villa",
+  ],
+  transportation: [
+    "private driver",
+    "airport transfer",
+    "luxury car service",
+    "chauffeur service",
+    "vip transport",
+    "transporte privado",
+    "servicio de chofer",
   ],
 };
 
@@ -398,6 +430,65 @@ export const VERTICAL_INTELLIGENCE: Record<string, {
       "Review + rebooking sequences",
     ],
     hookAngles: ["booking process", "client inquiries", "event coordination", "online presence"],
+  },
+  concierge: {
+    painPoints: [
+      "Managing 10+ villa guests simultaneously",
+      "Coordinating 15+ vendors for events",
+      "3am WhatsApp from guests who need something now",
+      "No client preference history across visits",
+      "Vendor contact chaos - lost numbers and outdated prices",
+      "Event coordination complexity with multiple moving parts",
+      "Can't clone yourself - every client thinks they're your only client",
+    ],
+    automations: [
+      "Client preference database (remember everything across visits)",
+      "Vendor coordination automation with instant availability checks",
+      "Guest communication templates for common requests",
+      "Event timeline management with automated reminders",
+      "Multi-property dashboard for villa management",
+      "After-hours auto-response with smart escalation",
+      "Vendor CRM with pricing and availability tracking",
+    ],
+    hookAngles: ["client preference tracking", "vendor coordination", "scaling operations", "after-hours coverage"],
+  },
+  villa_rental: {
+    painPoints: [
+      "Guest inquiries across Airbnb, VRBO, direct messages",
+      "Check-in/out coordination with housekeeping",
+      "Guest issues during stays (AC, water, wifi)",
+      "No guest preference tracking for repeat visitors",
+      "Revenue management across platforms",
+      "Cleaning and maintenance scheduling chaos",
+    ],
+    automations: [
+      "Multi-channel inquiry bot with instant availability",
+      "Automated check-in instructions with smart timing",
+      "Guest issue routing to right service providers",
+      "Preference CRM for VIP repeat guests",
+      "Cross-platform booking sync",
+      "Housekeeping coordination automation",
+    ],
+    hookAngles: ["guest experience", "multi-platform management", "cleaning coordination", "repeat guest loyalty"],
+  },
+  transportation: {
+    painPoints: [
+      "Last-minute booking requests with no availability",
+      "Driver scheduling and availability tracking",
+      "Payment collection and tipping confusion",
+      "Route changes and delays communication",
+      "Fleet utilization and idle time",
+      "Quality control across multiple drivers",
+    ],
+    automations: [
+      "Instant booking bot with real-time availability",
+      "Driver assignment automation",
+      "Automated payment and receipt system",
+      "Real-time trip updates to clients",
+      "Fleet scheduling optimization",
+      "Post-ride review collection",
+    ],
+    hookAngles: ["booking automation", "driver coordination", "client communication", "fleet management"],
   },
 };
 

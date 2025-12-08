@@ -1079,7 +1079,7 @@ export async function registerRoutes(
             tier: venue.tier,
             city: "Cartagena",
             priority: venue.priority,
-            keywords: venue.keywords as string[],
+            keywords: [...venue.keywords],
             isActive: true,
           });
           created.push(newVenue);
