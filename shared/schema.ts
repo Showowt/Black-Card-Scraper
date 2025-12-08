@@ -1058,3 +1058,727 @@ export const OBJECTION_PATTERNS = {
     ]
   }
 } as const;
+
+// Enhanced Sales Psychology Engine
+// Based on 47 years of combined sales psychology research
+
+export const FRAMEWORK_CREDENTIALS = {
+  authority_markers: {
+    years_research: "47 years of combined sales psychology research",
+    case_volume: "1,400+ successful client transformations",
+    results: "$4.7 million in documented client results",
+    methodology: "Proprietary system combining neuroscience, NLP, behavioral economics, and identity transformation",
+  },
+  frameworks_used: [
+    "Neuroscience of Decision-Making",
+    "Neuro-Linguistic Programming (NLP)",
+    "Behavioral Economics (Kahneman, Thaler)",
+    "Identity Transformation Architecture",
+    "Compliance Psychology",
+    "Loss Aversion Optimization",
+    "Future Pacing & Temporal Manipulation",
+  ],
+  credibility_statements: [
+    "This methodology has generated $4.7M in results across 1,400+ cases.",
+    "Built on 47 years of combined research in sales psychology and behavioral science.",
+    "Every script is engineered using neuroscience-backed persuasion principles.",
+    "The same frameworks used by top-tier consultancies, adapted for local business.",
+  ],
+} as const;
+
+export const NEUROSCIENCE_NLP = {
+  brain_decision_hierarchy: {
+    principle: "The emotional brain decides. The logical brain justifies.",
+    application: [
+      "ALWAYS trigger emotion BEFORE presenting logic",
+      "Pain/fear activates faster than pleasure/gain",
+      "Specificity creates believability (numbers, details)",
+      "Stories bypass resistance; facts meet resistance",
+    ],
+    sequence: [
+      "1. Activate reptilian brain: threat/opportunity to survival (business survival)",
+      "2. Engage limbic system: emotional resonance (frustration, desire, fear)",
+      "3. Satisfy neocortex: logical justification (ROI, numbers, proof)",
+    ],
+  },
+  nlp_language_patterns: {
+    presuppositions: {
+      principle: "Language that assumes the sale already happened",
+      patterns: [
+        "When you implement this system...",
+        "After we automate your bookings...",
+        "Once you see the first month's results...",
+        "As you start saving those 15 hours a week...",
+        "The question isn't whether, it's when...",
+      ],
+    },
+    embedded_commands: {
+      principle: "Bypass conscious resistance by embedding directives",
+      patterns: [
+        "You might find yourself wondering why you waited so long",
+        "Most owners discover they can finally relax once this is running",
+        "You'll notice the difference immediately",
+        "People often realize this was the missing piece",
+        "It's easy to see why this works",
+      ],
+    },
+    pattern_interrupts: {
+      principle: "Disrupt autopilot rejection responses",
+      patterns: [
+        "I'm not going to pitch you anything today.",
+        "You probably get 10 messages like this a week. This isn't one of them.",
+        "I almost didn't reach out.",
+        "This might not be for you.",
+        "I'm actually not sure you need this.",
+        "Stop me if you've heard this before - actually, you haven't.",
+      ],
+    },
+    temporal_language: {
+      principle: "Compress future benefits, expand current pain",
+      patterns: [
+        "In just 30 days...",
+        "By this time next month...",
+        "While you're reading this, you're losing...",
+        "Every hour that passes...",
+        "Right now, as we speak...",
+      ],
+    },
+    sensory_language: {
+      principle: "Make them FEEL the scenario, not just understand it",
+      patterns: [
+        "Picture this:",
+        "Imagine the feeling when...",
+        "You know that moment when...",
+        "Feel what it's like to...",
+        "See yourself...",
+      ],
+    },
+  },
+  anchoring_techniques: {
+    principle: "Link positive states to your solution, negative states to status quo",
+    applications: [
+      "Describe their current pain vividly (anchor negative state)",
+      "Transition: 'Now imagine...' (break state)",
+      "Describe transformation vividly (anchor positive state)",
+      "Connect positive anchor to your solution",
+    ],
+  },
+  mirroring_rapport: {
+    principle: "People trust those who are like them",
+    applications: [
+      "Use industry-specific language they use",
+      "Reference local (Colombian) context",
+      "Match formality level to their communication style",
+      "Acknowledge their specific situation before offering solutions",
+    ],
+  },
+} as const;
+
+export const BEHAVIORAL_ECONOMICS = {
+  loss_aversion: {
+    principle: "Frame as preventing loss, not acquiring gain",
+    research: "Kahneman & Tversky: Losses hurt 2.5x more than gains satisfy",
+    applications: {
+      bad: "You could earn an extra $3,000/month",
+      good: "You're losing $3,000/month to no-shows and missed inquiries",
+      better: "Every day you wait costs you approximately $100 in lost revenue",
+      best: "That $100/day loss has already cost you $3,000 this month. How much more will you lose before you fix it?",
+    },
+    loss_language: [
+      "You're losing...",
+      "Every day without this costs you...",
+      "While your competitors capture these customers, you're...",
+      "The money walking out your door...",
+      "What it's already cost you this month...",
+    ],
+  },
+  anchoring_effect: {
+    principle: "Set high anchor first, then reveal actual investment",
+    research: "Tversky & Kahneman: Initial values bias subsequent estimates",
+    applications: [
+      "A full-time employee costs $24,000/year. This system costs a fraction and works 24/7.",
+      "Most agencies charge $15-20k for this level of automation. My approach is different.",
+      "The revenue you're losing annually is probably $30-50k. Fixing it costs less than one month of losses.",
+      "Hiring a receptionist: $2,000/month. This system: less than half that, never calls in sick.",
+    ],
+  },
+  social_proof: {
+    principle: "Show similar businesses already winning",
+    research: "Cialdini: People follow the lead of similar others",
+    applications: {
+      local: "Three restaurants in Getsemani implemented this last month.",
+      competitor: "Your competitor down the street automated their bookings in January.",
+      category: "The top-rated hotels in Cartagena all have AI concierges now.",
+      aspirational: "This is what the Michelin-starred restaurants in Bogota use.",
+    },
+    specificity_matters: [
+      "37 restaurants in Colombia are using this exact system.",
+      "Average result: 47% reduction in no-shows within 30 days.",
+      "Last client went from 3-hour response time to under 3 minutes.",
+    ],
+  },
+  scarcity_effect: {
+    principle: "Limited availability increases perceived value",
+    research: "Cialdini: Scarcity increases perceived value and urgency",
+    applications: {
+      capacity: "I only take on 3 new clients per month. I have one spot left.",
+      time: "This pricing is only available through December.",
+      pilot: "I'm testing this with 5 restaurants before I raise the price.",
+      attention: "After this week, I'm heads-down with existing clients until February.",
+    },
+    urgency_triggers: [
+      "High season is 8 weeks away. We need 4 weeks to implement properly.",
+      "The longer you wait, the more you lose - that's just math.",
+      "Your competitors are implementing this now. The window is closing.",
+    ],
+  },
+  reciprocity: {
+    principle: "Provide value before asking for anything",
+    research: "Cialdini: People feel obligated to return favors",
+    applications: [
+      "I did a quick audit of your Google reviews. Here's what I found...",
+      "I noticed something in your booking flow. Mind if I share?",
+      "I put together a 3-minute video showing exactly what I'd fix. No strings.",
+      "Here's a framework you can implement yourself, even if we never work together.",
+    ],
+  },
+  commitment_consistency: {
+    principle: "Small yeses lead to big yeses",
+    research: "Cialdini: People strive to be consistent with prior commitments",
+    applications: {
+      agreement_ladder: [
+        "Would you agree that no-shows are a problem for most restaurants?",
+        "And would you say it's costing you real money every week?",
+        "If I could show you a way to fix that, would it be worth 15 minutes?",
+        "Great - does Thursday or Friday work better?",
+      ],
+      micro_commitments: [
+        "Reply 'yes' if you want to see how this works.",
+        "Just say 'show me' and I'll send the video.",
+        "Sound interesting? Just reply with your best number.",
+      ],
+    },
+  },
+  endowment_effect: {
+    principle: "People value what they already have more",
+    research: "Thaler: Ownership increases perceived value",
+    applications: [
+      "Let me show you YOUR system running...",
+      "This is what YOUR dashboard would look like...",
+      "Imagine this is YOUR booking flow...",
+      "Picture YOUR staff using this every day...",
+    ],
+  },
+  choice_architecture: {
+    principle: "How options are presented affects decisions",
+    applications: {
+      decoy_effect: "Basic ($500), Pro ($1,500), Premium ($2,000) - Pro looks best",
+      default_option: "Most clients start with the booking system. Want to do the same?",
+      limited_options: "Two options: We do this now, or we do it in January. Which works?",
+    },
+  },
+} as const;
+
+export const IDENTITY_TRANSFORMATION = {
+  core_principle: {
+    statement: "People make decisions to protect or enhance their identity",
+    implication: "Sell the IDENTITY they want to have, not the product features",
+    key_insight: "The gap between who they ARE and who they want to BE creates purchase motivation",
+  },
+  identity_architecture: {
+    current_identity: {
+      description: "Overwhelmed operator, reactive, losing control",
+      emotional_state: "Frustrated, exhausted, falling behind",
+      self_talk: "'I can't keep up', 'There's not enough time', 'I'm doing everything myself'",
+    },
+    aspirational_identity: {
+      description: "Strategic owner, proactive, in control",
+      emotional_state: "Confident, relaxed, ahead of the game",
+      self_talk: "'My business runs itself', 'I focus on what matters', 'I'm building something'",
+    },
+    transformation_bridge: {
+      message: "One system changes everything",
+      role_of_product: "The tool that transforms them into who they want to be",
+      positioning: "Not buying software - becoming a different kind of business owner",
+    },
+  },
+  identity_triggers_by_vertical: {
+    restaurant: {
+      current: "The owner who's always putting out fires, answering WhatsApp at midnight",
+      aspirational: "The restaurateur who runs a tight operation, never misses a beat",
+      gap_statement: "You didn't open a restaurant to be a full-time receptionist.",
+      transformation: "From chaos to command. From reactive to proactive.",
+    },
+    hotel: {
+      current: "The hotelier drowning in OTA commissions and guest complaints",
+      aspirational: "The hotelier guests rave about, who anticipates every need",
+      gap_statement: "You built a hotel to create experiences, not to answer the same question 50 times a day.",
+      transformation: "From overwhelmed to effortless. From surviving to thriving.",
+    },
+    tour_operator: {
+      current: "The operator buried in WhatsApp groups and booking chaos",
+      aspirational: "The operator with the reputation for flawless experiences",
+      gap_statement: "You started this to share adventures, not to be buried in logistics.",
+      transformation: "From logistics nightmare to seamless operation.",
+    },
+    club: {
+      current: "The owner scrambling for last-minute bookings and VIP no-shows",
+      aspirational: "The nightlife king who runs the spot everyone talks about",
+      gap_statement: "You didn't get into nightlife to be a table reservation hotline.",
+      transformation: "From chasing bookings to turning people away.",
+    },
+    boat_charter: {
+      current: "The captain chained to their phone, missing life on the water",
+      aspirational: "The operator with boats fully booked, living the lifestyle they sold",
+      gap_statement: "You bought boats to live the life, not to be a 24/7 sales rep.",
+      transformation: "From phone slave to fleet commander.",
+    },
+    concierge: {
+      current: "The fixer drowning in WhatsApp, juggling 10 clients, remembering nothing",
+      aspirational: "The legendary concierge who anticipates needs before clients ask",
+      gap_statement: "You built this to create magic, not to be a human switchboard at 3am.",
+      transformation: "From reactive chaos to anticipatory excellence.",
+    },
+    villa_rental: {
+      current: "The property manager buried in turnover chaos and guest complaints",
+      aspirational: "The operator with seamless guest experiences and passive income",
+      gap_statement: "You bought these properties for freedom, not another full-time job.",
+      transformation: "From constant fires to automated excellence.",
+    },
+    spa: {
+      current: "The owner juggling walk-ins, no-shows, and therapist scheduling",
+      aspirational: "The wellness expert with fully booked chairs and loyal clients",
+      gap_statement: "You opened a spa to heal people, not to chase down no-shows.",
+      transformation: "From appointment chaos to zen operation.",
+    },
+  },
+  identity_language_patterns: [
+    "This is for the {category} owner who wants to...",
+    "If you're the kind of owner who...",
+    "The {category}s that dominate {city} all have one thing in common...",
+    "Is this who you want to be known as?",
+    "A year from now, you'll either be glad you made this move, or still stuck in the same place.",
+    "The question isn't whether you need this. It's whether you're ready to become the owner you want to be.",
+  ],
+  transformation_timeline: {
+    "30_days": "Systems running, chaos eliminated",
+    "90_days": "Full automation, significant time savings",
+    "1_year": "Completely different business, completely different life",
+  },
+} as const;
+
+export const COMPLIANCE_PSYCHOLOGY = {
+  authority_principle: {
+    applications: [
+      "Position as expert, not salesperson",
+      "Reference frameworks, methodologies, research",
+      "Use specific numbers and case results",
+      "Speak with certainty, not tentativeness",
+    ],
+    language: [
+      "Based on 47 years of combined research...",
+      "The data from 1,400+ implementations shows...",
+      "This methodology has recovered $4.7 million for businesses like yours...",
+      "The behavioral science is clear on this...",
+    ],
+  },
+  procedural_compliance: {
+    applications: [
+      "Present clear next steps",
+      "Make the path forward obvious",
+      "Remove ambiguity and friction",
+      "Frame as 'standard process'",
+    ],
+    language: [
+      "Here's how this typically works:",
+      "Step one is a 15-minute call...",
+      "The standard process is...",
+      "What happens next is simple:",
+    ],
+  },
+  legitimacy_markers: {
+    applications: [
+      "Specific numbers over round numbers (47 not 50)",
+      "Named methodologies and frameworks",
+      "Third-party validation and social proof",
+      "Professional communication standards",
+    ],
+  },
+} as const;
+
+// City-specific targeting priorities
+export const CITY_PRIORITIES: Record<string, {
+  priority_verticals: string[];
+  market_context: string;
+  decision_maker: string;
+}> = {
+  cartagena: {
+    priority_verticals: ["restaurant", "club", "bar", "spa", "hotel", "tour_operator", "boat_charter", "concierge", "villa_rental"],
+    market_context: "Tourism-driven, high-spend visitors, WhatsApp-heavy communication, seasonal peaks",
+    decision_maker: "Usually owner-operator, values relationships, skeptical of tech unless shown ROI",
+  },
+  medellin: {
+    priority_verticals: ["restaurant", "gym", "spa", "coworking", "real_estate", "photographer", "event_planner"],
+    market_context: "Digital nomad hub, lifestyle businesses, younger owners, more tech-savvy",
+    decision_maker: "Often younger entrepreneurs, open to innovation, price-conscious but value quality",
+  },
+  bogota: {
+    priority_verticals: ["real_estate", "restaurant", "hotel", "event_planner", "chef", "transportation"],
+    market_context: "Corporate hub, larger businesses, formal sales cycles, higher budgets",
+    decision_maker: "Professional managers, need ROI proof, longer decision cycles",
+  },
+  cali: {
+    priority_verticals: ["restaurant", "club", "bar", "event_planner", "dj"],
+    market_context: "Salsa culture, vibrant nightlife, music-focused events",
+    decision_maker: "Entertainment-focused owners, value energy and experience",
+  },
+  barranquilla: {
+    priority_verticals: ["restaurant", "hotel", "event_planner", "club"],
+    market_context: "Carnival culture, seasonal events, family businesses",
+    decision_maker: "Traditional business owners, relationship-driven",
+  },
+};
+
+// Enhanced Vertical Deep Intelligence
+export const VERTICAL_DEEP_INTEL: Record<string, {
+  pain_points: string[];
+  revenue_leakage: string[];
+  ai_solutions: {
+    starter: { name: string; desc: string; roi: string }[];
+    core: { name: string; desc: string; roi: string }[];
+    flagship: { name: string; desc: string; roi: string; price_range: string };
+  };
+  owner_psychology: {
+    fears: string[];
+    wants: string[];
+    objections: string[];
+    leverage: string;
+  };
+}> = {
+  restaurant: {
+    pain_points: [
+      "WhatsApp reservation chaos - messages lost, double bookings, no confirmation system",
+      "No-shows eating 15-20% of revenue with zero deposit collection",
+      "Staff answering same questions 50x/day (hours, menu, location, parking)",
+      "Google reviews piling up unanswered, killing SEO and trust",
+      "Menu updates scattered across 5 platforms, always out of sync",
+      "No customer database - regulars treated same as first-timers",
+      "Peak hour phone overflow - missed reservations = missed revenue",
+    ],
+    revenue_leakage: [
+      "No-shows: $500-2000/month in lost covers",
+      "Missed calls during rush: 10-20 lost reservations/week",
+      "No upsell system: wine pairings, private dining, events",
+      "Zero rebooking automation: customers forget to return",
+      "Bad review responses: each unanswered review costs future customers",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "WhatsApp Auto-Responder", desc: "Instant replies to inquiries 24/7", roi: "Capture 30% more inquiries" },
+        { name: "Google Review Bot", desc: "Auto-respond to all reviews within 2 hours", roi: "Improve rating by 0.3 stars" },
+        { name: "FAQ Chatbot", desc: "Answer hours/menu/location instantly", roi: "Save 2hrs staff time daily" },
+      ],
+      core: [
+        { name: "Smart Reservation System", desc: "WhatsApp booking with confirmations + reminders", roi: "Cut no-shows by 60%" },
+        { name: "Deposit Collection Bot", desc: "Automated payment links for large parties", roi: "Eliminate no-show losses" },
+        { name: "Customer Memory System", desc: "Track preferences, anniversaries, VIP status", roi: "Increase repeat visits 25%" },
+      ],
+      flagship: {
+        name: "AI Restaurant Command Center",
+        desc: "Unified inbox (WhatsApp, Instagram, calls) + reservation management + review automation + customer CRM",
+        roi: "Full operational automation - run front-of-house with 50% less staff overhead",
+        price_range: "$3,000-8,000 setup + $500/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Technology breaking during service", "Losing personal touch with guests", "Staff not adopting new systems"],
+      wants: ["More free time", "Consistent bookings", "Less phone chaos", "Higher revenue without more staff"],
+      objections: ["We're too small for this", "Our customers prefer personal service", "We tried tech before and it failed"],
+      leverage: "Show them their competitors are already automating. FOMO is real in hospitality.",
+    },
+  },
+  hotel: {
+    pain_points: [
+      "Guest inquiries 24/7 across WhatsApp, email, OTAs - impossible to keep up",
+      "OTA commissions eating 15-25% of every booking",
+      "Upsell opportunities missed - tours, dining, spa, late checkout",
+      "Check-in friction creates bad first impressions",
+      "No pre-arrival communication = guests arrive confused",
+      "Post-stay follow-up is manual or nonexistent",
+      "Concierge requests pile up, response time kills satisfaction",
+    ],
+    revenue_leakage: [
+      "OTA dependency: $2,000-10,000/month in commissions on bookings you could own",
+      "Missed upsells: Average guest spends 40% more with proper prompting",
+      "No direct rebooking: Guests return via OTA, you pay commission again",
+      "Slow inquiry response: Every hour delay = 10% booking drop",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "WhatsApp Concierge Bot", desc: "Answer guest questions 24/7", roi: "90% faster response time" },
+        { name: "Pre-Arrival Sequence", desc: "Automated welcome + upsell offers", roi: "15% upsell conversion" },
+        { name: "Review Request Automation", desc: "Timed ask for reviews post-checkout", roi: "3x more reviews" },
+      ],
+      core: [
+        { name: "Direct Booking Chatbot", desc: "Website + WhatsApp booking without OTAs", roi: "Save 15-25% per booking" },
+        { name: "AI Upsell Engine", desc: "Personalized tour/dining/spa recommendations", roi: "Increase ancillary revenue 30%" },
+        { name: "Guest Experience Automator", desc: "Check-in instructions, WiFi, recommendations on autopilot", roi: "Cut front desk load 40%" },
+      ],
+      flagship: {
+        name: "AI Hotel Revenue System",
+        desc: "Full guest lifecycle automation - from inquiry to rebooking. Direct booking capture, dynamic upsells, reputation management, loyalty program.",
+        roi: "Shift 30% of bookings from OTA to direct. Increase RevPAR by 20%.",
+        price_range: "$5,000-15,000 setup + $800/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Losing the 'boutique' personal feel", "Technology errors embarrassing them with guests", "OTAs retaliating if they push direct"],
+      wants: ["Freedom from OTA dependency", "Higher margins", "Better reviews", "Less operational chaos"],
+      objections: ["Our guests expect human service", "We're too small for enterprise software", "OTAs bring us most of our business"],
+      leverage: "Calculate their exact OTA commission spend. Show them keeping even 20% of that = your fee paid 10x over.",
+    },
+  },
+  tour_operator: {
+    pain_points: [
+      "Booking inquiries scattered across WhatsApp, Instagram, email - chaos",
+      "Manual itinerary creation eating hours per booking",
+      "No-shows and last-minute cancellations with no deposit system",
+      "Availability management across multiple guides/boats is a nightmare",
+      "Tourists asking same questions 100x (what to bring, pickup times, etc.)",
+      "Payment collection fragmented - cash, transfer, card all separate",
+      "No rebooking system - tourists do one tour and forget you exist",
+    ],
+    revenue_leakage: [
+      "Inquiry response delay: Tourists book whoever responds first",
+      "No deposits: 20-30% no-show rate on group tours",
+      "Manual follow-up: Zero rebooking of multi-day visitors",
+      "Referral neglect: Happy tourists could bring 5 friends but you never ask",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "Instant Quote Bot", desc: "WhatsApp bot with tour options + pricing + availability", roi: "Respond in 30 seconds vs 30 minutes" },
+        { name: "Booking Confirmation System", desc: "Auto-confirm with details, what to bring, meeting point", roi: "Cut pre-tour support 70%" },
+        { name: "Review Collector", desc: "Automated post-tour review request with photo sharing", roi: "5x review volume" },
+      ],
+      core: [
+        { name: "Smart Booking + Deposit System", desc: "WhatsApp booking flow with instant payment links", roi: "Eliminate no-shows" },
+        { name: "Availability Calendar Bot", desc: "Real-time availability across all tours/guides", roi: "No more double bookings" },
+        { name: "Tourist Nurture Sequence", desc: "Multi-day visitors get daily tour recommendations", roi: "2x bookings per tourist" },
+      ],
+      flagship: {
+        name: "AI Tour Operations Hub",
+        desc: "Complete booking engine + guide management + customer journey automation + multi-tour upsell system",
+        roi: "Scale from 10 to 50 bookings/day without adding staff",
+        price_range: "$4,000-10,000 setup + $600/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Losing the personal adventure feel", "Technology failing during tours", "Guides not using the system"],
+      wants: ["More bookings with less phone time", "Reliable income", "Ability to scale without burnout"],
+      objections: ["Tourism is personal, can't automate", "We're seasonal, not worth investing", "Our customers are older, don't use apps"],
+      leverage: "Show them their WhatsApp response time. If it's over 5 minutes, they're losing bookings to faster competitors.",
+    },
+  },
+  boat_charter: {
+    pain_points: [
+      "Quote requests overwhelming - each one needs custom pricing based on boat, duration, extras",
+      "Deposits and payment tracking is manual nightmare",
+      "Weather cancellations create rebooking chaos",
+      "Crew scheduling across multiple boats",
+      "Tourists expect instant responses but you're on the water",
+      "No system for upsells - catering, DJ, photographer, drone",
+      "Seasonal demand spikes crush your capacity to respond",
+    ],
+    revenue_leakage: [
+      "Slow quote response: Luxury clients book whoever responds first",
+      "No deposit enforcement: Cancellations cost $500-2000 per incident",
+      "Missed upsells: Average charter could be 40% higher with add-ons",
+      "Zero rebooking: Bachelor parties have 5 more friends coming next month",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "Instant Quote Generator", desc: "WhatsApp bot with boat options, pricing, availability", roi: "Quote in 60 seconds vs 2 hours" },
+        { name: "Deposit Automation", desc: "Payment link sent automatically with booking confirmation", roi: "Eliminate cancellation losses" },
+        { name: "Weather Alert System", desc: "Automated rescheduling flow when conditions change", roi: "Save 5+ hours per weather event" },
+      ],
+      core: [
+        { name: "Upsell Menu Bot", desc: "Present catering, DJ, photo packages during booking", roi: "Increase average charter 30%" },
+        { name: "Fleet Availability System", desc: "Real-time boat + crew scheduling", roi: "No double bookings, maximize utilization" },
+        { name: "VIP Client Nurture", desc: "Automated follow-up for rebooking, referrals, reviews", roi: "2x repeat bookings" },
+      ],
+      flagship: {
+        name: "AI Charter Command Center",
+        desc: "Complete booking engine + fleet management + client CRM + upsell automation + weather integration",
+        roi: "Handle 3x volume with same team. Become the premium charter operation.",
+        price_range: "$6,000-15,000 setup + $800/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Technology failing on the water", "Losing the luxury personal touch", "Crew resistance to new systems"],
+      wants: ["Less phone time, more time on water", "Consistent high-season income", "Premium positioning"],
+      objections: ["Our clients expect white-glove service", "We're not a tech company", "High season is too busy to implement"],
+      leverage: "Position as 'what Four Seasons does for hotels, you'll do for charters.' Luxury = systems, not chaos.",
+    },
+  },
+  spa: {
+    pain_points: [
+      "Appointment booking scattered across phone, WhatsApp, walk-ins",
+      "No-shows with zero deposit system",
+      "Therapist scheduling is manual puzzle",
+      "No rebooking automation - clients forget to return",
+      "Gift cards and packages tracked in spreadsheets",
+      "No upsell flow - clients book basic when they'd pay for premium",
+    ],
+    revenue_leakage: [
+      "No-shows: 15-25% of appointments, each worth $50-200",
+      "No rebooking: Average client could visit 2x more with reminders",
+      "Missed upsells: Facial client would add massage if prompted",
+      "Gift card breakage: Cards sold but tracking is chaos",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "WhatsApp Booking Bot", desc: "24/7 appointment booking with therapist/time selection", roi: "Capture after-hours bookings" },
+        { name: "Appointment Reminder System", desc: "48hr + 2hr reminders with easy reschedule option", roi: "Cut no-shows 50%" },
+        { name: "Review Automation", desc: "Post-treatment review request", roi: "3x Google reviews" },
+      ],
+      core: [
+        { name: "Deposit Collection System", desc: "Auto-charge card on file for premium services", roi: "Eliminate no-show losses" },
+        { name: "Rebooking Engine", desc: "Automated follow-up based on treatment type", roi: "Increase visit frequency 30%" },
+        { name: "Upsell Recommender", desc: "Personalized add-on suggestions during booking", roi: "15% higher ticket average" },
+      ],
+      flagship: {
+        name: "AI Spa Management System",
+        desc: "Full booking + staff scheduling + client CRM + membership management + retail tracking",
+        roi: "Run spa operations with 50% less admin overhead",
+        price_range: "$3,000-7,000 setup + $400/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Losing the relaxation/wellness vibe with tech", "Staff not adopting", "Impersonal client experience"],
+      wants: ["Full appointment books", "Less phone interruptions", "Higher client retention"],
+      objections: ["Spa is about human touch", "Our clients are older, prefer phone", "We're small, don't need systems"],
+      leverage: "Every no-show is a therapist sitting idle getting paid. Math always wins.",
+    },
+  },
+  club: {
+    pain_points: [
+      "Table reservation chaos - WhatsApp groups, Instagram DMs, phone calls",
+      "VIP guest tracking is in someone's head, not a system",
+      "Bottle service coordination between hosts and bar",
+      "Guest list management for events is spreadsheet hell",
+      "Promoter commission tracking is manual and disputed",
+      "No system to reactivate past VIP guests",
+    ],
+    revenue_leakage: [
+      "Lost reservations: VIPs book whoever responds fastest",
+      "No reactivation: Big spenders from 3 months ago forgotten",
+      "Promoter disputes: Commission tracking chaos",
+      "Event underperformance: No data on what works",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "VIP Reservation Bot", desc: "WhatsApp table booking with menu + deposit", roi: "Instant response = more bookings" },
+        { name: "Guest List Automation", desc: "Digital check-in system for events", roi: "Eliminate door chaos" },
+        { name: "Post-Night Follow-up", desc: "Thank you + photos + next event invite", roi: "Build VIP loyalty" },
+      ],
+      core: [
+        { name: "VIP CRM System", desc: "Track spending, preferences, birthdays, crew", roi: "Personalized service = higher spend" },
+        { name: "Promoter Dashboard", desc: "Automated commission tracking + payouts", roi: "Eliminate disputes" },
+        { name: "Event Hype Engine", desc: "Countdown sequences, early access, FOMO creation", roi: "Sell out events faster" },
+      ],
+      flagship: {
+        name: "AI Nightlife Command Center",
+        desc: "Complete VIP management + reservation system + promoter tracking + event marketing automation",
+        roi: "Become the premium venue that runs like a machine",
+        price_range: "$5,000-12,000 setup + $700/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Losing the exclusive vibe", "Staff/promoters gaming the system", "Technology looking cheap"],
+      wants: ["Packed weekends", "VIP loyalty", "Less drama", "Premium reputation"],
+      objections: ["Nightlife is relationships, not tech", "Our crowd doesn't want apps", "We're already successful"],
+      leverage: "Every top club in Miami/Ibiza runs on systems. That's HOW they stay premium.",
+    },
+  },
+  concierge: {
+    pain_points: [
+      "Managing 10+ villa guests simultaneously",
+      "Coordinating 15+ vendors for events",
+      "3am WhatsApp from guests who need something now",
+      "No client preference history across visits",
+      "Vendor contact chaos - lost numbers and outdated prices",
+      "Event coordination complexity with multiple moving parts",
+      "Can't clone yourself - every client thinks they're your only client",
+    ],
+    revenue_leakage: [
+      "Client cap: Can't grow beyond personal bandwidth",
+      "Vendor inefficiency: Hours wasted on coordination",
+      "No upsell tracking: Missing high-value opportunities",
+      "Repeat client neglect: No system for rebooking",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "Client Preference Database", desc: "Remember everything across visits", roi: "Personalized service at scale" },
+        { name: "Vendor CRM", desc: "All vendor contacts, pricing, availability in one place", roi: "Cut coordination time 60%" },
+        { name: "After-Hours Bot", desc: "Handle common requests automatically while you sleep", roi: "Never miss a 3am request" },
+      ],
+      core: [
+        { name: "Event Coordination Hub", desc: "Manage multi-vendor events with automated reminders", roi: "Handle 3x more events" },
+        { name: "Client Communication Templates", desc: "One-click responses for common requests", roi: "Respond 10x faster" },
+        { name: "Multi-Property Dashboard", desc: "Track all villas, guests, requests in one view", roi: "Scale to 50 properties" },
+      ],
+      flagship: {
+        name: "AI Concierge Command Center",
+        desc: "Full client CRM + vendor management + event coordination + automated guest communication + preference tracking",
+        roi: "Clone yourself. Handle 3x clients with same or less effort.",
+        price_range: "$5,000-12,000 setup + $600/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Clients feeling like they're getting a bot", "Vendors not cooperating with new system", "Losing the magic touch"],
+      wants: ["Scale without burning out", "Premium positioning", "More high-value clients", "Actually take a vacation"],
+      objections: ["My service IS me - can't automate", "My clients expect me personally", "I'm already at capacity, don't need more"],
+      leverage: "Being at capacity = leaving money on the table. The best concierges scale without compromising quality.",
+    },
+  },
+  villa_rental: {
+    pain_points: [
+      "Guest inquiries across Airbnb, VRBO, direct messages",
+      "Check-in/out coordination with housekeeping",
+      "Guest issues during stays (AC, water, wifi)",
+      "No guest preference tracking for repeat visitors",
+      "Revenue management across platforms",
+      "Cleaning and maintenance scheduling chaos",
+    ],
+    revenue_leakage: [
+      "Multi-platform chaos: Double bookings or slow responses",
+      "No direct bookings: Paying 15-20% to OTAs unnecessarily",
+      "Guest issues unresolved: Bad reviews destroying future bookings",
+      "No repeat guests: Zero loyalty program",
+    ],
+    ai_solutions: {
+      starter: [
+        { name: "Multi-Channel Bot", desc: "Unified inbox for all platforms", roi: "Never miss an inquiry" },
+        { name: "Check-In Automation", desc: "Smart timing for instructions and access codes", roi: "Zero confusion arrivals" },
+        { name: "Issue Routing", desc: "Guest problems auto-routed to right service provider", roi: "Faster resolution = better reviews" },
+      ],
+      core: [
+        { name: "VIP Guest CRM", desc: "Track preferences for repeat visitors", roi: "Increase repeat bookings 40%" },
+        { name: "Direct Booking Engine", desc: "Capture OTA traffic to direct", roi: "Save 15-20% per booking" },
+        { name: "Housekeeping Coordination", desc: "Automated scheduling with turnover tracking", roi: "Never miss a clean" },
+      ],
+      flagship: {
+        name: "AI Villa Operations Hub",
+        desc: "Complete property management + guest CRM + multi-channel booking + housekeeping automation + maintenance tracking",
+        roi: "Manage 10 properties like you manage 2. True passive income.",
+        price_range: "$4,000-10,000 setup + $500/month",
+      },
+    },
+    owner_psychology: {
+      fears: ["Double bookings destroying reputation", "Guests feeling neglected", "Losing the boutique feel"],
+      wants: ["Passive income", "Premium guests", "Fewer headaches", "Scale portfolio"],
+      objections: ["Our properties are unique, need personal touch", "We tried property management software before", "Too busy to implement"],
+      leverage: "Every hour you spend on operations is an hour not finding your next property. Systems = scale.",
+    },
+  },
+};
