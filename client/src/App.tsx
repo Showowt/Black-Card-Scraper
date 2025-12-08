@@ -11,6 +11,7 @@ import BusinessDetail from "@/pages/BusinessDetail";
 import Statistics from "@/pages/Statistics";
 import Outreach from "@/pages/Outreach";
 import OutreachReady from "@/pages/OutreachReady";
+import UltimateOutreach from "@/pages/UltimateOutreach";
 import Copilot from "@/pages/Copilot";
 import Operations from "@/pages/Operations";
 import Events from "@/pages/Events";
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/statistics" component={Statistics} />
           <Route path="/outreach" component={Outreach} />
           <Route path="/outreach-ready" component={OutreachReady} />
+          <Route path="/ultimate-outreach" component={UltimateOutreach} />
           <Route path="/copilot" component={Copilot} />
           <Route path="/operations" component={Operations} />
           <Route path="/events" component={Events} />

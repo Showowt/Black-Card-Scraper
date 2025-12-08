@@ -159,6 +159,11 @@ export default function Dashboard() {
                 <MessageCircle className="h-4 w-4 mr-1" /> Outreach
               </Button>
             </Link>
+            <Link href="/ultimate-outreach">
+              <Button variant="ghost" size="sm" data-testid="nav-ultimate-outreach">
+                <Zap className="h-4 w-4 mr-1" /> Ultimate
+              </Button>
+            </Link>
             <Link href="/copilot">
               <Button variant="ghost" size="sm" data-testid="nav-copilot">
                 <Brain className="h-4 w-4 mr-1" /> Copilot
