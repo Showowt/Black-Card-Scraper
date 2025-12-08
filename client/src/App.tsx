@@ -14,6 +14,7 @@ import Operations from "@/pages/Operations";
 import Events from "@/pages/Events";
 import IntentSignals from "@/pages/IntentSignals";
 import VenueMonitors from "@/pages/VenueMonitors";
+import AuthorityContent from "@/pages/AuthorityContent";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/events" component={Events} />
           <Route path="/intent-signals" component={IntentSignals} />
           <Route path="/venue-monitors" component={VenueMonitors} />
+          <Route path="/authority-content" component={AuthorityContent} />
         </>
       )}
       <Route component={NotFound} />
