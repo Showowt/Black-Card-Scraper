@@ -654,7 +654,7 @@ export async function registerRoutes(
     }
   });
 
-  // Ultimate Outreach - Analyze endpoint (alias for compatibility)
+  // Ultimate Outreach - Analyze endpoint (returns signal analysis only)
   app.get('/api/ultimate-outreach/analyze/:businessId', isAuthenticated, async (req: any, res) => {
     try {
       const business = await storage.getBusiness(req.params.businessId);
@@ -662,8 +662,19 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Business not found" });
       }
       
-      const analysis = analyzeBusinessSignals(business);
-      res.json(analysis);
+      // Return only the signal analysis, not the full scripts
+      const signalAnalysis = analyzeBusinessSignals(business);
+      res.json({
+        detectedSignals: signalAnalysis.detectedSignals || [],
+        detectedProblem: signalAnalysis.detectedProblem || "No specific problem detected",
+        customOffer: signalAnalysis.customOffer || "General consultation available",
+        monthlyLoss: signalAnalysis.monthlyLoss || 0,
+        lossExplanation: signalAnalysis.lossExplanation || "",
+        identityStatement: signalAnalysis.identityStatement || "",
+        fearTrigger: signalAnalysis.fearTrigger || "",
+        desireTrigger: signalAnalysis.desireTrigger || "",
+        urgencyAngle: signalAnalysis.urgencyAngle || "",
+      });
     } catch (error) {
       console.error("Error analyzing business signals:", error);
       res.status(500).json({ message: "Failed to analyze business signals" });
