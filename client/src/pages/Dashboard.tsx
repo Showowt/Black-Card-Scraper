@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useUrlState, useScrollPosition } from "@/hooks/useUrlState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,11 +23,22 @@ import {
   Building2, Search, Download, BarChart3, Mail, Phone, Globe, 
   MapPin, Star, Zap, RefreshCw, ExternalLink, ChevronRight,
   Users, TrendingUp, LogOut, Filter, Layers, Terminal, Calendar,
-  MessageCircle, Brain
+  MessageCircle, Brain, X, RotateCcw
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, Scan } from "@shared/schema";
 import { CITIES, CATEGORIES, AI_READINESS_LEVELS } from "@shared/schema";
+
+type DashboardFilters = {
+  city: string;
+  category: string;
+  search: string;
+  readiness: string;
+  minScore: number;
+  hasEmail: boolean;
+  hasWebsite: boolean;
+  [key: string]: string | number | boolean | undefined;
+};
 
 interface BusinessStats {
   total: number;
@@ -41,26 +53,47 @@ interface BusinessStats {
   enriched: number;
 }
 
+const filterDefaults: DashboardFilters = {
+  city: "",
+  category: "",
+  search: "",
+  readiness: "",
+  minScore: 0,
+  hasEmail: false,
+  hasWebsite: false,
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // URL-persisted filter state - survives navigation and back/forward
+  const { state: filters, setState: setFilters, resetState: resetFilters, hasActiveFilters, activeFilterCount } = 
+    useUrlState<DashboardFilters>({ defaults: filterDefaults });
+  
+  // Preserve scroll position when navigating back
+  useScrollPosition("dashboard");
+  
+  // Local UI state (not persisted in URL)
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [enableAI, setEnableAI] = useState(true);
-  const [filterCity, setFilterCity] = useState<string>("");
-  const [filterCategory, setFilterCategory] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterReadiness, setFilterReadiness] = useState<string>("");
-  const [minScore, setMinScore] = useState<number>(0);
-  const [hasEmailFilter, setHasEmailFilter] = useState(false);
-  const [hasWebsiteFilter, setHasWebsiteFilter] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [batchCities, setBatchCities] = useState<string[]>([]);
   const [batchCategories, setBatchCategories] = useState<string[]>([]);
 
+  // Extract filter values from URL state
+  const filterCity = filters.city || "";
+  const filterCategory = filters.category || "";
+  const searchQuery = filters.search || "";
+  const filterReadiness = filters.readiness || "";
+  const minScore = filters.minScore || 0;
+  const hasEmailFilter = filters.hasEmail || false;
+  const hasWebsiteFilter = filters.hasWebsite || false;
+
   // Build URL with query params for filtering
-  const businessesUrl = (() => {
+  const businessesUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (filterCity && filterCity !== "all") params.append("city", filterCity);
     if (filterCategory && filterCategory !== "all") params.append("category", filterCategory);
@@ -71,7 +104,7 @@ export default function Dashboard() {
     if (hasWebsiteFilter) params.append("hasWebsite", "true");
     const queryString = params.toString();
     return queryString ? `/api/businesses?${queryString}` : "/api/businesses";
-  })();
+  }, [filterCity, filterCategory, searchQuery, filterReadiness, minScore, hasEmailFilter, hasWebsiteFilter]);
 
   const { data: businesses, isLoading: loadingBusinesses } = useQuery<Business[]>({
     queryKey: [businessesUrl],
@@ -445,12 +478,12 @@ export default function Dashboard() {
                     placeholder="Search businesses..." 
                     className="pl-9 w-48"
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={e => setFilters({ search: e.target.value })}
                     data-testid="input-search"
                   />
                 </div>
                 
-                <Select value={filterCity} onValueChange={setFilterCity}>
+                <Select value={filterCity || "all"} onValueChange={(v) => setFilters({ city: v === "all" ? "" : v })}>
                   <SelectTrigger className="w-36" data-testid="select-filter-city">
                     <SelectValue placeholder="All Cities" />
                   </SelectTrigger>
@@ -462,7 +495,7 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <Select value={filterCategory || "all"} onValueChange={(v) => setFilters({ category: v === "all" ? "" : v })}>
                   <SelectTrigger className="w-40" data-testid="select-filter-category">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
@@ -481,7 +514,21 @@ export default function Dashboard() {
                   data-testid="button-advanced-filters"
                 >
                   <Filter className="h-4 w-4 mr-1" /> Filters
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 h-5 px-1.5">{activeFilterCount}</Badge>
+                  )}
                 </Button>
+                
+                {hasActiveFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={resetFilters}
+                    data-testid="button-reset-all-filters"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" /> Reset
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -489,7 +536,7 @@ export default function Dashboard() {
               <div className="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm text-muted-foreground">AI Readiness</Label>
-                  <Select value={filterReadiness} onValueChange={setFilterReadiness}>
+                  <Select value={filterReadiness || "all"} onValueChange={(v) => setFilters({ readiness: v === "all" ? "" : v })}>
                     <SelectTrigger data-testid="select-filter-readiness">
                       <SelectValue placeholder="All Levels" />
                     </SelectTrigger>
@@ -506,7 +553,7 @@ export default function Dashboard() {
                   <Label className="text-sm text-muted-foreground">Min Score: {minScore}</Label>
                   <Slider
                     value={[minScore]}
-                    onValueChange={([v]) => setMinScore(v)}
+                    onValueChange={([v]) => setFilters({ minScore: v })}
                     max={100}
                     step={5}
                     className="mt-2"
@@ -520,7 +567,7 @@ export default function Dashboard() {
                     <Checkbox 
                       id="has-email"
                       checked={hasEmailFilter}
-                      onCheckedChange={(v) => setHasEmailFilter(!!v)}
+                      onCheckedChange={(v) => setFilters({ hasEmail: !!v })}
                       data-testid="checkbox-has-email"
                     />
                     <Label htmlFor="has-email" className="font-normal cursor-pointer">Has Email</Label>
@@ -529,7 +576,7 @@ export default function Dashboard() {
                     <Checkbox 
                       id="has-website"
                       checked={hasWebsiteFilter}
-                      onCheckedChange={(v) => setHasWebsiteFilter(!!v)}
+                      onCheckedChange={(v) => setFilters({ hasWebsite: !!v })}
                       data-testid="checkbox-has-website"
                     />
                     <Label htmlFor="has-website" className="font-normal cursor-pointer">Has Website</Label>
@@ -540,12 +587,7 @@ export default function Dashboard() {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={() => {
-                      setFilterReadiness("");
-                      setMinScore(0);
-                      setHasEmailFilter(false);
-                      setHasWebsiteFilter(false);
-                    }}
+                    onClick={() => setFilters({ readiness: "", minScore: 0, hasEmail: false, hasWebsite: false })}
                     data-testid="button-clear-filters"
                   >
                     Clear Filters
