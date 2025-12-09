@@ -172,11 +172,12 @@ export function analyzeBusinessSignals(business: Business): SignalAnalysis {
 export function generateMultiChannelScripts(
   business: Business,
   analysis: SignalAnalysis,
-  senderName: string = "Carlos"
+  senderName: string = "Phil McGill"
 ): MultiChannelScripts {
   const businessName = business.name || "your business";
   const category = business.category || "your business";
   const city = business.city || "Colombia";
+  const shortName = senderName.split(" ")[0];
   
   const whatsappScript = `Hola! Soy ${senderName}. Vi ${businessName} y me encantó lo que hacen.
 
@@ -186,7 +187,9 @@ Tengo una solución: ${analysis.customOffer}
 
 Esto podría recuperar $${analysis.monthlyLoss.toLocaleString()} USD/mes.
 
-¿Tienes 5 minutos esta semana para mostrarte cómo funciona? Sin compromiso.`;
+¿Tienes 5 minutos esta semana para mostrarte cómo funciona? Sin compromiso.
+
+— ${senderName}`;
 
   const phone = business.whatsapp || business.phone || "";
   const cleanPhone = phone.replace(/[^0-9]/g, "");
@@ -202,7 +205,9 @@ Trabajo con ${category}s para automatizar operaciones y he notado una oportunida
 
 ${analysis.fearTrigger}
 
-¿Puedo mandarte un voice note de 60 segundos explicando cómo ayudo?`;
+¿Puedo mandarte un voice note de 60 segundos explicando cómo ayudo?
+
+— ${shortName}`;
 
   const emailSubject = `${businessName}: $${analysis.monthlyLoss.toLocaleString()}/mes en oportunidades perdidas`;
   
@@ -228,6 +233,8 @@ ${analysis.urgencyAngle}
 
 Saludos,
 ${senderName}
+AI Systems for Colombian Hospitality
+movvia.co
 
 P.S. ${analysis.fearTrigger}`;
 
@@ -239,7 +246,7 @@ ${analysis.desireTrigger}
 
 ¿Vale la pena una conversación rápida de 5 minutos?
 
-${senderName}`;
+— ${shortName}`;
 
   const followUpDay7 = `Hola!
 
@@ -251,7 +258,7 @@ ${analysis.urgencyAngle}
 
 ¿Cuándo sería un buen momento para ti?
 
-${senderName}`;
+— ${senderName}`;
 
   const followUpDay14 = `Último mensaje, lo prometo!
 
@@ -261,7 +268,8 @@ Pero si ${analysis.detectedProblem.toLowerCase()} sigue siendo un problema, esta
 
 Solo responde "info" cuando estés listo/a y te cuento todo.
 
-${senderName}`;
+— ${senderName}
+AI Systems for Colombian Hospitality`;
 
   return {
     whatsappScript,
@@ -275,7 +283,7 @@ ${senderName}`;
   };
 }
 
-export function generateUltimateOutreach(business: Business, senderName: string = "Carlos") {
+export function generateUltimateOutreach(business: Business, senderName: string = "Phil McGill") {
   const analysis = analyzeBusinessSignals(business);
   const scripts = generateMultiChannelScripts(business, analysis, senderName);
   

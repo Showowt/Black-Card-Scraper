@@ -749,7 +749,7 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Business not found" });
       }
       
-      const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Carlos");
+      const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Phil McGill");
       
       // Check for existing campaign
       const existingCampaigns = await storage.getOutreachCampaigns(businessId);
@@ -838,7 +838,7 @@ export async function registerRoutes(
       
       for (const business of prospects) {
         try {
-          const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Carlos");
+          const { analysis, scripts } = generateUltimateOutreach(business, senderName || "Phil McGill");
           
           const existingCampaigns = await storage.getOutreachCampaigns(business.id);
           let campaign;
