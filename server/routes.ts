@@ -35,6 +35,12 @@ import {
   generateMultiChannelScripts as generateSignalScripts,
   generateUltimateOutreach,
 } from "./signalEngine";
+import {
+  ELITE_SEARCH_TERMS,
+  TEXT_SEARCH_ONLY_CATEGORIES,
+  CITY_COORDINATES,
+  ELITE_SEARCH_CONFIG,
+} from "./eliteSearchConfig";
 
 // Validation schemas for batch operations
 const BatchEnrichSchema = z.object({
@@ -251,6 +257,73 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error starting batch scan:", error);
       res.status(500).json({ message: "Failed to start batch scan" });
+    }
+  });
+
+  // Elite Scan - exhaustive search for hard-to-find categories
+  app.post('/api/elite-scan', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { city, category, enableAI = false, maxTerms } = req.body;
+      
+      // Validate city
+      const cityKey = city?.toLowerCase();
+      const eliteCityData = CITY_COORDINATES[cityKey];
+      if (!eliteCityData) {
+        return res.status(400).json({ 
+          message: `Unknown city: ${city}. Available: ${Object.keys(CITY_COORDINATES).join(', ')}` 
+        });
+      }
+      
+      // Validate category has elite search terms
+      const searchTerms = ELITE_SEARCH_TERMS[category];
+      if (!searchTerms || searchTerms.length === 0) {
+        return res.status(400).json({ 
+          message: `No elite search terms for category: ${category}. Available: ${Object.keys(ELITE_SEARCH_TERMS).join(', ')}` 
+        });
+      }
+      
+      // Find city data for display
+      const cityData = CITIES.find(c => c.value === city);
+      
+      // Create scan record
+      const scan = await storage.createScan({
+        userId,
+        city,
+        category,
+        status: "scanning",
+      });
+      
+      // Run elite scan in background
+      processEliteScan(scan.id, city, cityKey, eliteCityData, category, searchTerms, enableAI, maxTerms).catch(err => {
+        console.error("Elite scan error:", err);
+        storage.updateScan(scan.id, { status: "failed", errorMessage: err.message });
+      });
+      
+      res.json({ 
+        scanId: scan.id, 
+        message: `Started elite scan for ${category} in ${city} with ${searchTerms.length} search terms`,
+        searchTermCount: searchTerms.length,
+      });
+    } catch (error) {
+      console.error("Error starting elite scan:", error);
+      res.status(500).json({ message: "Failed to start elite scan" });
+    }
+  });
+
+  // Get elite scan categories with term counts
+  app.get('/api/elite-scan/categories', isAuthenticated, async (req: any, res) => {
+    try {
+      const categories = Object.entries(ELITE_SEARCH_TERMS).map(([key, terms]) => ({
+        value: key,
+        label: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        searchTermCount: terms.length,
+        isTextSearchOnly: TEXT_SEARCH_ONLY_CATEGORIES.includes(key),
+      }));
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching elite categories:", error);
+      res.status(500).json({ message: "Failed to fetch elite categories" });
     }
   });
 
@@ -1973,6 +2046,180 @@ async function processScan(
       totalEnriched: enrichedCount,
     });
   } catch (error: any) {
+    await storage.updateScan(scanId, { 
+      status: "failed", 
+      errorMessage: error.message,
+    });
+    throw error;
+  }
+}
+
+// Elite Scan processor - exhaustive text search with all terms
+async function processEliteScan(
+  scanId: string,
+  city: string,
+  cityKey: string,
+  eliteCityData: { lat: number; lng: number; radius: number; neighborhoods?: Array<{ name: string; lat: number; lng: number; radius: number }> },
+  category: string,
+  searchTerms: string[],
+  enableAI: boolean,
+  maxTerms?: number
+) {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) {
+    throw new Error("Google Places API key not configured");
+  }
+
+  try {
+    const termsToUse = maxTerms ? searchTerms.slice(0, maxTerms) : searchTerms;
+    const seenPlaceIds = new Set<string>();
+    const allPlaces: any[] = [];
+    
+    console.log(`[Elite Scan] Starting ${category} in ${city} with ${termsToUse.length} search terms`);
+    
+    // Build search locations (city center + neighborhoods if available)
+    const searchLocations = [
+      { name: city, lat: eliteCityData.lat, lng: eliteCityData.lng, radius: eliteCityData.radius }
+    ];
+    
+    if (ELITE_SEARCH_CONFIG.includeNeighborhoods && eliteCityData.neighborhoods) {
+      for (const n of eliteCityData.neighborhoods) {
+        searchLocations.push({ name: n.name, lat: n.lat, lng: n.lng, radius: n.radius });
+      }
+    }
+    
+    // Run text search for each term in each location
+    for (const location of searchLocations) {
+      for (const term of termsToUse) {
+        try {
+          const searchUrl = 'https://places.googleapis.com/v1/places:searchText';
+          const query = `${term} ${city} Colombia`;
+          
+          const response = await fetch(searchUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Goog-Api-Key': apiKey,
+              'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.rating,places.userRatingCount,places.priceLevel,places.location,places.googleMapsUri,places.regularOpeningHours,places.photos,places.types',
+            },
+            body: JSON.stringify({
+              textQuery: query,
+              locationBias: {
+                circle: {
+                  center: { latitude: location.lat, longitude: location.lng },
+                  radius: location.radius,
+                },
+              },
+              maxResultCount: ELITE_SEARCH_CONFIG.maxResultsPerTerm,
+              languageCode: "es",
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const places = data.places || [];
+            
+            let newCount = 0;
+            for (const place of places) {
+              if (place.id && !seenPlaceIds.has(place.id)) {
+                seenPlaceIds.add(place.id);
+                place._searchTerm = term;
+                allPlaces.push(place);
+                newCount++;
+              }
+            }
+            
+            if (newCount > 0) {
+              console.log(`[Elite Scan] '${term}' in ${location.name} → ${newCount} new (${allPlaces.length} total)`);
+            }
+          } else {
+            const errorText = await response.text();
+            console.warn(`[Elite Scan] Error for "${term}": ${errorText.substring(0, 100)}`);
+          }
+          
+          // Rate limiting
+          await new Promise(resolve => setTimeout(resolve, ELITE_SEARCH_CONFIG.delayBetweenCalls));
+          
+        } catch (err: any) {
+          console.warn(`[Elite Scan] Failed search "${term}": ${err.message}`);
+        }
+      }
+    }
+    
+    console.log(`[Elite Scan] Found ${allPlaces.length} unique businesses for ${category} in ${city}`);
+    await storage.updateScan(scanId, { totalFound: allPlaces.length });
+    
+    // Save all businesses
+    let enrichedCount = 0;
+    let savedCount = 0;
+    
+    for (const place of allPlaces) {
+      const existing = place.id ? await storage.getBusinessByPlaceId(place.id) : null;
+      
+      const parsePriceLevel = (priceStr: string | undefined): number | null => {
+        if (!priceStr) return null;
+        const priceLevels: Record<string, number> = {
+          'PRICE_LEVEL_FREE': 0,
+          'PRICE_LEVEL_INEXPENSIVE': 1,
+          'PRICE_LEVEL_MODERATE': 2,
+          'PRICE_LEVEL_EXPENSIVE': 3,
+          'PRICE_LEVEL_VERY_EXPENSIVE': 4,
+        };
+        return priceLevels[priceStr] ?? null;
+      };
+      
+      const businessData: InsertBusiness = {
+        placeId: place.id,
+        name: place.displayName?.text || 'Unknown',
+        category: category,
+        city: city,
+        address: place.formattedAddress,
+        phone: place.internationalPhoneNumber || place.nationalPhoneNumber,
+        website: place.websiteUri,
+        rating: place.rating ? parseFloat(place.rating) : null,
+        reviewCount: place.userRatingCount ? parseInt(place.userRatingCount) : null,
+        priceLevel: parsePriceLevel(place.priceLevel),
+        latitude: place.location?.latitude,
+        longitude: place.location?.longitude,
+        googleMapsUrl: place.googleMapsUri,
+        openingHours: place.regularOpeningHours?.weekdayDescriptions || null,
+        photoUrl: place.photos?.[0]?.name ? `https://places.googleapis.com/v1/${place.photos[0].name}/media?maxHeightPx=400&key=${apiKey}` : null,
+      };
+      
+      try {
+        let business: Business;
+        if (existing) {
+          business = (await storage.updateBusiness(existing.id, businessData))!;
+        } else {
+          business = await storage.createBusiness(businessData);
+        }
+        savedCount++;
+        
+        if (enableAI && !business.isEnriched) {
+          try {
+            const enriched = await enrichBusiness(business);
+            await storage.updateBusiness(business.id, enriched);
+            enrichedCount++;
+            await storage.updateScan(scanId, { totalEnriched: enrichedCount });
+          } catch (err) {
+            console.error(`[Elite Scan] Failed to enrich ${business.name}:`, err);
+          }
+        }
+      } catch (err: any) {
+        console.error(`[Elite Scan] Failed to save ${businessData.name}:`, err.message);
+      }
+    }
+    
+    console.log(`[Elite Scan] Saved ${savedCount} businesses, enriched ${enrichedCount}`);
+    
+    await storage.updateScan(scanId, { 
+      status: "completed", 
+      completedAt: new Date(),
+      totalEnriched: enrichedCount,
+    });
+    
+  } catch (error: any) {
+    console.error(`[Elite Scan] Error:`, error);
     await storage.updateScan(scanId, { 
       status: "failed", 
       errorMessage: error.message,
