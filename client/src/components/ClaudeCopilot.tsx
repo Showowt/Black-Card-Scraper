@@ -150,31 +150,61 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
 
   const decisionMakerQuery = useQuery<DecisionMakerProfileResult>({
     queryKey: ['/api/copilot/decision-maker', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/decision-maker/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch decision maker profile');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
   const financialLeaksQuery = useQuery<FinancialLeakResult>({
     queryKey: ['/api/copilot/financial-leaks', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/financial-leaks/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch financial leaks');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
   const roiTimelineQuery = useQuery<ROITimelineResult>({
     queryKey: ['/api/copilot/roi-timeline', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/roi-timeline/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch ROI timeline');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
   const competitorMirrorQuery = useQuery<CompetitorGhostMirrorResult>({
     queryKey: ['/api/copilot/competitor-mirror', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/competitor-mirror/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch competitor mirror');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
   const greedTriggersQuery = useQuery<GreedTriggerResult>({
     queryKey: ['/api/copilot/greed-triggers', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/greed-triggers/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch greed triggers');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
   const offerMutationQuery = useQuery<OfferMutationResult>({
     queryKey: ['/api/copilot/offer-mutation', business.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/copilot/offer-mutation/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch offer mutation');
+      return res.json();
+    },
     enabled: showAdvancedData,
   });
 
