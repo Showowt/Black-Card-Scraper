@@ -66,7 +66,10 @@ export function useUrlState<T extends FilterState>(
 
   const resetState = useCallback(() => {
     const basePath = location.split("?")[0];
-    setLocation(basePath, { replace: false });
+    // Use history.pushState for reliable param clearing, then trigger navigation
+    window.history.pushState(null, "", basePath);
+    // Force a re-render by setting location
+    setLocation(basePath, { replace: true });
   }, [location, setLocation]);
 
   const hasActiveFilters = useMemo(() => {
