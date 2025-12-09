@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { 
   Brain, MessageSquare, Mic, FileText, Search, Send, Loader2, 
   Lightbulb, AlertTriangle, Target, DollarSign, TrendingUp, Zap,
-  CheckCircle2, XCircle, Copy, Check, RefreshCw
+  CheckCircle2, XCircle, Copy, Check, RefreshCw, Users, Calculator, 
+  Clock, Eye, Flame, Package, ChevronDown, ChevronUp
 } from "lucide-react";
 import { SiInstagram } from "react-icons/si";
 import type { Business } from "@shared/schema";
@@ -45,9 +47,98 @@ interface DeepScanResult {
   competitorIntel: string[];
 }
 
+interface DecisionMakerProfileResult {
+  ownerArchetype: string;
+  communicationStyle: string;
+  decisionDrivers: string[];
+  riskTolerance: "conservative" | "moderate" | "aggressive";
+  buyingTimeline: string;
+  influencers: string[];
+  negotiationStyle: string;
+  hotButtons: string[];
+  turnoffs: string[];
+  bestApproach: string;
+  openingLine: string;
+}
+
+interface FinancialLeakResult {
+  totalMonthlyLeak: number;
+  leakBreakdown: {
+    category: string;
+    amount: number;
+    explanation: string;
+    fixPriority: "critical" | "high" | "medium" | "low";
+  }[];
+  annualImpact: number;
+  competitorAdvantage: string;
+  quickWins: string[];
+  roiIfFixed: string;
+}
+
+interface ROITimelineResult {
+  implementationWeeks: number;
+  milestones: {
+    week: number;
+    milestone: string;
+    expectedOutcome: string;
+    roiContribution: number;
+  }[];
+  breakEvenPoint: string;
+  monthlyROI: {
+    month: number;
+    cumulativeInvestment: number;
+    cumulativeSavings: number;
+    netPosition: number;
+  }[];
+  yearOneProjection: number;
+  yearThreeProjection: number;
+}
+
+interface CompetitorGhostMirrorResult {
+  competitorActions: {
+    action: string;
+    impact: string;
+    adoptionRate: string;
+  }[];
+  marketGaps: string[];
+  differentiationOpportunities: string[];
+  urgentThreats: string[];
+  catchUpActions: string[];
+  leapfrogStrategies: string[];
+}
+
+interface GreedTriggerResult {
+  primaryTrigger: string;
+  monetaryHook: string;
+  statusHook: string;
+  freedomHook: string;
+  exclusivityHook: string;
+  fomoPitch: string;
+  successStoryAngle: string;
+  numbersToMention: string[];
+  closingGreedStatement: string;
+}
+
+interface OfferMutationResult {
+  baseOffer: string;
+  mutations: {
+    variant: string;
+    description: string;
+    priceAnchor: string;
+    urgencyElement: string;
+    targetProfile: string;
+  }[];
+  recommendedMutation: string;
+  pricingStrategy: string;
+  bonusStack: string[];
+  guaranteeFraming: string;
+  scarcityElement: string;
+}
+
 export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("deep-scan");
+  const [intelligenceMode, setIntelligenceMode] = useState<"scan" | "advanced">("scan");
   const [conversationHistory, setConversationHistory] = useState("");
   const [theirMessage, setTheirMessage] = useState("");
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -55,6 +146,37 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [proposalTier, setProposalTier] = useState<"starter" | "core" | "flagship">("starter");
   const [deepScanData, setDeepScanData] = useState<DeepScanResult | null>(null);
+  const [showAdvancedData, setShowAdvancedData] = useState(false);
+
+  const decisionMakerQuery = useQuery<DecisionMakerProfileResult>({
+    queryKey: ['/api/copilot/decision-maker', business.id],
+    enabled: showAdvancedData,
+  });
+
+  const financialLeaksQuery = useQuery<FinancialLeakResult>({
+    queryKey: ['/api/copilot/financial-leaks', business.id],
+    enabled: showAdvancedData,
+  });
+
+  const roiTimelineQuery = useQuery<ROITimelineResult>({
+    queryKey: ['/api/copilot/roi-timeline', business.id],
+    enabled: showAdvancedData,
+  });
+
+  const competitorMirrorQuery = useQuery<CompetitorGhostMirrorResult>({
+    queryKey: ['/api/copilot/competitor-mirror', business.id],
+    enabled: showAdvancedData,
+  });
+
+  const greedTriggersQuery = useQuery<GreedTriggerResult>({
+    queryKey: ['/api/copilot/greed-triggers', business.id],
+    enabled: showAdvancedData,
+  });
+
+  const offerMutationQuery = useQuery<OfferMutationResult>({
+    queryKey: ['/api/copilot/offer-mutation', business.id],
+    enabled: showAdvancedData,
+  });
 
   // Load cached deep scan data from localStorage on mount
   useEffect(() => {
@@ -378,6 +500,266 @@ export default function ClaudeCopilot({ business }: ClaudeCopilotProps) {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowAdvancedData(!showAdvancedData)}
+                      data-testid="button-toggle-advanced"
+                    >
+                      {showAdvancedData ? (
+                        <ChevronUp className="h-4 w-4 mr-2" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 mr-2" />
+                      )}
+                      {showAdvancedData ? "Hide" : "Show"} Advanced Intelligence
+                    </Button>
+
+                    {showAdvancedData && (
+                      <div className="mt-4 space-y-6">
+                        {decisionMakerQuery.isLoading || financialLeaksQuery.isLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <span className="ml-2 text-sm text-muted-foreground">Loading intelligence...</span>
+                          </div>
+                        ) : (
+                          <>
+                            {decisionMakerQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-blue-500" />
+                                  Decision Maker Profile
+                                </h4>
+                                <div className="bg-blue-500/5 rounded-md p-3 space-y-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <Badge variant="outline">{decisionMakerQuery.data.ownerArchetype}</Badge>
+                                    <Badge variant={
+                                      decisionMakerQuery.data.riskTolerance === "aggressive" ? "default" :
+                                      decisionMakerQuery.data.riskTolerance === "conservative" ? "secondary" : "outline"
+                                    }>
+                                      {decisionMakerQuery.data.riskTolerance} risk
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    <span className="font-medium">Style:</span> {decisionMakerQuery.data.communicationStyle}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    <span className="font-medium">Timeline:</span> {decisionMakerQuery.data.buyingTimeline}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <div className="bg-green-500/10 rounded p-2">
+                                      <div className="text-xs text-green-400 mb-1">Hot Buttons</div>
+                                      <ul className="text-xs space-y-0.5">
+                                        {decisionMakerQuery.data.hotButtons.slice(0, 3).map((btn, i) => (
+                                          <li key={i}>{btn}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                    <div className="bg-red-500/10 rounded p-2">
+                                      <div className="text-xs text-red-400 mb-1">Avoid</div>
+                                      <ul className="text-xs space-y-0.5">
+                                        {decisionMakerQuery.data.turnoffs.slice(0, 3).map((off, i) => (
+                                          <li key={i}>{off}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </div>
+                                  <div className="bg-muted/50 rounded p-2 mt-2">
+                                    <div className="text-xs text-muted-foreground mb-1">Recommended Opener</div>
+                                    <p className="text-sm italic">{decisionMakerQuery.data.openingLine}</p>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="mt-1"
+                                      onClick={() => copyToClipboard(decisionMakerQuery.data!.openingLine, "opener-line")}
+                                    >
+                                      {copiedField === "opener-line" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {financialLeaksQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Calculator className="h-4 w-4 text-red-500" />
+                                  Financial Leak Analysis
+                                </h4>
+                                <div className="bg-red-500/5 rounded-md p-3 space-y-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-lg font-bold text-red-400">
+                                      ${financialLeaksQuery.data.totalMonthlyLeak.toLocaleString()}/month
+                                    </span>
+                                    <Badge variant="destructive">
+                                      ${financialLeaksQuery.data.annualImpact.toLocaleString()}/year
+                                    </Badge>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {financialLeaksQuery.data.leakBreakdown.slice(0, 4).map((leak, i) => (
+                                      <div key={i} className="flex items-center gap-2">
+                                        <Badge variant={
+                                          leak.fixPriority === "critical" ? "destructive" :
+                                          leak.fixPriority === "high" ? "default" : "secondary"
+                                        } className="text-xs shrink-0">
+                                          {leak.fixPriority}
+                                        </Badge>
+                                        <span className="text-xs flex-1">{leak.category}</span>
+                                        <span className="text-xs font-medium">${leak.amount.toLocaleString()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="text-xs text-green-400 mt-2">
+                                    <span className="font-medium">If Fixed:</span> {financialLeaksQuery.data.roiIfFixed}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {roiTimelineQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-green-500" />
+                                  ROI Timeline
+                                </h4>
+                                <div className="bg-green-500/5 rounded-md p-3 space-y-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm">Break-even: <span className="font-medium">{roiTimelineQuery.data.breakEvenPoint}</span></span>
+                                    <Badge variant="outline">{roiTimelineQuery.data.implementationWeeks} weeks</Badge>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 mt-2">
+                                    <div className="bg-green-500/10 rounded p-2 text-center">
+                                      <div className="text-xs text-muted-foreground">Year 1 Net</div>
+                                      <div className="text-sm font-bold text-green-400">
+                                        ${roiTimelineQuery.data.yearOneProjection.toLocaleString()}
+                                      </div>
+                                    </div>
+                                    <div className="bg-green-500/20 rounded p-2 text-center">
+                                      <div className="text-xs text-muted-foreground">Year 3 Net</div>
+                                      <div className="text-sm font-bold text-green-400">
+                                        ${roiTimelineQuery.data.yearThreeProjection.toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {competitorMirrorQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Eye className="h-4 w-4 text-orange-500" />
+                                  Competitor Intelligence
+                                </h4>
+                                <div className="bg-orange-500/5 rounded-md p-3 space-y-2">
+                                  {competitorMirrorQuery.data.urgentThreats.length > 0 && (
+                                    <div className="bg-red-500/10 rounded p-2 mb-2">
+                                      <div className="text-xs text-red-400 mb-1">Urgent Threats</div>
+                                      <ul className="text-xs space-y-0.5">
+                                        {competitorMirrorQuery.data.urgentThreats.map((threat, i) => (
+                                          <li key={i} className="flex items-start gap-1">
+                                            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                                            {threat}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                  <div className="text-xs">
+                                    <span className="font-medium">What competitors are doing:</span>
+                                    <ul className="mt-1 space-y-1">
+                                      {competitorMirrorQuery.data.competitorActions.slice(0, 3).map((action, i) => (
+                                        <li key={i} className="flex items-center justify-between gap-2">
+                                          <span>{action.action}</span>
+                                          <Badge variant="outline" className="text-xs">{action.adoptionRate}</Badge>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                  {competitorMirrorQuery.data.leapfrogStrategies.length > 0 && (
+                                    <div className="bg-green-500/10 rounded p-2 mt-2">
+                                      <div className="text-xs text-green-400 mb-1">Leapfrog Opportunities</div>
+                                      <ul className="text-xs space-y-0.5">
+                                        {competitorMirrorQuery.data.leapfrogStrategies.map((strat, i) => (
+                                          <li key={i}>{strat}</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {greedTriggersQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Flame className="h-4 w-4 text-yellow-500" />
+                                  Greed Triggers
+                                </h4>
+                                <div className="bg-yellow-500/5 rounded-md p-3 space-y-2">
+                                  <div className="bg-yellow-500/10 rounded p-2">
+                                    <div className="text-xs text-yellow-400 mb-1">Primary Hook</div>
+                                    <p className="text-sm font-medium">{greedTriggersQuery.data.primaryTrigger}</p>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="text-xs">
+                                      <span className="text-muted-foreground">Money:</span>
+                                      <p className="mt-0.5">{greedTriggersQuery.data.monetaryHook.substring(0, 80)}...</p>
+                                    </div>
+                                    <div className="text-xs">
+                                      <span className="text-muted-foreground">FOMO:</span>
+                                      <p className="mt-0.5">{greedTriggersQuery.data.fomoPitch.substring(0, 80)}...</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {greedTriggersQuery.data.numbersToMention.slice(0, 3).map((num, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">{num}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {offerMutationQuery.data && (
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <Package className="h-4 w-4 text-purple-500" />
+                                  Offer Mutations
+                                </h4>
+                                <div className="bg-purple-500/5 rounded-md p-3 space-y-2">
+                                  <div className="text-xs text-muted-foreground">
+                                    Base: <span className="font-medium">{offerMutationQuery.data.baseOffer}</span>
+                                  </div>
+                                  <div className="text-xs text-blue-400">
+                                    Recommended: {offerMutationQuery.data.recommendedMutation}
+                                  </div>
+                                  <div className="space-y-2 mt-2">
+                                    {offerMutationQuery.data.mutations.slice(0, 3).map((mutation, i) => (
+                                      <div key={i} className="bg-muted/30 rounded p-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="text-sm font-medium">{mutation.variant}</span>
+                                          <Badge variant="outline" className="text-xs">{mutation.priceAnchor}</Badge>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">{mutation.description}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="bg-green-500/10 rounded p-2 mt-2">
+                                    <div className="text-xs text-green-400 mb-1">Guarantee</div>
+                                    <p className="text-xs">{offerMutationQuery.data.guaranteeFraming}</p>
+                                  </div>
+                                  <div className="text-xs text-orange-400">
+                                    <span className="font-medium">Scarcity:</span> {offerMutationQuery.data.scarcityElement}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </ScrollArea>

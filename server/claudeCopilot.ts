@@ -869,3 +869,733 @@ export function deepScan(business: Business): DeepScanResult {
     competitorIntel,
   };
 }
+
+// ==========================================
+// ADVANCED PYTHON CLI FEATURES - PORTED
+// ==========================================
+
+// Decision Maker Profiler Result
+export interface DecisionMakerProfileResult {
+  ownerArchetype: string;
+  communicationStyle: string;
+  decisionDrivers: string[];
+  riskTolerance: "conservative" | "moderate" | "aggressive";
+  buyingTimeline: string;
+  influencers: string[];
+  negotiationStyle: string;
+  hotButtons: string[];
+  turnoffs: string[];
+  bestApproach: string;
+  openingLine: string;
+}
+
+// Financial Leak Calculator Result
+export interface FinancialLeakResult {
+  totalMonthlyLeak: number;
+  leakBreakdown: {
+    category: string;
+    amount: number;
+    explanation: string;
+    fixPriority: "critical" | "high" | "medium" | "low";
+  }[];
+  annualImpact: number;
+  competitorAdvantage: string;
+  quickWins: string[];
+  roiIfFixed: string;
+}
+
+// ROI Timeline Result
+export interface ROITimelineResult {
+  implementationWeeks: number;
+  milestones: {
+    week: number;
+    milestone: string;
+    expectedOutcome: string;
+    roiContribution: number;
+  }[];
+  breakEvenPoint: string;
+  monthlyROI: {
+    month: number;
+    cumulativeInvestment: number;
+    cumulativeSavings: number;
+    netPosition: number;
+  }[];
+  yearOneProjection: number;
+  yearThreeProjection: number;
+}
+
+// Competitor Ghost Mirror Result
+export interface CompetitorGhostMirrorResult {
+  competitorActions: {
+    action: string;
+    impact: string;
+    adoptionRate: string;
+  }[];
+  marketGaps: string[];
+  differentiationOpportunities: string[];
+  urgentThreats: string[];
+  catchUpActions: string[];
+  leapfrogStrategies: string[];
+}
+
+// Greed Trigger Engine Result
+export interface GreedTriggerResult {
+  primaryTrigger: string;
+  monetaryHook: string;
+  statusHook: string;
+  freedomHook: string;
+  exclusivityHook: string;
+  fomoPitch: string;
+  successStoryAngle: string;
+  numbersToMention: string[];
+  closingGreedStatement: string;
+}
+
+// Offer Mutation Engine Result
+export interface OfferMutationResult {
+  baseOffer: string;
+  mutations: {
+    variant: string;
+    description: string;
+    priceAnchor: string;
+    urgencyElement: string;
+    targetProfile: string;
+  }[];
+  recommendedMutation: string;
+  pricingStrategy: string;
+  bonusStack: string[];
+  guaranteeFraming: string;
+  scarcityElement: string;
+}
+
+// Decision Maker Profiler - Profile the business owner based on signals
+export function profileDecisionMaker(business: Business): DecisionMakerProfileResult {
+  const category = business.category?.toLowerCase() || "";
+  const hasWebsite = !!business.website;
+  const hasInstagram = !!business.instagram;
+  const rating = business.rating || 4.0;
+  const reviewCount = business.reviewCount || 0;
+  const priceLevel = business.priceLevel || 2;
+
+  // Determine owner archetype based on business signals
+  let ownerArchetype = "The Pragmatic Operator";
+  let communicationStyle = "Direct and business-focused";
+  let riskTolerance: "conservative" | "moderate" | "aggressive" = "moderate";
+  let negotiationStyle = "Value-focused";
+
+  if (priceLevel >= 3 && rating >= 4.5) {
+    ownerArchetype = "The Premium Brand Builder";
+    communicationStyle = "Sophisticated, quality-focused";
+    riskTolerance = "moderate";
+    negotiationStyle = "Quality over price";
+  } else if (!hasWebsite && !hasInstagram) {
+    ownerArchetype = "The Traditional Operator";
+    communicationStyle = "Conservative, proof-heavy";
+    riskTolerance = "conservative";
+    negotiationStyle = "Risk-averse, needs guarantees";
+  } else if (hasInstagram && reviewCount > 100) {
+    ownerArchetype = "The Growth-Focused Entrepreneur";
+    communicationStyle = "Fast-paced, results-oriented";
+    riskTolerance = "aggressive";
+    negotiationStyle = "Speed over perfection";
+  } else if (category.includes("hotel") || category.includes("villa")) {
+    ownerArchetype = "The Hospitality Professional";
+    communicationStyle = "Guest experience focused";
+    riskTolerance = "moderate";
+    negotiationStyle = "ROI and guest satisfaction";
+  }
+
+  // Decision drivers based on profile
+  const decisionDrivers: string[] = [];
+  if (riskTolerance === "conservative") {
+    decisionDrivers.push("Proven track record", "Risk mitigation", "Step-by-step approach");
+  } else if (riskTolerance === "aggressive") {
+    decisionDrivers.push("Speed to market", "Competitive advantage", "Growth potential");
+  } else {
+    decisionDrivers.push("Clear ROI", "Peer validation", "Balanced approach");
+  }
+
+  // Determine buying timeline
+  let buyingTimeline = "30-60 days";
+  if (riskTolerance === "aggressive") buyingTimeline = "1-2 weeks";
+  if (riskTolerance === "conservative") buyingTimeline = "60-90 days";
+
+  // Hot buttons based on vertical
+  const hotButtons: string[] = [];
+  const turnoffs: string[] = [];
+  
+  if (category.includes("restaurant")) {
+    hotButtons.push("Staff efficiency", "Peak hour coverage", "Review management");
+    turnoffs.push("Complicated tech", "Long implementation", "Hidden fees");
+  } else if (category.includes("hotel")) {
+    hotButtons.push("Guest experience", "OTA commission reduction", "Direct bookings");
+    turnoffs.push("Guest data concerns", "Integration complexity", "Brand inconsistency");
+  } else if (category.includes("tour")) {
+    hotButtons.push("Off-hours bookings", "Multi-language support", "No-show reduction");
+    turnoffs.push("Loss of personal touch", "Generic responses", "Upfront costs");
+  } else {
+    hotButtons.push("Time savings", "Revenue increase", "Customer satisfaction");
+    turnoffs.push("Overpromising", "Hidden complexity", "Lack of support");
+  }
+
+  // Best approach based on archetype
+  const approachMap: Record<string, string> = {
+    "The Premium Brand Builder": "Lead with quality and brand elevation, emphasize exclusivity",
+    "The Traditional Operator": "Start with small win, show proof from similar businesses, offer guarantee",
+    "The Growth-Focused Entrepreneur": "Lead with speed and competitive advantage, show quick results",
+    "The Hospitality Professional": "Focus on guest experience improvement and operational efficiency",
+    "The Pragmatic Operator": "Lead with clear ROI and practical benefits, be direct",
+  };
+
+  const openingLineMap: Record<string, string> = {
+    "The Premium Brand Builder": "Vi que manejas una operacion premium - te cuento como otros en tu nivel estan automatizando sin perder el toque personal",
+    "The Traditional Operator": "Entiendo que tienes un negocio establecido - te muestro una forma simple de capturar clientes que hoy se te escapan",
+    "The Growth-Focused Entrepreneur": "Estas creciendo rapido - te muestro como escalar sin triplicar tu equipo",
+    "The Hospitality Professional": "Tus huespedes merecen respuestas inmediatas 24/7 - te cuento como lograrlo",
+    "The Pragmatic Operator": "Tengo una solucion que te ahorra X horas a la semana - te muestro los numeros",
+  };
+
+  return {
+    ownerArchetype,
+    communicationStyle,
+    decisionDrivers,
+    riskTolerance,
+    buyingTimeline,
+    influencers: ["Business partner", "Key staff members", "Family (for family businesses)"],
+    negotiationStyle,
+    hotButtons,
+    turnoffs,
+    bestApproach: approachMap[ownerArchetype] || approachMap["The Pragmatic Operator"],
+    openingLine: openingLineMap[ownerArchetype] || openingLineMap["The Pragmatic Operator"],
+  };
+}
+
+// Financial Leak Calculator - Detailed breakdown of revenue leakage
+export function calculateFinancialLeaks(business: Business): FinancialLeakResult {
+  const category = business.category?.toLowerCase() || "";
+  const hasWebsite = !!business.website;
+  const hasInstagram = !!business.instagram;
+  const hasWhatsapp = !!business.whatsapp;
+  const rating = business.rating || 4.0;
+  const reviewCount = business.reviewCount || 0;
+  const priceLevel = business.priceLevel || 2;
+
+  const leakBreakdown: FinancialLeakResult["leakBreakdown"] = [];
+  
+  // Base monthly revenue estimation by vertical and price level
+  const baseRevenueMap: Record<string, number> = {
+    restaurant: 15000 + (priceLevel * 10000),
+    hotel: 30000 + (priceLevel * 20000),
+    tour_operator: 12000 + (priceLevel * 8000),
+    spa: 10000 + (priceLevel * 5000),
+    club: 25000 + (priceLevel * 15000),
+    boat_charter: 20000 + (priceLevel * 25000),
+    concierge: 15000 + (priceLevel * 10000),
+    villa_rental: 25000 + (priceLevel * 30000),
+  };
+
+  const verticalKey = category.includes("restaurant") ? "restaurant" :
+    category.includes("hotel") ? "hotel" :
+    category.includes("tour") ? "tour_operator" :
+    category.includes("spa") ? "spa" :
+    category.includes("club") ? "club" :
+    category.includes("boat") || category.includes("yacht") ? "boat_charter" :
+    category.includes("concierge") ? "concierge" :
+    category.includes("villa") ? "villa_rental" : "restaurant";
+
+  const baseRevenue = baseRevenueMap[verticalKey] || 15000;
+
+  // Calculate leaks based on signals
+  if (!hasWebsite) {
+    leakBreakdown.push({
+      category: "No Web Presence",
+      amount: Math.round(baseRevenue * 0.15),
+      explanation: "15% of potential customers search online before visiting - invisible to these searches",
+      fixPriority: "critical",
+    });
+  }
+
+  if (!hasInstagram) {
+    leakBreakdown.push({
+      category: "No Social Proof",
+      amount: Math.round(baseRevenue * 0.10),
+      explanation: "Tourists check Instagram before booking - no profile means lost trust and bookings",
+      fixPriority: "high",
+    });
+  }
+
+  if (!hasWhatsapp) {
+    leakBreakdown.push({
+      category: "No WhatsApp Channel",
+      amount: Math.round(baseRevenue * 0.08),
+      explanation: "WhatsApp is the #1 communication channel in LATAM - missing direct inquiries",
+      fixPriority: "critical",
+    });
+  }
+
+  if (rating < 4.0) {
+    const ratingLoss = (4.0 - rating) * 0.08;
+    leakBreakdown.push({
+      category: "Low Rating Impact",
+      amount: Math.round(baseRevenue * ratingLoss),
+      explanation: `Each 0.1 star below 4.0 costs 5-8% of potential bookings - current ${rating} rating is hurting`,
+      fixPriority: "critical",
+    });
+  }
+
+  if (reviewCount < 50) {
+    leakBreakdown.push({
+      category: "Insufficient Reviews",
+      amount: Math.round(baseRevenue * 0.07),
+      explanation: "Tourists trust businesses with 100+ reviews - below 50 signals uncertainty",
+      fixPriority: "medium",
+    });
+  }
+
+  // Vertical-specific leaks
+  if (verticalKey === "hotel") {
+    leakBreakdown.push({
+      category: "OTA Commission Bleed",
+      amount: Math.round(baseRevenue * 0.20),
+      explanation: "Paying 15-25% to Booking.com/Expedia for bookings you could get direct",
+      fixPriority: "critical",
+    });
+  }
+
+  if (verticalKey === "restaurant" || verticalKey === "spa") {
+    leakBreakdown.push({
+      category: "Off-Hours Inquiry Loss",
+      amount: Math.round(baseRevenue * 0.12),
+      explanation: "No way to capture reservations when staff isn't available",
+      fixPriority: "high",
+    });
+  }
+
+  if (verticalKey === "tour_operator" || verticalKey === "boat_charter") {
+    leakBreakdown.push({
+      category: "Slow Response Loss",
+      amount: Math.round(baseRevenue * 0.18),
+      explanation: "Tourists book the first operator to respond - every hour delay = lost booking",
+      fixPriority: "critical",
+    });
+  }
+
+  if (verticalKey === "spa" || verticalKey === "restaurant") {
+    leakBreakdown.push({
+      category: "No-Show Revenue Loss",
+      amount: Math.round(baseRevenue * 0.05),
+      explanation: "No deposit or reminder system means 5-10% no-show rate",
+      fixPriority: "medium",
+    });
+  }
+
+  const totalMonthlyLeak = leakBreakdown.reduce((sum, leak) => sum + leak.amount, 0);
+  const annualImpact = totalMonthlyLeak * 12;
+
+  // Quick wins
+  const quickWins: string[] = [];
+  const criticalLeaks = leakBreakdown.filter(l => l.fixPriority === "critical");
+  if (criticalLeaks.length > 0) {
+    quickWins.push(`Fix ${criticalLeaks[0].category} first - biggest immediate impact`);
+  }
+  if (!hasWhatsapp) {
+    quickWins.push("Add WhatsApp Business - 1 day setup, immediate results");
+  }
+  if (reviewCount < 50) {
+    quickWins.push("Implement review request automation - compound growth");
+  }
+
+  return {
+    totalMonthlyLeak,
+    leakBreakdown,
+    annualImpact,
+    competitorAdvantage: `Competitors fixing these leaks are capturing $${totalMonthlyLeak.toLocaleString()}/month that should be yours`,
+    quickWins,
+    roiIfFixed: `$${Math.round(totalMonthlyLeak * 0.6).toLocaleString()}-$${Math.round(totalMonthlyLeak * 0.8).toLocaleString()}/month recoverable with automation`,
+  };
+}
+
+// ROI Timeline Generator - Week-by-week projection
+export function generateROITimeline(business: Business, investmentAmount: number = 2000): ROITimelineResult {
+  const category = business.category?.toLowerCase() || "";
+  const leaks = calculateFinancialLeaks(business);
+  
+  // Implementation timeline by complexity
+  let implementationWeeks = 4;
+  if (category.includes("hotel") || category.includes("villa")) {
+    implementationWeeks = 6;
+  } else if (category.includes("restaurant") || category.includes("cafe")) {
+    implementationWeeks = 3;
+  }
+
+  const monthlySavings = Math.round(leaks.totalMonthlyLeak * 0.7);
+  const weeklyBenefit = Math.round(monthlySavings / 4);
+
+  const milestones = [
+    {
+      week: 1,
+      milestone: "System setup and integration",
+      expectedOutcome: "Infrastructure ready, team trained",
+      roiContribution: 0,
+    },
+    {
+      week: 2,
+      milestone: "Soft launch with test inquiries",
+      expectedOutcome: "First automated responses going out",
+      roiContribution: Math.round(weeklyBenefit * 0.3),
+    },
+    {
+      week: 3,
+      milestone: "Full automation live",
+      expectedOutcome: "24/7 response capability active",
+      roiContribution: Math.round(weeklyBenefit * 0.6),
+    },
+    {
+      week: 4,
+      milestone: "Optimization based on data",
+      expectedOutcome: "Refined messaging, improved conversion",
+      roiContribution: Math.round(weeklyBenefit * 0.8),
+    },
+    {
+      week: 6,
+      milestone: "Full velocity reached",
+      expectedOutcome: "Maximum efficiency, team focus on high-value tasks",
+      roiContribution: weeklyBenefit,
+    },
+    {
+      week: 8,
+      milestone: "Expansion phase",
+      expectedOutcome: "Adding new channels, scaling successful strategies",
+      roiContribution: Math.round(weeklyBenefit * 1.2),
+    },
+  ];
+
+  // Monthly ROI projection
+  const monthlyROI = [];
+  let cumulativeInvestment = investmentAmount;
+  let cumulativeSavings = 0;
+  const monthlyFee = investmentAmount * 0.15; // 15% monthly maintenance
+
+  for (let month = 1; month <= 12; month++) {
+    cumulativeInvestment += monthlyFee;
+    const monthSavings = month === 1 ? monthlySavings * 0.5 : monthlySavings * (month < 3 ? 0.8 : 1);
+    cumulativeSavings += monthSavings;
+    
+    monthlyROI.push({
+      month,
+      cumulativeInvestment: Math.round(cumulativeInvestment),
+      cumulativeSavings: Math.round(cumulativeSavings),
+      netPosition: Math.round(cumulativeSavings - cumulativeInvestment),
+    });
+  }
+
+  const breakEvenMonth = monthlyROI.findIndex(m => m.netPosition > 0) + 1;
+
+  return {
+    implementationWeeks,
+    milestones: milestones.filter(m => m.week <= implementationWeeks + 4),
+    breakEvenPoint: `Month ${breakEvenMonth || 3}`,
+    monthlyROI,
+    yearOneProjection: monthlyROI[11]?.netPosition || 0,
+    yearThreeProjection: Math.round((monthlySavings * 36) - (investmentAmount + monthlyFee * 36)),
+  };
+}
+
+// Competitor Ghost Mirror - What competitors are doing that you're not
+export function mirrorCompetitors(business: Business): CompetitorGhostMirrorResult {
+  const category = business.category?.toLowerCase() || "";
+  const city = business.city?.toLowerCase() || "";
+  const hasWebsite = !!business.website;
+  const hasInstagram = !!business.instagram;
+  const hasWhatsapp = !!business.whatsapp;
+
+  const competitorActions: CompetitorGhostMirrorResult["competitorActions"] = [];
+  const marketGaps: string[] = [];
+  const differentiationOpportunities: string[] = [];
+  const urgentThreats: string[] = [];
+  const catchUpActions: string[] = [];
+  const leapfrogStrategies: string[] = [];
+
+  // City-specific competitor intelligence
+  if (city.includes("cartagena")) {
+    competitorActions.push({
+      action: "WhatsApp Business API with chatbot",
+      impact: "Instant response to tourist inquiries 24/7",
+      adoptionRate: "40% of top-rated venues",
+    });
+    competitorActions.push({
+      action: "Instagram booking integration",
+      impact: "Direct bookings from profile",
+      adoptionRate: "60% of premium venues",
+    });
+    if (!hasInstagram) {
+      urgentThreats.push("Walled City venues are dominating Instagram discovery - you're invisible");
+    }
+  }
+
+  if (city.includes("medellin")) {
+    competitorActions.push({
+      action: "Multi-language chatbot (EN/ES)",
+      impact: "Capturing digital nomad market",
+      adoptionRate: "35% of tourist-facing businesses",
+    });
+    competitorActions.push({
+      action: "Google Business optimization",
+      impact: "Higher visibility in local searches",
+      adoptionRate: "70% of successful businesses",
+    });
+    urgentThreats.push("Medellin's tech-savvy operators are moving fast on AI adoption");
+  }
+
+  // Category-specific competitor actions
+  if (category.includes("restaurant")) {
+    competitorActions.push({
+      action: "Automated reservation system",
+      impact: "Zero missed bookings, reduced staff load",
+      adoptionRate: "50% of high-end restaurants",
+    });
+    if (!hasWhatsapp) {
+      catchUpActions.push("Implement WhatsApp ordering - your competitors offer this");
+    }
+    leapfrogStrategies.push("AI-powered menu recommendations based on dietary preferences");
+  }
+
+  if (category.includes("hotel")) {
+    competitorActions.push({
+      action: "Direct booking engine with best-rate guarantee",
+      impact: "20-25% OTA commission savings",
+      adoptionRate: "45% of boutique hotels",
+    });
+    competitorActions.push({
+      action: "Pre-arrival concierge via WhatsApp",
+      impact: "Upsell opportunities, better reviews",
+      adoptionRate: "30% of premium properties",
+    });
+    leapfrogStrategies.push("AI concierge that knows guest preferences before arrival");
+  }
+
+  if (category.includes("tour")) {
+    competitorActions.push({
+      action: "Instant booking confirmation",
+      impact: "First to respond wins the booking",
+      adoptionRate: "55% of successful operators",
+    });
+    catchUpActions.push("Automate availability checking and instant confirmation");
+    leapfrogStrategies.push("Dynamic pricing based on demand - charge more for peak dates");
+  }
+
+  // General market gaps
+  if (!hasWebsite) {
+    marketGaps.push("Online presence gap - competitors are capturing your potential searches");
+  }
+  if (!hasInstagram) {
+    marketGaps.push("Social proof gap - tourists verify businesses on Instagram before booking");
+  }
+  marketGaps.push("After-hours service gap - 40% of inquiries come outside business hours");
+
+  // Differentiation opportunities based on what's NOT being done
+  differentiationOpportunities.push("Personalized follow-up sequences - most competitors do one message and forget");
+  differentiationOpportunities.push("VIP recognition system - remember returning customers automatically");
+  differentiationOpportunities.push("Proactive review management - turn satisfied customers into advocates");
+
+  return {
+    competitorActions,
+    marketGaps,
+    differentiationOpportunities,
+    urgentThreats,
+    catchUpActions,
+    leapfrogStrategies,
+  };
+}
+
+// Greed Trigger Engine - Psychological triggers based on potential gains
+export function generateGreedTriggers(business: Business): GreedTriggerResult {
+  const leaks = calculateFinancialLeaks(business);
+  const category = business.category?.toLowerCase() || "";
+  const priceLevel = business.priceLevel || 2;
+
+  const monthlyRecovery = leaks.totalMonthlyLeak;
+  const yearlyRecovery = monthlyRecovery * 12;
+
+  // Primary trigger based on biggest leak
+  const biggestLeak = leaks.leakBreakdown.sort((a, b) => b.amount - a.amount)[0];
+  const primaryTrigger = `You're leaving $${biggestLeak?.amount.toLocaleString() || "3,000"}/month on the table from ${biggestLeak?.category || "missed opportunities"} alone`;
+
+  // Monetary hook
+  const monetaryHook = `$${monthlyRecovery.toLocaleString()}/month = $${yearlyRecovery.toLocaleString()}/year. That's a ${priceLevel >= 3 ? "luxury vacation property" : "new vehicle"} every year from money that's already there.`;
+
+  // Status hook based on vertical
+  const statusHooks: Record<string, string> = {
+    restaurant: "Los restaurantes top de la ciudad ya tienen esto. La pregunta es: quieres ser el que se queda atras?",
+    hotel: "Los hoteles boutique mas exitosos operan con automation. Es lo que separa los premium de los promedio.",
+    tour_operator: "Los operadores de tours mas exitosos responden en segundos. Por eso tienen 5 estrellas.",
+    spa: "Los spas de clase mundial tienen sistemas que hacen que cada cliente se sienta VIP desde el primer contacto.",
+  };
+  const statusHook = statusHooks[category.includes("restaurant") ? "restaurant" : 
+    category.includes("hotel") ? "hotel" : 
+    category.includes("tour") ? "tour_operator" : "spa"] || 
+    "Los negocios lideres en tu categoria ya usan esto. Tu decides si compites o te quedas atras.";
+
+  // Freedom hook
+  const freedomHook = "Imagina poder irte de vacaciones sabiendo que cada consulta se atiende perfectamente. Tus clientes felices, tu tranquilo.";
+
+  // Exclusivity hook
+  const exclusivityHook = priceLevel >= 3 
+    ? "Solo trabajamos con negocios selectos que entienden el valor de la excelencia operativa. No es para todos."
+    : "Estamos expandiendo a solo 5 negocios en tu zona este trimestre. Quien entre primero tiene ventaja.";
+
+  // FOMO pitch
+  const fomoPitch = `Cada dia que pasa sin esto, tus competidores capturan los clientes que deberian ser tuyos. $${Math.round(monthlyRecovery / 30).toLocaleString()}/dia literalmente.`;
+
+  // Numbers to mention
+  const numbersToMention = [
+    `$${monthlyRecovery.toLocaleString()}/mes en recuperacion`,
+    `${Math.round(monthlyRecovery * 12 / 1000)}K al ano`,
+    "24/7 cobertura vs tus 8-10 horas actuales",
+    "Respuesta en segundos vs minutos u horas",
+    `${leaks.leakBreakdown.length} areas de fuga identificadas`,
+  ];
+
+  // Closing greed statement
+  const closingGreedStatement = `En 12 meses, esto puede significar $${yearlyRecovery.toLocaleString()} adicionales en tu bolsillo. La unica pregunta es: prefieres empezar a capturar ese dinero ahora, o seguir dejandolo para la competencia?`;
+
+  return {
+    primaryTrigger,
+    monetaryHook,
+    statusHook,
+    freedomHook,
+    exclusivityHook,
+    fomoPitch,
+    successStoryAngle: `Un ${category} similar en tu ciudad recupero $${Math.round(monthlyRecovery * 0.8).toLocaleString()}/mes en los primeros 60 dias`,
+    numbersToMention,
+    closingGreedStatement,
+  };
+}
+
+// Offer Mutation Engine - Dynamic offer generation based on signals
+export function mutateOffer(business: Business): OfferMutationResult {
+  const leaks = calculateFinancialLeaks(business);
+  const profile = profileDecisionMaker(business);
+  const category = business.category?.toLowerCase() || "";
+  const priceLevel = business.priceLevel || 2;
+  const hasWebsite = !!business.website;
+  const hasInstagram = !!business.instagram;
+
+  // Base offer based on vertical
+  const baseOfferMap: Record<string, string> = {
+    restaurant: "AI Reservation & Customer Engagement System",
+    hotel: "Direct Booking & Guest Experience Automation",
+    tour_operator: "Instant Booking & Multi-Language Response System",
+    spa: "Appointment Automation & VIP Client Management",
+    club: "VIP Table Management & Guest List Automation",
+    boat_charter: "Inquiry Response & Booking Automation System",
+    concierge: "Multi-Platform Client Management & Response System",
+    villa_rental: "Direct Booking & Guest Communication Automation",
+  };
+
+  const verticalKey = category.includes("restaurant") ? "restaurant" :
+    category.includes("hotel") ? "hotel" :
+    category.includes("tour") ? "tour_operator" :
+    category.includes("spa") ? "spa" :
+    category.includes("club") ? "club" :
+    category.includes("boat") || category.includes("yacht") ? "boat_charter" :
+    category.includes("concierge") ? "concierge" :
+    category.includes("villa") ? "villa_rental" : "restaurant";
+
+  const baseOffer = baseOfferMap[verticalKey] || "AI Business Automation System";
+
+  // Generate mutations based on profile and signals
+  const mutations: OfferMutationResult["mutations"] = [];
+
+  // Starter mutation for conservative profiles
+  if (profile.riskTolerance === "conservative" || !hasWebsite) {
+    mutations.push({
+      variant: "Quick Start Package",
+      description: "WhatsApp automation only - simple, proven, low commitment",
+      priceAnchor: "$500 setup + $150/month",
+      urgencyElement: "30-day money-back guarantee",
+      targetProfile: "Conservative decision makers, first-time tech adopters",
+    });
+  }
+
+  // Core mutation for moderate profiles
+  mutations.push({
+    variant: "Core Automation Package",
+    description: "WhatsApp + Instagram + basic website integration",
+    priceAnchor: "$1,500 setup + $350/month",
+    urgencyElement: "Implementation starts within 48 hours",
+    targetProfile: "Growth-focused operators ready to scale",
+  });
+
+  // Premium mutation for aggressive profiles
+  if (profile.riskTolerance !== "conservative" && priceLevel >= 2) {
+    mutations.push({
+      variant: "Full Stack Premium",
+      description: "Complete automation suite with AI learning and optimization",
+      priceAnchor: "$3,000 setup + $750/month",
+      urgencyElement: "Priority support + quarterly strategy calls",
+      targetProfile: "Premium brand builders, rapid scalers",
+    });
+  }
+
+  // Pay-for-performance mutation
+  mutations.push({
+    variant: "Performance Partnership",
+    description: "Lower upfront, share in the additional revenue generated",
+    priceAnchor: "$750 setup + 10% of recovered revenue",
+    urgencyElement: "Aligned incentives - we only win when you win",
+    targetProfile: "Results-focused, cash-conscious operators",
+  });
+
+  // Determine recommended mutation based on profile
+  let recommendedMutation = "Core Automation Package";
+  if (profile.riskTolerance === "conservative") {
+    recommendedMutation = "Quick Start Package";
+  } else if (profile.riskTolerance === "aggressive" && priceLevel >= 3) {
+    recommendedMutation = "Full Stack Premium";
+  }
+
+  // Pricing strategy based on vertical and price level
+  const pricingStrategy = priceLevel >= 3
+    ? "Premium positioning - emphasize exclusivity and white-glove service"
+    : priceLevel === 2
+    ? "Value positioning - emphasize ROI and payback period"
+    : "Accessibility positioning - emphasize low barrier to entry and quick wins";
+
+  // Bonus stack to increase perceived value
+  const bonusStack = [
+    "Free 30-day trial of advanced analytics",
+    "Priority response time guarantee",
+    "Monthly optimization review",
+    "Competitor response time audit",
+  ];
+
+  if (!hasInstagram) {
+    bonusStack.push("Free Instagram Business profile setup assistance");
+  }
+  if (!hasWebsite) {
+    bonusStack.push("Free landing page for direct bookings");
+  }
+
+  // Guarantee framing based on profile
+  const guaranteeFraming = profile.riskTolerance === "conservative"
+    ? "100% money-back guarantee for 30 days. No questions asked. If it doesn't work for you, we refund everything."
+    : profile.riskTolerance === "aggressive"
+    ? "Performance guarantee: if we don't improve your response time by 80%, next month is free."
+    : "Satisfaction guarantee: we work until you're happy, or you don't pay.";
+
+  // Scarcity element
+  const scarcityElement = priceLevel >= 3
+    ? "We only take on 3 premium clients per quarter to ensure white-glove service"
+    : "Implementation slots are limited - we can only onboard 5 new clients this month";
+
+  return {
+    baseOffer,
+    mutations,
+    recommendedMutation,
+    pricingStrategy,
+    bonusStack,
+    guaranteeFraming,
+    scarcityElement,
+  };
+}

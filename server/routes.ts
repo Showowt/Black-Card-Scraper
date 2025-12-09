@@ -23,6 +23,12 @@ import {
   generateProposal,
   analyzeVoiceNote,
   deepScan,
+  profileDecisionMaker,
+  calculateFinancialLeaks,
+  generateROITimeline,
+  mirrorCompetitors,
+  generateGreedTriggers,
+  mutateOffer,
 } from "./claudeCopilot";
 import {
   analyzeBusinessSignals,
@@ -1068,6 +1074,142 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error performing deep scan:", error);
       res.status(500).json({ message: "Failed to perform deep scan" });
+    }
+  });
+
+  // Advanced Copilot Features - Decision Maker Profiler
+  app.get('/api/copilot/decision-maker/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = profileDecisionMaker(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error profiling decision maker:", error);
+      res.status(500).json({ message: "Failed to profile decision maker" });
+    }
+  });
+
+  // Advanced Copilot Features - Financial Leak Calculator
+  app.get('/api/copilot/financial-leaks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = calculateFinancialLeaks(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error calculating financial leaks:", error);
+      res.status(500).json({ message: "Failed to calculate financial leaks" });
+    }
+  });
+
+  // Advanced Copilot Features - ROI Timeline Generator
+  app.get('/api/copilot/roi-timeline/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const investment = parseInt(req.query.investment as string) || 2000;
+      const result = generateROITimeline(business, investment);
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating ROI timeline:", error);
+      res.status(500).json({ message: "Failed to generate ROI timeline" });
+    }
+  });
+
+  // Advanced Copilot Features - Competitor Ghost Mirror
+  app.get('/api/copilot/competitor-mirror/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = mirrorCompetitors(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error mirroring competitors:", error);
+      res.status(500).json({ message: "Failed to mirror competitors" });
+    }
+  });
+
+  // Advanced Copilot Features - Greed Trigger Engine
+  app.get('/api/copilot/greed-triggers/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = generateGreedTriggers(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating greed triggers:", error);
+      res.status(500).json({ message: "Failed to generate greed triggers" });
+    }
+  });
+
+  // Advanced Copilot Features - Offer Mutation Engine
+  app.get('/api/copilot/offer-mutation/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const result = mutateOffer(business);
+      res.json(result);
+    } catch (error) {
+      console.error("Error mutating offer:", error);
+      res.status(500).json({ message: "Failed to mutate offer" });
+    }
+  });
+
+  // Advanced Copilot Features - Complete Intelligence Package (all features in one)
+  app.get('/api/copilot/intelligence-package/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const deepScanResult = deepScan(business);
+      const decisionMaker = profileDecisionMaker(business);
+      const financialLeaks = calculateFinancialLeaks(business);
+      const roiTimeline = generateROITimeline(business);
+      const competitorMirror = mirrorCompetitors(business);
+      const greedTriggers = generateGreedTriggers(business);
+      const offerMutation = mutateOffer(business);
+      
+      res.json({
+        business: {
+          id: business.id,
+          name: business.name,
+          category: business.category,
+          city: business.city,
+          rating: business.rating,
+          reviewCount: business.reviewCount,
+        },
+        deepScan: deepScanResult,
+        decisionMaker,
+        financialLeaks,
+        roiTimeline,
+        competitorMirror,
+        greedTriggers,
+        offerMutation,
+      });
+    } catch (error) {
+      console.error("Error generating intelligence package:", error);
+      res.status(500).json({ message: "Failed to generate intelligence package" });
     }
   });
 
