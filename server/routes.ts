@@ -2667,6 +2667,191 @@ Respond in JSON format with these exact keys:
     }
   });
 
+  // =====================================================
+  // ADVANCED INTELLIGENCE SCRAPERS
+  // =====================================================
+  
+  // Instagram intelligence scraper
+  app.post('/api/intel/instagram', isAuthenticated, async (req: any, res) => {
+    try {
+      const { handle } = req.body;
+      if (!handle) {
+        return res.status(400).json({ message: "Instagram handle is required" });
+      }
+
+      const { InstagramScraper } = await import('./services/advancedIntel');
+      const scraper = new InstagramScraper();
+      const intel = await scraper.scrapeProfile(handle);
+      
+      res.json(intel);
+    } catch (error) {
+      console.error("Error scraping Instagram:", error);
+      res.status(500).json({ message: "Failed to scrape Instagram profile" });
+    }
+  });
+
+  // Google Reviews intelligence scraper
+  app.post('/api/intel/reviews', isAuthenticated, async (req: any, res) => {
+    try {
+      const { placeId, businessName, maxReviews = 20 } = req.body;
+      if (!placeId || !businessName) {
+        return res.status(400).json({ message: "placeId and businessName are required" });
+      }
+
+      const { GoogleReviewsScraper } = await import('./services/advancedIntel');
+      const scraper = new GoogleReviewsScraper(process.env.GOOGLE_PLACES_API_KEY);
+      const intel = await scraper.scrapeReviews(placeId, businessName, maxReviews);
+      
+      res.json(intel);
+    } catch (error) {
+      console.error("Error scraping Google Reviews:", error);
+      res.status(500).json({ message: "Failed to scrape Google Reviews" });
+    }
+  });
+
+  // TripAdvisor intelligence scraper
+  app.post('/api/intel/tripadvisor', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessName, city, category } = req.body;
+      if (!businessName || !city) {
+        return res.status(400).json({ message: "businessName and city are required" });
+      }
+
+      const { TripAdvisorScraper } = await import('./services/advancedIntel');
+      const scraper = new TripAdvisorScraper();
+      const intel = await scraper.scrapeProfile(businessName, city, category || 'restaurant');
+      
+      res.json(intel);
+    } catch (error) {
+      console.error("Error scraping TripAdvisor:", error);
+      res.status(500).json({ message: "Failed to scrape TripAdvisor" });
+    }
+  });
+
+  // OTA Presence detector
+  app.post('/api/intel/ota', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessName, city, category, websiteHtml } = req.body;
+      if (!businessName || !city || !category) {
+        return res.status(400).json({ message: "businessName, city, and category are required" });
+      }
+
+      const { OTAPresenceDetector } = await import('./services/advancedIntel');
+      const detector = new OTAPresenceDetector();
+      const intel = await detector.detectPresence(businessName, city, category, websiteHtml);
+      
+      res.json(intel);
+    } catch (error) {
+      console.error("Error detecting OTA presence:", error);
+      res.status(500).json({ message: "Failed to detect OTA presence" });
+    }
+  });
+
+  // WhatsApp response tester
+  app.post('/api/intel/whatsapp', isAuthenticated, async (req: any, res) => {
+    try {
+      const { phoneNumber, businessName } = req.body;
+      if (!phoneNumber) {
+        return res.status(400).json({ message: "phoneNumber is required" });
+      }
+
+      const { WhatsAppResponseTester } = await import('./services/advancedIntel');
+      const tester = new WhatsAppResponseTester();
+      const intel = await tester.testWhatsApp(phoneNumber, businessName || '');
+      
+      res.json(intel);
+    } catch (error) {
+      console.error("Error testing WhatsApp:", error);
+      res.status(500).json({ message: "Failed to test WhatsApp" });
+    }
+  });
+
+  // Comprehensive intelligence gatherer - runs all scrapers
+  app.post('/api/intel/comprehensive', isAuthenticated, async (req: any, res) => {
+    try {
+      const { 
+        businessName, 
+        category, 
+        city, 
+        instagramHandle, 
+        placeId, 
+        phoneNumber, 
+        websiteHtml 
+      } = req.body;
+      
+      if (!businessName || !category || !city) {
+        return res.status(400).json({ 
+          message: "businessName, category, and city are required" 
+        });
+      }
+
+      const { gatherComprehensiveIntelligence, formatIntelligenceSummary } = await import('./services/advancedIntel');
+      
+      const intel = await gatherComprehensiveIntelligence({
+        businessName,
+        category,
+        city,
+        instagramHandle,
+        placeId,
+        phoneNumber,
+        websiteHtml,
+        googleApiKey: process.env.GOOGLE_PLACES_API_KEY,
+      });
+      
+      res.json({
+        ...intel,
+        formattedSummary: formatIntelligenceSummary(intel),
+      });
+    } catch (error) {
+      console.error("Error gathering comprehensive intelligence:", error);
+      res.status(500).json({ message: "Failed to gather comprehensive intelligence" });
+    }
+  });
+
+  // Get intelligence for a specific business by ID
+  app.get('/api/intel/business/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusinessById(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const { gatherComprehensiveIntelligence, formatIntelligenceSummary } = await import('./services/advancedIntel');
+      
+      // Extract Instagram handle from social links if available
+      let instagramHandle = '';
+      if (business.socialLinks) {
+        const igLink = (business.socialLinks as string[]).find((link: string) => 
+          link.includes('instagram.com')
+        );
+        if (igLink) {
+          const match = igLink.match(/instagram\.com\/([^\/\?]+)/);
+          if (match) instagramHandle = match[1];
+        }
+      }
+
+      const intel = await gatherComprehensiveIntelligence({
+        businessName: business.name,
+        category: business.category,
+        city: business.city || 'Cartagena',
+        instagramHandle,
+        placeId: business.googlePlaceId || undefined,
+        phoneNumber: business.phone || undefined,
+        googleApiKey: process.env.GOOGLE_PLACES_API_KEY,
+      });
+      
+      res.json({
+        businessId: business.id,
+        businessName: business.name,
+        intel,
+        formattedSummary: formatIntelligenceSummary(intel),
+      });
+    } catch (error) {
+      console.error("Error gathering business intelligence:", error);
+      res.status(500).json({ message: "Failed to gather business intelligence" });
+    }
+  });
+
   return httpServer;
 }
 
