@@ -19,6 +19,8 @@ import IntentSignals from "@/pages/IntentSignals";
 import VenueMonitors from "@/pages/VenueMonitors";
 import AuthorityContent from "@/pages/AuthorityContent";
 import BlackCardIntel from "@/pages/BlackCardIntel";
+import TeamLogin from "@/pages/TeamLogin";
+import TeamManagement from "@/pages/TeamManagement";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -33,6 +35,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Team login is always accessible */}
+      <Route path="/team-login" component={TeamLogin} />
+      
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
@@ -51,6 +56,7 @@ function Router() {
           <Route path="/authority-content" component={AuthorityContent} />
           <Route path="/blackcard-intel" component={BlackCardIntel} />
           <Route path="/blackcard-intel/:id" component={BlackCardIntel} />
+          <Route path="/team" component={TeamManagement} />
         </>
       )}
       <Route component={NotFound} />

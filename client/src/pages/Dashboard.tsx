@@ -217,6 +217,13 @@ export default function Dashboard() {
                 <BarChart3 className="h-4 w-4 mr-1" /> Stats
               </Button>
             </Link>
+            {user?.role === 'admin' && (
+              <Link href="/team">
+                <Button variant="ghost" size="sm" data-testid="nav-team">
+                  <Users className="h-4 w-4 mr-1" /> Team
+                </Button>
+              </Link>
+            )}
           </nav>
           
           <div className="flex items-center gap-3">
