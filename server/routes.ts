@@ -2848,6 +2848,70 @@ Respond in JSON format with these exact keys:
     }
   });
 
+  // Instagram Discovery - Find Instagram handle for a business
+  app.post('/api/intel/discover-instagram', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessName, city, websiteUrl, facebookUrl, existingCandidates } = req.body;
+      
+      if (!businessName || !city) {
+        return res.status(400).json({ message: "businessName and city are required" });
+      }
+
+      const { discoverInstagram, formatDiscoveryResult } = await import('./services/advancedIntel');
+      
+      const result = await discoverInstagram({
+        businessName,
+        city,
+        websiteUrl,
+        facebookUrl,
+        existingCandidates,
+      });
+      
+      res.json({
+        ...result,
+        formattedSummary: formatDiscoveryResult(result),
+      });
+    } catch (error) {
+      console.error("Error discovering Instagram:", error);
+      res.status(500).json({ message: "Failed to discover Instagram handle" });
+    }
+  });
+
+  // Instagram Discovery for a specific business by ID
+  app.get('/api/intel/discover-instagram/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const { discoverInstagram, formatDiscoveryResult } = await import('./services/advancedIntel');
+      
+      // Extract existing Instagram if any
+      const existingCandidates: string[] = [];
+      if (business.instagram) {
+        existingCandidates.push(business.instagram);
+      }
+
+      const result = await discoverInstagram({
+        businessName: business.name,
+        city: business.city || 'Cartagena',
+        websiteUrl: business.website || undefined,
+        existingCandidates: existingCandidates.length > 0 ? existingCandidates : undefined,
+      });
+      
+      res.json({
+        businessId: business.id,
+        businessName: business.name,
+        discovery: result,
+        formattedSummary: formatDiscoveryResult(result),
+      });
+    } catch (error) {
+      console.error("Error discovering Instagram for business:", error);
+      res.status(500).json({ message: "Failed to discover Instagram handle" });
+    }
+  });
+
   return httpServer;
 }
 

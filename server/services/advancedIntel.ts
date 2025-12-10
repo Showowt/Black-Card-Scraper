@@ -882,3 +882,488 @@ export function formatIntelligenceSummary(intel: ComprehensiveIntelligence): str
 
   return lines.join('\n');
 }
+
+// ============================================================
+// INSTAGRAM DISCOVERY ENGINE
+// Multi-source Instagram handle discovery for businesses
+// ============================================================
+
+export interface InstagramCandidate {
+  handle: string;
+  source: string;
+  confidence: number;
+  profileUrl: string;
+  validationNotes: string;
+  followers: number;
+  bio: string;
+  fullName: string;
+  isVerified: boolean;
+  isBusiness: boolean;
+  externalUrl: string;
+}
+
+export interface InstagramDiscoveryResult {
+  businessName: string;
+  city: string;
+  bestMatch: InstagramCandidate | null;
+  allCandidates: InstagramCandidate[];
+  sourcesChecked: string[];
+  discoverySuccessful: boolean;
+  error: string;
+}
+
+export class InstagramDiscoveryEngine {
+  private igPatterns: RegExp[] = [
+    /(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]+)\/?/i,
+    /(?:https?:\/\/)?(?:www\.)?instagr\.am\/([a-zA-Z0-9_.]+)\/?/i,
+    /@([a-zA-Z0-9_.]{1,30})(?:\s|$|[,.])/,
+    /[Ii]nstagram[:\s]+@?([a-zA-Z0-9_.]+)/,
+    /[Ii][Gg][:\s]+@?([a-zA-Z0-9_.]+)/,
+    /href=["'](?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]+)/i,
+  ];
+
+  private falsePositives = new Set([
+    'instagram', 'explore', 'p', 'reel', 'reels', 'stories', 'story',
+    'accounts', 'login', 'signup', 'about', 'legal', 'privacy',
+    'terms', 'help', 'support', 'developer', 'blog', 'press',
+    'jobs', 'careers', 'api', 'share', 'direct', 'tv', 'igtv',
+  ]);
+
+  private cleanHandle(handle: string): string {
+    let cleaned = handle.replace(/^@/, '').toLowerCase().trim();
+    cleaned = cleaned.replace(/\/$/, '');
+    if (this.falsePositives.has(cleaned) || cleaned.length < 2 || cleaned.length > 30) {
+      return '';
+    }
+    if (!/^[a-z0-9_.]+$/.test(cleaned)) {
+      return '';
+    }
+    return cleaned;
+  }
+
+  private extractHandlesFromHtml(html: string): string[] {
+    const handles: Set<string> = new Set();
+    
+    for (const pattern of this.igPatterns) {
+      const regex = new RegExp(pattern, 'gi');
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(html)) !== null) {
+        const handle = this.cleanHandle(match[1]);
+        if (handle) handles.add(handle);
+      }
+    }
+    
+    return Array.from(handles);
+  }
+
+  private generateNameVariations(businessName: string, city: string): string[] {
+    const variations: string[] = [];
+    const cleanName = businessName.toLowerCase()
+      .replace(/['"]/g, '')
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
+    
+    const words = cleanName.split(/\s+/).filter(w => w.length > 0);
+    
+    // Join all words
+    variations.push(words.join(''));
+    
+    // Underscore separated
+    variations.push(words.join('_'));
+    
+    // Dot separated
+    variations.push(words.join('.'));
+    
+    // With city suffix
+    const cityClean = city.toLowerCase().replace(/[^a-z]/g, '');
+    variations.push(`${words.join('')}_${cityClean}`);
+    variations.push(`${words.join('')}${cityClean}`);
+    
+    // With common suffixes
+    variations.push(`${words.join('')}_oficial`);
+    variations.push(`${words.join('')}_co`);
+    variations.push(`${words.join('')}_colombia`);
+    
+    // First letters + city
+    if (words.length >= 2) {
+      const initials = words.map(w => w[0]).join('');
+      variations.push(`${initials}${cityClean}`);
+    }
+    
+    return [...new Set(variations)].filter(v => v.length >= 3 && v.length <= 30);
+  }
+
+  private calculateNameMatchScore(businessName: string, profileName: string): number {
+    const businessWordsArray = businessName.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 2);
+    const businessWords = new Set(businessWordsArray);
+    const profileWords = new Set(
+      profileName.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 2)
+    );
+    
+    let matches = 0;
+    for (const word of businessWordsArray) {
+      if (profileWords.has(word)) matches++;
+    }
+    
+    return businessWords.size > 0 ? matches / businessWords.size : 0;
+  }
+
+  async discover(params: {
+    businessName: string;
+    city: string;
+    country?: string;
+    websiteUrl?: string;
+    facebookUrl?: string;
+    existingCandidates?: string[];
+  }): Promise<InstagramDiscoveryResult> {
+    const { businessName, city, country = 'Colombia', websiteUrl, facebookUrl, existingCandidates } = params;
+    
+    const result: InstagramDiscoveryResult = {
+      businessName,
+      city,
+      bestMatch: null,
+      allCandidates: [],
+      sourcesChecked: [],
+      discoverySuccessful: false,
+      error: '',
+    };
+
+    const candidates: InstagramCandidate[] = [];
+
+    // Add existing candidates
+    if (existingCandidates) {
+      for (const handle of existingCandidates) {
+        const cleaned = this.cleanHandle(handle);
+        if (cleaned) {
+          candidates.push({
+            handle: cleaned,
+            source: 'existing_data',
+            confidence: 0.5,
+            profileUrl: `https://instagram.com/${cleaned}`,
+            validationNotes: 'From existing data',
+            followers: 0,
+            bio: '',
+            fullName: '',
+            isVerified: false,
+            isBusiness: false,
+            externalUrl: '',
+          });
+        }
+      }
+    }
+
+    // Source 1: Business Website
+    if (websiteUrl) {
+      try {
+        const websiteCandidates = await this.searchWebsite(websiteUrl, businessName);
+        candidates.push(...websiteCandidates);
+        result.sourcesChecked.push('business_website');
+      } catch (e: any) {
+        result.sourcesChecked.push(`business_website (failed: ${e.message?.slice(0, 30)})`);
+      }
+    }
+
+    // Source 2: Name variations (check if they exist on Instagram)
+    try {
+      const variations = this.generateNameVariations(businessName, city);
+      const variationCandidates = await this.checkNameVariations(variations.slice(0, 10));
+      candidates.push(...variationCandidates);
+      result.sourcesChecked.push('name_variations');
+    } catch (e: any) {
+      result.sourcesChecked.push(`name_variations (failed: ${e.message?.slice(0, 30)})`);
+    }
+
+    // Deduplicate candidates
+    const uniqueCandidates = this.deduplicateCandidates(candidates);
+
+    // Validate and score each candidate
+    const validatedCandidates: InstagramCandidate[] = [];
+    for (const candidate of uniqueCandidates.slice(0, 8)) {
+      try {
+        const validated = await this.validateCandidate(candidate, businessName, city);
+        validatedCandidates.push(validated);
+      } catch {
+        validatedCandidates.push(candidate);
+      }
+      await new Promise(r => setTimeout(r, 300)); // Rate limiting
+    }
+
+    // Sort by confidence
+    validatedCandidates.sort((a, b) => b.confidence - a.confidence);
+    result.allCandidates = validatedCandidates;
+
+    // Select best match
+    if (validatedCandidates.length > 0 && validatedCandidates[0].confidence >= 0.5) {
+      result.bestMatch = validatedCandidates[0];
+      result.discoverySuccessful = true;
+    }
+
+    return result;
+  }
+
+  private async searchWebsite(websiteUrl: string, businessName: string): Promise<InstagramCandidate[]> {
+    const candidates: InstagramCandidate[] = [];
+    
+    let url = websiteUrl;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `https://${url}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+      });
+
+      if (!response.ok) return candidates;
+
+      const html = await response.text();
+      const handles = this.extractHandlesFromHtml(html);
+
+      for (const handle of handles) {
+        candidates.push({
+          handle,
+          source: 'business_website',
+          confidence: 0.9,
+          profileUrl: `https://instagram.com/${handle}`,
+          validationNotes: 'Found on business website',
+          followers: 0,
+          bio: '',
+          fullName: '',
+          isVerified: false,
+          isBusiness: false,
+          externalUrl: '',
+        });
+      }
+
+      // Check footer specifically (often has social links)
+      const footerMatch = html.match(/<footer[^>]*>[\s\S]*?<\/footer>/i);
+      if (footerMatch) {
+        const footerHandles = this.extractHandlesFromHtml(footerMatch[0]);
+        for (const handle of footerHandles) {
+          const existing = candidates.find(c => c.handle === handle);
+          if (existing) {
+            existing.confidence = 0.95;
+            existing.source = 'website_footer';
+            existing.validationNotes = 'Found in website footer';
+          }
+        }
+      }
+    } catch (e) {
+      // Website fetch failed
+    }
+
+    return candidates;
+  }
+
+  private async checkNameVariations(variations: string[]): Promise<InstagramCandidate[]> {
+    const candidates: InstagramCandidate[] = [];
+
+    for (const variation of variations) {
+      try {
+        const profileUrl = `https://www.instagram.com/${variation}/`;
+        const response = await fetch(profileUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+        });
+
+        if (response.ok) {
+          const html = await response.text();
+          // Check if it's a real profile (not 404 page)
+          if (!html.includes("Sorry, this page isn't available") && 
+              (html.includes('Followers') || html.includes('edge_followed_by'))) {
+            candidates.push({
+              handle: variation,
+              source: 'name_variation',
+              confidence: 0.4,
+              profileUrl,
+              validationNotes: 'Matches business name pattern',
+              followers: 0,
+              bio: '',
+              fullName: '',
+              isVerified: false,
+              isBusiness: false,
+              externalUrl: '',
+            });
+          }
+        }
+        await new Promise(r => setTimeout(r, 500)); // Rate limiting
+      } catch {
+        // Variation check failed, continue
+      }
+    }
+
+    return candidates;
+  }
+
+  private deduplicateCandidates(candidates: InstagramCandidate[]): InstagramCandidate[] {
+    const seen = new Map<string, InstagramCandidate>();
+    
+    for (const candidate of candidates) {
+      const existing = seen.get(candidate.handle);
+      if (!existing || candidate.confidence > existing.confidence) {
+        seen.set(candidate.handle, candidate);
+      } else if (existing && candidate.confidence === existing.confidence) {
+        // Merge sources
+        if (!existing.source.includes(candidate.source)) {
+          existing.source = `${existing.source}, ${candidate.source}`;
+        }
+      }
+    }
+
+    return Array.from(seen.values());
+  }
+
+  private async validateCandidate(
+    candidate: InstagramCandidate,
+    businessName: string,
+    city: string
+  ): Promise<InstagramCandidate> {
+    try {
+      const response = await fetch(candidate.profileUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+      });
+
+      if (!response.ok) {
+        candidate.confidence *= 0.5;
+        candidate.validationNotes += ' | Profile not accessible';
+        return candidate;
+      }
+
+      const html = await response.text();
+
+      // Extract profile name from meta tags
+      const nameMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) ||
+                       html.match(/<meta\s+content="([^"]+)"\s+property="og:title"/i);
+      if (nameMatch) {
+        candidate.fullName = nameMatch[1].split('(')[0].trim();
+        
+        // Check name match
+        const nameScore = this.calculateNameMatchScore(businessName, candidate.fullName);
+        if (nameScore > 0.5) {
+          candidate.confidence += 0.3 * nameScore;
+          candidate.validationNotes += ` | Name match: ${Math.round(nameScore * 100)}%`;
+        }
+      }
+
+      // Extract follower count
+      const metaDesc = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i) ||
+                       html.match(/<meta\s+content="([^"]+)"\s+name="description"/i);
+      if (metaDesc) {
+        const followerMatch = metaDesc[1].match(/([\d,.]+[KMB]?)\s*Followers/i);
+        if (followerMatch) {
+          candidate.followers = this.parseCount(followerMatch[1]);
+          if (candidate.followers > 1000) {
+            candidate.confidence += 0.1;
+            candidate.validationNotes += ` | ${candidate.followers.toLocaleString()} followers`;
+          }
+        }
+        
+        // Check for city in bio/description
+        const cityLower = city.toLowerCase();
+        if (metaDesc[1].toLowerCase().includes(cityLower)) {
+          candidate.confidence += 0.2;
+          candidate.validationNotes += ' | City found in bio';
+        }
+      }
+
+      // Check for business account indicators
+      if (html.includes('is_business_account":true') || 
+          html.includes('Contact') ||
+          html.includes('professional_account')) {
+        candidate.isBusiness = true;
+        candidate.confidence += 0.1;
+        candidate.validationNotes += ' | Business account';
+      }
+
+      // Check verified
+      if (html.includes('is_verified":true')) {
+        candidate.isVerified = true;
+        candidate.confidence += 0.1;
+        candidate.validationNotes += ' | Verified';
+      }
+
+      // Cap confidence at 1.0
+      candidate.confidence = Math.min(candidate.confidence, 1.0);
+
+    } catch (e) {
+      candidate.validationNotes += ' | Validation failed';
+    }
+
+    return candidate;
+  }
+
+  private parseCount(countStr: string): number {
+    const cleaned = countStr.toUpperCase().replace(/,/g, '');
+    const multipliers: Record<string, number> = { K: 1000, M: 1000000, B: 1000000000 };
+    
+    for (const [suffix, mult] of Object.entries(multipliers)) {
+      if (cleaned.includes(suffix)) {
+        const num = parseFloat(cleaned.replace(suffix, ''));
+        return Math.floor(num * mult);
+      }
+    }
+    return parseInt(cleaned) || 0;
+  }
+}
+
+// Export discover function for easy use
+export async function discoverInstagram(params: {
+  businessName: string;
+  city: string;
+  websiteUrl?: string;
+  facebookUrl?: string;
+  existingCandidates?: string[];
+}): Promise<InstagramDiscoveryResult> {
+  const engine = new InstagramDiscoveryEngine();
+  return engine.discover(params);
+}
+
+export function formatDiscoveryResult(result: InstagramDiscoveryResult): string {
+  const lines: string[] = [];
+  
+  lines.push(`INSTAGRAM DISCOVERY: ${result.businessName}`);
+  lines.push(`City: ${result.city}`);
+  lines.push('');
+  
+  if (result.bestMatch) {
+    lines.push('BEST MATCH');
+    lines.push(`   Handle: @${result.bestMatch.handle}`);
+    lines.push(`   Confidence: ${Math.round(result.bestMatch.confidence * 100)}%`);
+    lines.push(`   Source: ${result.bestMatch.source}`);
+    lines.push(`   Profile: ${result.bestMatch.profileUrl}`);
+    lines.push(`   DM Link: https://ig.me/m/${result.bestMatch.handle}`);
+    if (result.bestMatch.followers > 0) {
+      lines.push(`   Followers: ${result.bestMatch.followers.toLocaleString()}`);
+    }
+    if (result.bestMatch.fullName) {
+      lines.push(`   Profile Name: ${result.bestMatch.fullName}`);
+    }
+    if (result.bestMatch.validationNotes) {
+      lines.push(`   Notes: ${result.bestMatch.validationNotes}`);
+    }
+  } else {
+    lines.push('NO MATCH FOUND');
+  }
+  
+  lines.push('');
+  lines.push(`Sources checked: ${result.sourcesChecked.join(', ')}`);
+  
+  if (result.allCandidates.length > 1) {
+    lines.push('');
+    lines.push('OTHER CANDIDATES:');
+    for (const candidate of result.allCandidates.slice(1, 5)) {
+      lines.push(`   @${candidate.handle} - ${Math.round(candidate.confidence * 100)}% (${candidate.source})`);
+    }
+  }
+  
+  return lines.join('\n');
+}

@@ -1,0 +1,150 @@
+The Solution: Multi-Source Discovery
+The new engine searches 6 different sources to find the correct Instagram:
+┌─────────────────────────────────────────────────────────────┐
+│  INSTAGRAM DISCOVERY ENGINE                                 │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  SOURCE 1: Google Search                                    │
+│  → Searches: "[business name] [city] instagram"             │
+│  → Searches: "[business name] [city] site:instagram.com"    │
+│  → Searches: "[business name] [city] @"                     │
+│                                                             │
+│  SOURCE 2: Business Website (Deep Scan)                     │
+│  → Homepage                                                 │
+│  → Footer (most common location)                            │
+│  → Contact page                                             │
+│  → Multiple URL patterns                                    │
+│                                                             │
+│  SOURCE 3: Facebook Page                                    │
+│  → Linked Instagram accounts                                │
+│                                                             │
+│  SOURCE 4: Google Maps                                      │
+│  → Social links in listing                                  │
+│                                                             │
+│  SOURCE 5: Name Variations                                  │
+│  → casasanagustin                                           │
+│  → casa_san_agustin                                         │
+│  → casa.san.agustin                                         │
+│  → casasanagustin_cartagena                                 │
+│  → casasanagustin_oficial                                   │
+│  → (checks if each exists on Instagram)                     │
+│                                                             │
+│  SOURCE 6: Bing Search (backup)                             │
+│  → Same queries as Google                                   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+Validation & Confidence Scoring
+Every candidate found gets validated:
+python# Validation checks:
+1. Does the handle actually exist on Instagram?
+2. Does the profile NAME match the business name?
+3. Does the CITY appear in the bio?
+4. Is it a Business account?
+5. Does it have significant followers?
+
+# Confidence scoring:
+- From business website footer: 95%
+- From business website: 90%
+- From Facebook page: 85%
+- From Google Maps: 80%
+- From Google search: 70%
+- From Bing search: 60%
+- Name variation (unvalidated): 40%
+
+# Boosts:
+- Name words match profile: +30%
+- City in bio: +20%
+- Business account: +10%
+
+New CLI Commands
+1. Find Instagram for Single Business
+bashpython main.py find-instagram "Casa San Agustin" -c Cartagena
+python main.py find-instagram "Carmen Restaurant" -w carmencartagena.com
+python main.py find-instagram "Hotel Name" -fb facebook.com/hotelname
+```
+
+**Output:**
+```
+🔍 INSTAGRAM DISCOVERY: Casa San Agustin
+City: Cartagena
+
+╭──────────────────── Best Match ────────────────────╮
+│ ✅ FOUND: @casasanagustin                          │
+│                                                    │
+│ Confidence: 92%                                    │
+│ Source: business_website, google_search            │
+│ URL: https://instagram.com/casasanagustin          │
+│ DM Link: https://ig.me/m/casasanagustin            │
+│                                                    │
+│ Followers: 45,230                                  │
+│ Profile Name: Casa San Agustín Hotel               │
+│                                                    │
+│ Notes: Name match: 3 words overlap | City found    │
+╰────────────────────────────────────────────────────╯
+
+Sources checked: google_search, business_website, name_variations, bing_search
+
+Other Candidates:
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Handle               ┃ Confidence ┃ Source                      ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ @casasanagustinctg   │ 65%        │ name_variation              │
+│ @hotel_casasanagustin│ 55%        │ google_search               │
+└──────────────────────┴────────────┴─────────────────────────────┘
+
+2. Batch Discovery (Multiple Businesses)
+bashpython main.py find-instagram-batch -c Cartagena -cat hotel -l 50
+```
+
+**Output:**
+```
+📸 BATCH INSTAGRAM DISCOVERY
+City: Cartagena | Category: hotel | Limit: 50
+
+Found 50 businesses
+
+Discovering Instagram handles... ━━━━━━━━━━━━━━━━━━━━ 50/50
+
+✓ Saved to instagram_discovery.json
+✓ Found Instagram for 38/50 businesses (76%)
+
+Discovery Summary:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ Business                  ┃ Instagram          ┃ Confidence ┃ Followers ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ Casa San Agustin          │ @casasanagustin    │ 92%        │ 45,230    │
+│ Hotel Santa Clara         │ @hotelsantaclara   │ 88%        │ 32,100    │
+│ Sofitel Legend            │ @sofitelcartagena  │ 95%        │ 28,500    │
+│ Casa Pestagua             │ @casapestagua      │ 85%        │ 18,900    │
+│ Small Unknown Hotel       │ Not found          │ -          │ -         │
+└───────────────────────────┴────────────────────┴────────────┴───────────┘
+
+JSON Output Format
+json{
+  "business_name": "Casa San Agustin",
+  "business_id": "ChIJxyz123",
+  "instagram_handle": "casasanagustin",
+  "instagram_url": "https://instagram.com/casasanagustin",
+  "dm_link": "https://ig.me/m/casasanagustin",
+  "confidence": 0.92,
+  "source": "business_website, google_search",
+  "followers": 45230,
+  "profile_name": "Casa San Agustín Hotel"
+}
+
+How It Handles Edge Cases
+ProblemSolutionBusiness has weird Instagram nameChecks 15+ name variationsNo websiteFalls back to Google/Bing searchWebsite doesn't list InstagramChecks footer, contact page, FacebookMultiple candidates foundValidates each, picks highest confidenceHandle exists but wrong businessCross-checks name and city in bioRate limitingBuilt-in delays between requests
+
+Full Workflow
+bash# Step 1: Scan businesses
+python main.py elite-scan -c Cartagena -cat hotel
+
+# Step 2: Discover Instagram handles
+python main.py find-instagram-batch -c Cartagena -cat hotel -l 100
+
+# Step 3: Get full intelligence on high-value targets
+python main.py intel "Casa San Agustin" -c Cartagena -cat hotel -ig casasanagustin
+
+# Step 4: Generate outreach
+python main.py blackcard -c Cartagena -cat hotel --limit 20

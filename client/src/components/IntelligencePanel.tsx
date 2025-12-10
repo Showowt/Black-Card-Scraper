@@ -11,10 +11,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search, Star, MessageCircle, Globe, RefreshCw, AlertTriangle,
-  TrendingUp, TrendingDown, Users, Phone, Building2, Copy, Check
+  TrendingUp, TrendingDown, Users, Phone, Building2, Copy, Check, Sparkles
 } from "lucide-react";
 import { SiInstagram, SiTripadvisor, SiWhatsapp } from "react-icons/si";
 import type { Business } from "@shared/schema";
+
+interface InstagramCandidate {
+  handle: string;
+  source: string;
+  confidence: number;
+  profileUrl: string;
+  validationNotes: string;
+  followers: number;
+  fullName: string;
+  isVerified: boolean;
+  isBusiness: boolean;
+}
+
+interface InstagramDiscoveryData {
+  businessId: string;
+  businessName: string;
+  discovery: {
+    businessName: string;
+    city: string;
+    bestMatch: InstagramCandidate | null;
+    allCandidates: InstagramCandidate[];
+    sourcesChecked: string[];
+    discoverySuccessful: boolean;
+    error: string;
+  };
+  formattedSummary: string;
+}
 
 interface IntelligencePanelProps {
   business: Business;
@@ -114,6 +141,33 @@ export default function IntelligencePanel({ business }: IntelligencePanelProps) 
     },
     onError: (error: Error) => {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const { data: discoveryData } = useQuery<InstagramDiscoveryData>({
+    queryKey: ['/api/intel/discover-instagram', business.id],
+    enabled: false,
+  });
+
+  const discoverMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/intel/discover-instagram/${business.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to discover Instagram');
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['/api/intel/discover-instagram', business.id], data);
+      if (data.discovery?.bestMatch) {
+        toast({ 
+          title: "Instagram Found!", 
+          description: `@${data.discovery.bestMatch.handle} (${Math.round(data.discovery.bestMatch.confidence * 100)}% confidence)` 
+        });
+      } else {
+        toast({ title: "Discovery Complete", description: "No high-confidence match found" });
+      }
+    },
+    onError: (error: Error) => {
+      toast({ title: "Discovery Failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -226,11 +280,15 @@ export default function IntelligencePanel({ business }: IntelligencePanelProps) 
             )}
 
             {/* Platform Details */}
-            <Tabs defaultValue="instagram" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+            <Tabs defaultValue="discover" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="discover" className="gap-1" data-testid="tab-discover">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="hidden md:inline">Discover</span>
+                </TabsTrigger>
                 <TabsTrigger value="instagram" className="gap-1" data-testid="tab-instagram">
                   <SiInstagram className="w-4 h-4" />
-                  <span className="hidden md:inline">Instagram</span>
+                  <span className="hidden md:inline">IG</span>
                 </TabsTrigger>
                 <TabsTrigger value="google" className="gap-1" data-testid="tab-google">
                   <Star className="w-4 h-4" />
@@ -246,9 +304,157 @@ export default function IntelligencePanel({ business }: IntelligencePanelProps) 
                 </TabsTrigger>
                 <TabsTrigger value="whatsapp" className="gap-1" data-testid="tab-whatsapp">
                   <SiWhatsapp className="w-4 h-4" />
-                  <span className="hidden md:inline">WhatsApp</span>
+                  <span className="hidden md:inline">WA</span>
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="discover" className="mt-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h4 className="font-medium">Instagram Discovery</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Multi-source search to find the business Instagram handle
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => discoverMutation.mutate()}
+                      disabled={discoverMutation.isPending}
+                      size="sm"
+                      data-testid="button-discover-instagram"
+                    >
+                      {discoverMutation.isPending ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Discovering...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Discover Instagram
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {discoverMutation.isPending && (
+                    <div className="space-y-2">
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  )}
+
+                  {discoveryData?.discovery && (
+                    <div className="space-y-4">
+                      {discoveryData.discovery.bestMatch ? (
+                        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-md">
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <SiInstagram className="w-5 h-5 text-pink-500" />
+                              <span className="font-bold">@{discoveryData.discovery.bestMatch.handle}</span>
+                              {discoveryData.discovery.bestMatch.isVerified && (
+                                <Badge variant="secondary" className="text-xs">Verified</Badge>
+                              )}
+                              {discoveryData.discovery.bestMatch.isBusiness && (
+                                <Badge variant="outline" className="text-xs">Business</Badge>
+                              )}
+                            </div>
+                            <Badge variant="default" className="bg-green-600">
+                              {Math.round(discoveryData.discovery.bestMatch.confidence * 100)}% match
+                            </Badge>
+                          </div>
+                          {discoveryData.discovery.bestMatch.followers > 0 && (
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {discoveryData.discovery.bestMatch.followers.toLocaleString()} followers
+                              {discoveryData.discovery.bestMatch.fullName && ` | ${discoveryData.discovery.bestMatch.fullName}`}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Button size="sm" variant="outline" asChild>
+                              <a 
+                                href={discoveryData.discovery.bestMatch.profileUrl} 
+                                target="_blank" 
+                                rel="noopener"
+                                data-testid="link-discovered-instagram"
+                              >
+                                <Globe className="w-4 h-4 mr-1" /> Profile
+                              </a>
+                            </Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <a 
+                                href={`https://ig.me/m/${discoveryData.discovery.bestMatch.handle}`} 
+                                target="_blank" 
+                                rel="noopener"
+                                data-testid="link-discovered-dm"
+                              >
+                                <MessageCircle className="w-4 h-4 mr-1" /> DM
+                              </a>
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => copyToClipboard(`@${discoveryData.discovery.bestMatch!.handle}`, 'ig-handle')}
+                              data-testid="button-copy-handle"
+                            >
+                              {copied === 'ig-handle' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Source: {discoveryData.discovery.bestMatch.source}
+                            {discoveryData.discovery.bestMatch.validationNotes && (
+                              <span> | {discoveryData.discovery.bestMatch.validationNotes}</span>
+                            )}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-muted rounded-md text-center">
+                          <SiInstagram className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-muted-foreground">No high-confidence Instagram match found</p>
+                        </div>
+                      )}
+
+                      {discoveryData.discovery.allCandidates.length > 1 && (
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium">Other candidates:</h5>
+                          <div className="space-y-1">
+                            {discoveryData.discovery.allCandidates.slice(1, 5).map((candidate, i) => (
+                              <div key={i} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                                <a 
+                                  href={candidate.profileUrl} 
+                                  target="_blank" 
+                                  rel="noopener" 
+                                  className="hover:underline"
+                                  data-testid={`link-candidate-${i}`}
+                                >
+                                  @{candidate.handle}
+                                </a>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground">{candidate.source}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {Math.round(candidate.confidence * 100)}%
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-xs text-muted-foreground">
+                        Sources checked: {discoveryData.discovery.sourcesChecked.join(', ')}
+                      </div>
+                    </div>
+                  )}
+
+                  {!discoveryData && !discoverMutation.isPending && (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Click "Discover Instagram" to search for the business's Instagram handle</p>
+                      <p className="text-xs mt-1">Searches website, name variations, and validates profiles</p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
 
               <TabsContent value="instagram" className="mt-4">
                 {intel.instagram?.scrapeSuccess ? (
