@@ -21,6 +21,7 @@ import { SiInstagram, SiFacebook, SiWhatsapp } from "react-icons/si";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ClaudeCopilot from "@/components/ClaudeCopilot";
+import IntelligencePanel from "@/components/IntelligencePanel";
 import type { Business, OutreachCampaign } from "@shared/schema";
 import { CITIES, CATEGORIES, OUTREACH_STATUSES } from "@shared/schema";
 
@@ -597,6 +598,10 @@ export default function BusinessDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <IntelligencePanel business={business} />
         </div>
 
         <div className="mt-6">

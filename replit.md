@@ -161,6 +161,15 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
 - `POST /api/blackcard/generate` - Generate AI-enhanced intelligence with OpenAI
 - `GET /api/blackcard/colombia-intel` - Colombia market stats and psychology triggers
 
+### Advanced Intelligence Scrapers
+- `POST /api/intel/instagram` - Scrape Instagram profile intelligence (handle)
+- `POST /api/intel/reviews` - Scrape Google Reviews data (placeId, businessName)
+- `POST /api/intel/tripadvisor` - Scrape TripAdvisor profile (businessName, city, category)
+- `POST /api/intel/ota` - Detect OTA presence (businessName, city, category, websiteHtml)
+- `POST /api/intel/whatsapp` - Test WhatsApp Business presence (phoneNumber, businessName)
+- `POST /api/intel/comprehensive` - Run all scrapers for a business (businessName, category, city, etc.)
+- `GET /api/intel/business/:id` - Gather comprehensive intelligence for a business by ID
+
 ### Export & Config
 - `GET /api/export/csv` - Export to CSV
 - `GET /api/export/movvia` - Export to Movvia format
