@@ -1,0 +1,116 @@
+Colombia Market Statistics (Hard Data)
+pythonCOLOMBIA_STATS = {
+    "tourism": {
+        "visitors_2024": 6_200_000,
+        "target_2026": 7_500_000,
+        "cartagena_occupancy": "75%",
+    },
+    "digital_behavior": {
+        "whatsapp_purchase_rate": 0.66,  # 66% buy after WhatsApp
+        "abandon_without_fast_response": 0.50,  # 50% abandon
+        "no_web_presence_rate": 0.30,  # 25-35% no website
+    },
+    "ai_adoption": {
+        "fintech_ai_usage": 0.66,  # 66% use AI
+        "ai_cost_reduction": 0.44,  # 44% savings
+        "latam_ai_adoption_rank": 1,  # #1 in LATAM
+    },
+    "conpes_4144": {
+        "investment_usd": 110_000_000,  # $110M
+        "target_year": 2030,
+    },
+}
+```
+
+### 2. Vertical-Specific Ticket Ranges (Every Category)
+| Category | Min | Max | Avg | Monthly Loss Range | Implementation Days |
+|----------|-----|-----|-----|-------------------|---------------------|
+| Restaurant | $500 | $3,000 | $1,500 | $2K-$15K | 7 |
+| Hotel | $1,500 | $5,000 | $3,000 | $5K-$30K | 14 |
+| Tour Operator | $1,000 | $3,000 | $1,800 | $3K-$12K | 10 |
+| Club | $1,000 | $4,000 | $2,000 | $4K-$20K | 10 |
+| Boat Charter | $1,500 | $10,000 | $4,000 | $8K-$40K | 14 |
+| Spa | $500 | $2,000 | $1,000 | $1.5K-$8K | 7 |
+| Concierge | $2,000 | $8,000 | $4,000 | $10K-$50K | 14 |
+| Villa Rental | $2,000 | $8,000 | $4,000 | $8K-$35K | 14 |
+| Photographer | $800 | $2,500 | $1,500 | $2K-$8K | 7 |
+| Videographer | $1,000 | $3,000 | $1,800 | $2.5K-$10K | 10 |
+| DJ | $500 | $2,000 | $1,000 | $1.5K-$6K | 5 |
+| Chef | $800 | $3,000 | $1,500 | $2K-$10K | 7 |
+| Event Planner | $1,500 | $5,000 | $2,500 | $5K-$20K | 14 |
+
+### 3. Colombia-Specific Psychology Triggers
+
+**Freedom Triggers:**
+```
+"No abriste este negocio para contestar WhatsApps a las 10pm. — Phil McGill"
+"You didn't open this place to answer WhatsApps at 10pm. — Phil McGill"
+```
+
+**Urgency Triggers:**
+```
+"Cada día sin automatización es un día de dinero perdido. — Phil McGill"
+"El 50% de los colombianos abandonan si no reciben respuesta rápida. — Phil McGill"
+```
+
+**Tourist Capture Triggers:**
+```
+"La mayoría de turistas nunca regresan. ¿Los estás capturando la primera vez? — Phil McGill"
+"6.2 millones de turistas visitaron Colombia el año pasado. ¿Cuántos se fueron sin conocerte? — Phil"
+```
+
+**Government Leverage Triggers:**
+```
+"Colombia acaba de aprobar $110M USD para modernización AI (CONPES 4144). 
+Los negocios que se muevan primero tendrán ventaja de 2 años. — Phil McGill"
+4. CONPES 4144 Positioning
+pythonCONPES_POSITIONING = {
+    "credibility_statements": [
+        "Nuestras soluciones están alineadas con la Política Nacional de AI de Colombia (CONPES 4144) — cumplimiento total, escalable, a prueba de futuro. — Phil McGill",
+    ],
+    "urgency_statements": [
+        "Colombia acaba de aprobar su Política Nacional de AI y destinó $110M USD para llevar automatización a negocios en todo el país. Si no actúas ahora, tu competidor lo hará — y tendrá un año de ventaja. — Phil McGill",
+    ],
+}
+```
+
+### 5. Tech Stack Gap Detection
+
+The website scraper now detects:
+- ✅/❌ Booking system (OpenTable, Resy, Calendly, etc.)
+- ✅/❌ WhatsApp Business integration
+- ✅/❌ Online payment (Stripe, MercadoPago, Wompi, etc.)
+- ✅/❌ Review management (Trustpilot, Birdeye, etc.)
+- ✅/❌ Live chat (Intercom, Drift, Tidio, etc.)
+- ✅/❌ Mobile optimization
+- ✅/❌ Analytics
+
+**Output:**
+```
+gaps = [
+    "❌ No tiene sistema de reservas automatizado",
+    "❌ No tiene integración de WhatsApp Business",
+    "❌ No tiene pagos en línea integrados",
+    "❌ No tiene sistema de gestión de reseñas",
+    "❌ Sitio web no optimizado para móviles",
+]
+automation_score = 17  # 0-100
+6. Funding Pathways
+pythonFUNDING_PATHWAYS = {
+    "mintic": "MinTIC Digital Transformation Funds",
+    "innpulsa": "INNpulsa Colombia Innovation Grants",
+    "ruta_n": "Ruta N (Medellín) - 4IR AI Hub",
+    "mincit": "Ministry of Commerce - Tourism Digitalization",
+    "procolombia": "ProColombia - Export Services",
+}
+7. Competitor Intelligence
+pythonCOLOMBIA_COMPETITORS = {
+    "loggro_sas": {
+        "threat_level": "medium",
+        "weakness": "No AI, no WhatsApp automation, no psychology-driven sales",
+    },
+    "hatchworks_ai": {
+        "threat_level": "low",
+        "weakness": "Enterprise focus, slow, expensive, not hospitality-specific",
+    },
+}

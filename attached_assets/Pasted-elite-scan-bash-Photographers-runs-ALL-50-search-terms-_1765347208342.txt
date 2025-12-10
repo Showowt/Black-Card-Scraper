@@ -1,0 +1,227 @@
+elite-scan
+bash# Photographers - runs ALL 50+ search terms
+python main.py elite-scan -c Cartagena -cat photographer
+
+# Videographers - runs ALL 50+ search terms
+python main.py elite-scan -c Cartagena -cat videographer
+
+# DJs - runs ALL 50+ search terms
+python main.py elite-scan -c Cartagena -cat dj
+
+# Private Chefs - runs ALL 40+ search terms
+python main.py elite-scan -c Cartagena -cat chef
+
+# Event Planners - runs ALL 50+ search terms
+python main.py elite-scan -c Cartagena -cat event_planner
+
+# Hotels - runs ALL 60+ search terms
+python main.py elite-scan -c Cartagena -cat hotel
+```
+
+---
+
+## What Changed: Search Term Expansion
+
+### PHOTOGRAPHERS (Before: 4 terms → Now: 50+ terms)
+```
+Before:
+- wedding photographer
+- event photographer
+- portrait photographer
+- fotografo bodas
+
+Now ALSO includes:
+- destination wedding photographer
+- quinceañera photographer
+- commercial photographer
+- product photographer
+- food photographer
+- fashion photographer
+- real estate photographer
+- architectural photographer
+- airbnb photographer
+- drone photographer
+- fotografo profesional
+- fotógrafo de eventos
+- estudio fotografico
+- sesion de fotos
+- fotografo cartagena
+- fotografo medellin
+... and 30+ more
+```
+
+### VIDEOGRAPHERS (Before: 4 terms → Now: 50+ terms)
+```
+Now includes:
+- wedding videographer
+- wedding cinematography
+- destination wedding videographer
+- corporate videographer
+- promotional video
+- brand video
+- social media video
+- content creator
+- drone videographer
+- videografo de bodas
+- videógrafo de eventos
+- video corporativo
+- video promocional
+- produccion de video
+- camarografo
+- cineasta
+... and 30+ more
+```
+
+### DJs (Before: 4 terms → Now: 50+ terms)
+```
+Now includes:
+- wedding dj
+- corporate event dj
+- quinceañera dj
+- yacht party dj
+- pool party dj
+- latin dj
+- salsa dj
+- reggaeton dj
+- electronic dj
+- dj profesional
+- dj para eventos
+- dj para fiestas
+- dj para matrimonios
+- animador de fiestas
+- sonido para eventos
+- dj cartagena
+- dj medellin
+... and 30+ more
+```
+
+### PRIVATE CHEFS (Before: 5 terms → Now: 40+ terms)
+```
+Now includes:
+- private chef
+- personal chef
+- in-villa chef
+- yacht chef
+- vacation chef
+- private dining
+- event catering
+- wedding catering
+- luxury catering
+- private sushi chef
+- chef privado
+- chef a domicilio
+- chef para eventos
+- servicio de catering
+- chef para bodas
+- experiencia gastronómica
+- clase de cocina
+... and 25+ more
+```
+
+### EVENT PLANNERS (Before: 5 terms → Now: 50+ terms)
+```
+Now includes:
+- wedding planner
+- destination wedding planner
+- bridal consultant
+- day of coordinator
+- corporate event planner
+- conference planner
+- quinceañera planner
+- baby shower planner
+- event decorator
+- floral designer
+- organizador de eventos
+- planificador de bodas
+- bodas destino
+- decoracion de eventos
+- montaje de eventos
+- cartagena wedding planner
+... and 30+ more
+```
+
+### HOTELS (Before: basic types → Now: 60+ terms)
+```
+Now includes:
+- boutique hotel
+- luxury hotel
+- eco hotel
+- spa resort
+- all inclusive
+- adults only hotel
+- hotel boutique
+- hotel de lujo
+- posada
+- hosteria
+- finca hotel
+- hacienda hotel
+- hotel colonial
+- hotel centro historico
+- 5 star hotel
+- hotel 5 estrellas
+- hotel cartagena
+- hotel getsemani
+- hotel bocagrande
+- hotel ciudad amurallada
+... and 40+ more
+```
+
+---
+
+## How Elite Scan Works
+```
+1. Takes your category (e.g., "photographer")
+2. Gets ALL 50+ search terms for that category
+3. Runs EACH term as a separate Google Places search
+4. Deduplicates by place_id (no duplicates)
+5. Saves ALL unique results to database
+6. Shows you what it found
+
+Example output:
+🎯 ELITE SCAN: PHOTOGRAPHER
+City: Cartagena | Search terms: 52 | Max per term: 20
+
+  ✓ 'wedding photographer' → 8 new (12 total)
+  ✓ 'fotografo de bodas' → 5 new (11 total)
+  ✓ 'event photographer' → 3 new (9 total)
+  ✓ 'fotografo profesional' → 7 new (15 total)
+  ✓ 'destination wedding photo...' → 4 new (8 total)
+  ...
+
+✓ Found 127 unique businesses
+✓ Saved 127 businesses to database
+
+Complete Scan Workflow
+bash# 1. Elite scan all hard-to-find categories
+python main.py elite-scan -c Cartagena -cat photographer
+python main.py elite-scan -c Cartagena -cat videographer
+python main.py elite-scan -c Cartagena -cat dj
+python main.py elite-scan -c Cartagena -cat chef
+python main.py elite-scan -c Cartagena -cat event_planner
+python main.py elite-scan -c Cartagena -cat hotel
+python main.py elite-scan -c Cartagena -cat concierge
+python main.py elite-scan -c Cartagena -cat villa_rental
+python main.py elite-scan -c Cartagena -cat boat_charter
+python main.py elite-scan -c Cartagena -cat transportation
+
+# 2. Standard scan for restaurants (Places API works well)
+python main.py scan -c Cartagena -cat restaurant -m 100
+
+# 3. Generate outreach for all
+python main.py blackcard -c Cartagena --min-score 50 --limit 50
+
+Categories with Elite Search Terms
+CategorySearch TermsLanguage Coveragephotographer52 termsEN + ESvideographer48 termsEN + ESdj52 termsEN + ESchef42 termsEN + ESevent_planner55 termsEN + EShotel62 termsEN + ESboat_charter38 termsEN + ESconcierge32 termsEN + ESvilla_rental35 termsEN + EStransportation30 termsEN + ES
+
+Why This Finds More Businesses
+Before:
+
+Only searched "wedding photographer"
+Missed: "fotografo de bodas", "fotografo de eventos", "destination wedding photographer", etc.
+
+Now:
+
+Searches ALL 52 variations
+Finds businesses that list themselves under ANY of these terms
+Catches English AND Spanish listings
+Catches specific niches (real estate, quinceañera, corporate, etc.)
