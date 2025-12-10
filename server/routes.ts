@@ -2811,23 +2811,19 @@ Respond in JSON format with these exact keys:
   // Get intelligence for a specific business by ID
   app.get('/api/intel/business/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const business = await storage.getBusinessById(req.params.id);
+      const business = await storage.getBusiness(req.params.id);
       if (!business) {
         return res.status(404).json({ message: "Business not found" });
       }
 
       const { gatherComprehensiveIntelligence, formatIntelligenceSummary } = await import('./services/advancedIntel');
       
-      // Extract Instagram handle from social links if available
+      // Extract Instagram handle from instagram field or website
       let instagramHandle = '';
-      if (business.socialLinks) {
-        const igLink = (business.socialLinks as string[]).find((link: string) => 
-          link.includes('instagram.com')
-        );
-        if (igLink) {
-          const match = igLink.match(/instagram\.com\/([^\/\?]+)/);
-          if (match) instagramHandle = match[1];
-        }
+      if (business.instagram) {
+        const match = business.instagram.match(/instagram\.com\/([^\/\?]+)/);
+        if (match) instagramHandle = match[1];
+        else instagramHandle = business.instagram.replace(/^@/, '');
       }
 
       const intel = await gatherComprehensiveIntelligence({
@@ -2835,7 +2831,7 @@ Respond in JSON format with these exact keys:
         category: business.category,
         city: business.city || 'Cartagena',
         instagramHandle,
-        placeId: business.googlePlaceId || undefined,
+        placeId: business.placeId || undefined,
         phoneNumber: business.phone || undefined,
         googleApiKey: process.env.GOOGLE_PLACES_API_KEY,
       });
