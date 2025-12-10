@@ -80,7 +80,7 @@ export default function TeamManagement() {
   // Create invitation mutation
   const createInviteMutation = useMutation({
     mutationFn: async (data: { email?: string; role: string; expiresInDays: number }): Promise<TeamInvitation> => {
-      const response = await apiRequest("/api/team/invites", "POST", data);
+      const response = await apiRequest("POST", "/api/team/invites", data);
       return response.json();
     },
     onSuccess: (data: TeamInvitation) => {
@@ -107,7 +107,7 @@ export default function TeamManagement() {
   // Delete invitation mutation
   const deleteInviteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/team/invites/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/team/invites/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/team/invites"] });
@@ -126,7 +126,7 @@ export default function TeamManagement() {
   // Update member mutation
   const updateMemberMutation = useMutation({
     mutationFn: async ({ id, ...data }: { id: string; role?: string; isActive?: boolean }) => {
-      return await apiRequest(`/api/team/members/${id}`, "PATCH", data);
+      return await apiRequest("PATCH", `/api/team/members/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/team/members"] });

@@ -41,7 +41,7 @@ export default function TeamLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: { email: string; password: string }) => {
-      return await apiRequest("/api/team/login", "POST", data);
+      return await apiRequest("POST", "/api/team/login", data);
     },
     onSuccess: () => {
       toast({ title: "Login successful", description: "Welcome back!" });
@@ -58,7 +58,7 @@ export default function TeamLogin() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: { inviteCode: string; email: string; password: string; firstName?: string; lastName?: string }) => {
-      return await apiRequest("/api/team/register", "POST", data);
+      return await apiRequest("POST", "/api/team/register", data);
     },
     onSuccess: () => {
       toast({ title: "Registration successful", description: "Welcome to the team!" });
@@ -75,7 +75,8 @@ export default function TeamLogin() {
 
   const requestMagicLinkMutation = useMutation({
     mutationFn: async (email: string) => {
-      return await apiRequest("/api/team/magic-link", "POST", { email });
+      const response = await apiRequest("POST", "/api/team/magic-link", { email });
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({ 
