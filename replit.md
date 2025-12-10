@@ -45,6 +45,24 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
 22. **SEO Optimization**: Auto-generated meta descriptions and keywords
 23. **Business Integration**: Link content to scanned businesses for authority building
 
+### Black Card Intelligence Vault
+24. **Black Card Intelligence Page**: Full 9-component intelligence view per business
+25. **Decision Maker Profiler**: Predict owner psychology, buying style, risk tolerance
+26. **Financial Leak Calculator**: Precise monthly/annual loss quantification with formulas
+27. **ROI Timeline**: Break-even calculation to the day, milestone tracking
+28. **Competitor Ghost Mirror**: Competitor intelligence and urgency statements
+29. **Greed Trigger Engine**: Advanced psychological levers for closing
+30. **Pre-Emptive Objection Removal**: Anticipate and neutralize objections
+31. **Offer Mutation Engine**: Dynamic custom offers based on signals
+32. **Post-Close Blueprint**: Retention roadmap with weekly/monthly tasks
+33. **Colombia Market Intelligence**: CONPES 4144 positioning, psychology triggers, vertical ticket sizing
+
+### URL-Based Navigation State
+34. **Filter Persistence**: All dashboard filters saved in URL query parameters
+35. **Browser History Support**: Back/forward navigation preserves filter state
+36. **Shareable Views**: Copy URL to share filtered business views
+37. **Reset Functionality**: One-click reset to clear all filters
+
 ## Project Structure
 ```
 /shared
@@ -68,8 +86,10 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
     Statistics.tsx  # Analytics dashboard
     Outreach.tsx    # Outreach campaign management
     Operations.tsx  # CLI-style batch operations panel
+    BlackCardIntel.tsx # Black Card 9-component intelligence view
   /hooks
     useAuth.ts      # Authentication hook
+    useUrlState.ts  # URL-based filter state persistence
   /lib
     queryClient.ts  # TanStack Query setup
     authUtils.ts    # Auth utility functions
@@ -136,10 +156,36 @@ A comprehensive business intelligence platform for scanning, enriching, and mana
 - `PATCH /api/content/:id` - Update content
 - `DELETE /api/content/:id` - Delete content
 
+### Black Card Intelligence
+- `GET /api/blackcard/:businessId` - Full Black Card intelligence for a business
+- `POST /api/blackcard/generate` - Generate AI-enhanced intelligence with OpenAI
+- `GET /api/blackcard/colombia-intel` - Colombia market stats and psychology triggers
+
 ### Export & Config
 - `GET /api/export/csv` - Export to CSV
 - `GET /api/export/movvia` - Export to Movvia format
 - `GET /api/config` - Get cities, categories, event tiers, content types
+
+## Black Card Intelligence Components
+
+The Black Card system provides complete closing intelligence:
+
+1. **Category Solutions**: Specific features per vertical (restaurant: QR ordering, no-show prediction; hotel: OTA bypass, AI concierge)
+2. **Decision Maker Profile**: Personality type, buying style, risk tolerance, key motivators
+3. **Financial Leaks**: Monthly/annual loss breakdown by category (no-shows, slow response, missing reviews)
+4. **ROI Timeline**: Break-even point, implementation milestones, year 1 projection
+5. **Competitor Mirror**: What competitors are doing, urgent threats, leapfrog strategies
+6. **Greed Triggers**: Urgency/FOMO hooks with specific numbers to mention
+7. **Objections**: Pre-emptive handling with proven frameworks
+8. **Custom Offer**: Base offer + mutations based on detected gaps
+9. **Retention Blueprint**: Weekly/monthly tasks, upsell opportunities
+
+## Colombia Market Intelligence
+
+- **CONPES 4144**: $110M USD government AI initiative positioning
+- **Vertical Ticket Ranges**: $500-$10,000 based on category
+- **Psychology Triggers**: Phil McGill branded Spanish/English hooks
+- **WhatsApp Stats**: 66% purchase after WhatsApp, 50% abandon without fast response
 
 ## Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string

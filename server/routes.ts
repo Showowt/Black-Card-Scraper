@@ -4,12 +4,15 @@ import { z } from "zod";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
-  CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE,
+  CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, CATEGORY_SOLUTIONS, OBJECTION_PATTERNS,
   EVENT_TIERS, EVENT_CATEGORIES, EVENT_SOURCES, INTENT_LEVELS, CARTAGENA_VENUES_TO_MONITOR, CONTENT_TYPES,
+  COLOMBIA_STATS, VERTICAL_TICKET_RANGES, COLOMBIA_PSYCHOLOGY_TRIGGERS, CONPES_POSITIONING,
+  DECISION_MAKER_TYPES, BUYING_STYLES, PSYCHOLOGY_HOOKS, SIGNAL_OFFER_MATRIX,
   type Business, type InsertBusiness, type OutreachCampaign,
   type Event, type InsertEvent, type IntentSignal, type InsertIntentSignal,
   type VenueMonitor, type InsertVenueMonitor, type InstagramPost, type InsertInstagramPost,
   type AuthorityContent, type InsertAuthorityContent,
+  type BlackCardIntelligence, type DecisionMakerProfile, type ColombiaMarketIntel,
   insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema
 } from "@shared/schema";
 import OpenAI from "openai";
@@ -1286,6 +1289,168 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== BLACK CARD INTELLIGENCE API ====================
+  
+  // Get Black Card intelligence for a business
+  app.get('/api/blackcard/:businessId', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const deepScanResult = deepScan(business);
+      const decisionMaker = profileDecisionMaker(business);
+      const financialLeaks = calculateFinancialLeaks(business);
+      const roiTimeline = generateROITimeline(business);
+      const competitorMirror = mirrorCompetitors(business);
+      const greedTriggers = generateGreedTriggers(business);
+      const offerMutation = mutateOffer(business);
+      
+      // Get category solutions from schema
+      const categorySolutions = CATEGORY_SOLUTIONS[business.category] || CATEGORY_SOLUTIONS.restaurant || {
+        core_solutions: [],
+        quick_wins: [],
+        advanced_features: [],
+        metrics_improved: [],
+      };
+      
+      // Get pre-emptive objections from schema
+      const preEmptiveObjections = Object.entries(OBJECTION_PATTERNS).map(([key, pattern]) => ({
+        type: key,
+        triggers: pattern.triggers,
+        framework: pattern.framework,
+        responseAngles: pattern.response_angles,
+      }));
+      
+      // Generate post-close blueprint based on category
+      const postCloseBlueprint = {
+        week1: ["Onboarding call and system setup", "Team training session", "Initial configuration"],
+        week2: ["Soft launch with select customers", "Performance monitoring", "Quick adjustments"],
+        month1: ["Full deployment", "First results review", "Optimization based on data"],
+        month2: ["Advanced features activation", "Upsell opportunities identification", "Client check-in"],
+        month3: ["Performance review meeting", "Strategy refinement", "Expansion planning"],
+        retentionTriggers: [
+          "Monthly performance report with ROI metrics",
+          "Quarterly strategy call",
+          "New feature announcements",
+          "Referral incentive program",
+        ],
+        upsellOpportunities: deepScanResult.recommendedSolutions.core.map(s => s.name),
+      };
+      
+      res.json({
+        business: {
+          id: business.id,
+          name: business.name,
+          category: business.category,
+          city: business.city,
+          rating: business.rating,
+          reviewCount: business.reviewCount,
+          website: business.website,
+          instagram: business.instagram,
+          phone: business.phone,
+        },
+        decisionMaker,
+        categorySolutions,
+        financialLeaks,
+        roiTimeline,
+        competitorMirror,
+        greedTriggers,
+        preEmptiveObjections,
+        customOffer: offerMutation,
+        postCloseBlueprint,
+        deepScan: deepScanResult,
+      });
+    } catch (error) {
+      console.error("Error fetching black card intelligence:", error);
+      res.status(500).json({ message: "Failed to fetch black card intelligence" });
+    }
+  });
+  
+  // Generate Black Card intelligence for a business (same as GET but POST for semantic clarity)
+  app.post('/api/blackcard/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+      
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const deepScanResult = deepScan(business);
+      const decisionMaker = profileDecisionMaker(business);
+      const financialLeaks = calculateFinancialLeaks(business);
+      const roiTimeline = generateROITimeline(business);
+      const competitorMirror = mirrorCompetitors(business);
+      const greedTriggers = generateGreedTriggers(business);
+      const offerMutation = mutateOffer(business);
+      
+      // Get category solutions from schema
+      const categorySolutions = CATEGORY_SOLUTIONS[business.category] || CATEGORY_SOLUTIONS.restaurant || {
+        core_solutions: [],
+        quick_wins: [],
+        advanced_features: [],
+        metrics_improved: [],
+      };
+      
+      // Get pre-emptive objections from schema
+      const preEmptiveObjections = Object.entries(OBJECTION_PATTERNS).map(([key, pattern]) => ({
+        type: key,
+        triggers: pattern.triggers,
+        framework: pattern.framework,
+        responseAngles: pattern.response_angles,
+      }));
+      
+      // Generate post-close blueprint based on category
+      const postCloseBlueprint = {
+        week1: ["Onboarding call and system setup", "Team training session", "Initial configuration"],
+        week2: ["Soft launch with select customers", "Performance monitoring", "Quick adjustments"],
+        month1: ["Full deployment", "First results review", "Optimization based on data"],
+        month2: ["Advanced features activation", "Upsell opportunities identification", "Client check-in"],
+        month3: ["Performance review meeting", "Strategy refinement", "Expansion planning"],
+        retentionTriggers: [
+          "Monthly performance report with ROI metrics",
+          "Quarterly strategy call",
+          "New feature announcements",
+          "Referral incentive program",
+        ],
+        upsellOpportunities: deepScanResult.recommendedSolutions.core.map(s => s.name),
+      };
+      
+      res.json({
+        business: {
+          id: business.id,
+          name: business.name,
+          category: business.category,
+          city: business.city,
+          rating: business.rating,
+          reviewCount: business.reviewCount,
+          website: business.website,
+          instagram: business.instagram,
+          phone: business.phone,
+        },
+        decisionMaker,
+        categorySolutions,
+        financialLeaks,
+        roiTimeline,
+        competitorMirror,
+        greedTriggers,
+        preEmptiveObjections,
+        customOffer: offerMutation,
+        postCloseBlueprint,
+        deepScan: deepScanResult,
+      });
+    } catch (error) {
+      console.error("Error generating black card intelligence:", error);
+      res.status(500).json({ message: "Failed to generate black card intelligence" });
+    }
+  });
+
   // Export
   app.get('/api/export/csv', isAuthenticated, async (req: any, res) => {
     try {
@@ -1865,6 +2030,233 @@ OUTPUT ONLY VALID JSON.`;
     } catch (error) {
       console.error("Error deleting content:", error);
       res.status(500).json({ message: "Failed to delete content" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BLACK CARD INTELLIGENCE API ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // GET /api/blackcard/colombia-intel - Returns Colombia market statistics and triggers
+  app.get('/api/blackcard/colombia-intel', isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({
+        colombia_stats: COLOMBIA_STATS,
+        conpes_positioning: CONPES_POSITIONING,
+        colombia_psychology_triggers: COLOMBIA_PSYCHOLOGY_TRIGGERS,
+        vertical_ticket_ranges: VERTICAL_TICKET_RANGES,
+        category_solutions: CATEGORY_SOLUTIONS,
+        objection_patterns: OBJECTION_PATTERNS,
+        psychology_hooks: PSYCHOLOGY_HOOKS,
+      });
+    } catch (error) {
+      console.error("Error fetching Colombia intel:", error);
+      res.status(500).json({ message: "Failed to fetch Colombia intel" });
+    }
+  });
+
+  // GET /api/blackcard/:businessId - Returns full Black Card intelligence for a business
+  app.get('/api/blackcard/:businessId', isAuthenticated, async (req: any, res) => {
+    try {
+      const business = await storage.getBusiness(req.params.businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const category = business.category || 'restaurant';
+      const ticketRange = VERTICAL_TICKET_RANGES[category] || VERTICAL_TICKET_RANGES.restaurant;
+      const solutions = CATEGORY_SOLUTIONS[category] || CATEGORY_SOLUTIONS.restaurant;
+      const psychologyHook = PSYCHOLOGY_HOOKS[category] || PSYCHOLOGY_HOOKS.restaurant;
+
+      // Calculate decision maker profile based on business type
+      const decisionMakerProfile: DecisionMakerProfile = calculateDecisionMakerProfile(business, category);
+
+      // Calculate financial leaks based on business signals
+      const financialLeaks = calculateBusinessFinancialLeaks(business, category, ticketRange);
+
+      // Generate ROI timeline
+      const roiTimeline = generateBusinessROITimeline(business, category, ticketRange, financialLeaks);
+
+      // Get competitor signals
+      const competitorMirror = generateCompetitorMirror(business, category);
+
+      // Generate greed triggers
+      const greedTriggers = generateBusinessGreedTriggers(business, category, financialLeaks);
+
+      // Get objection handling
+      const objectionHandling = getRelevantObjections(business, category);
+
+      // Generate offer mutation
+      const offerMutation = generateBusinessOfferMutation(business, category, financialLeaks);
+
+      // Build Colombia market intel
+      const colombiaMarketIntel: ColombiaMarketIntel = {
+        category,
+        city: business.city || 'Cartagena',
+        min_ticket: ticketRange.min_ticket,
+        max_ticket: ticketRange.max_ticket,
+        recommended_ticket: ticketRange.avg_ticket,
+        missing_systems: financialLeaks.gaps_detected,
+        monthly_loss_estimate: financialLeaks.monthly_loss,
+        annual_loss_estimate: financialLeaks.monthly_loss * 12,
+        tech_gaps: financialLeaks.tech_gaps,
+        primary_triggers: getRandomTriggers(category),
+        conpes_positioning: CONPES_POSITIONING.credibility_statements,
+        local_competition_level: financialLeaks.competition_level,
+        competitor_warnings: competitorMirror.warnings,
+        implementation_days: ticketRange.implementation_days,
+        roi_timeframe_days: roiTimeline.break_even_days,
+      };
+
+      const blackCardIntelligence: BlackCardIntelligence = {
+        category_solutions: { [category]: solutions },
+        colombia_stats: COLOMBIA_STATS,
+        vertical_ticket_ranges: { [category]: ticketRange },
+        colombia_psychology_triggers: COLOMBIA_PSYCHOLOGY_TRIGGERS,
+        conpes_positioning: CONPES_POSITIONING,
+        decision_maker_types: DECISION_MAKER_TYPES,
+        buying_styles: BUYING_STYLES,
+        decision_maker_profile: decisionMakerProfile,
+        colombia_market_intel: colombiaMarketIntel,
+      };
+
+      res.json({
+        business_id: business.id,
+        business_name: business.name,
+        intelligence: blackCardIntelligence,
+        financial_leaks: financialLeaks,
+        roi_timeline: roiTimeline,
+        competitor_mirror: competitorMirror,
+        greed_triggers: greedTriggers,
+        objection_handling: objectionHandling,
+        offer_mutation: offerMutation,
+        psychology_hook: psychologyHook,
+      });
+    } catch (error) {
+      console.error("Error generating Black Card intelligence:", error);
+      res.status(500).json({ message: "Failed to generate Black Card intelligence" });
+    }
+  });
+
+  // POST /api/blackcard/generate - Generates new Black Card intelligence using OpenAI
+  app.post('/api/blackcard/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { businessId } = req.body;
+      
+      if (!businessId) {
+        return res.status(400).json({ message: "businessId is required" });
+      }
+
+      const business = await storage.getBusiness(businessId);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+
+      const category = business.category || 'restaurant';
+      const ticketRange = VERTICAL_TICKET_RANGES[category] || VERTICAL_TICKET_RANGES.restaurant;
+      const solutions = CATEGORY_SOLUTIONS[category] || CATEGORY_SOLUTIONS.restaurant;
+
+      // Calculate base intelligence
+      const financialLeaks = calculateBusinessFinancialLeaks(business, category, ticketRange);
+
+      // Use OpenAI to enhance and personalize the intelligence
+      const prompt = `You are an elite sales psychology expert analyzing a ${category} business in Colombia for AI automation opportunities.
+
+Business Details:
+- Name: ${business.name}
+- Category: ${category}
+- City: ${business.city || 'Unknown'}
+- Rating: ${business.rating || 'Unknown'} (${business.reviewCount || 0} reviews)
+- Has Website: ${business.website ? 'Yes' : 'No'}
+- Has Email: ${business.email ? 'Yes' : 'No'}
+- Has WhatsApp: ${business.whatsapp ? 'Yes' : 'No'}
+- Has Instagram: ${business.instagram ? 'Yes' : 'No'}
+
+Calculated Monthly Loss: $${financialLeaks.monthly_loss} USD
+Detected Gaps: ${financialLeaks.gaps_detected.join(', ')}
+
+Core Solutions Available:
+${solutions.core_solutions.slice(0, 4).join('\n')}
+
+Generate a personalized Black Card Intelligence report with:
+1. A compelling opening hook (1-2 sentences that grab attention based on their specific situation)
+2. Three specific pain points this business likely experiences
+3. The most relevant solution to pitch first and why
+4. A custom urgency angle based on Colombia market dynamics
+5. The ideal first message for WhatsApp outreach (in Spanish, conversational)
+6. Predicted objections and counter-responses
+7. A greed trigger that will make them act now
+
+Respond in JSON format with these exact keys:
+{
+  "opening_hook": "",
+  "pain_points": [],
+  "lead_solution": { "solution": "", "why": "" },
+  "urgency_angle": "",
+  "whatsapp_opener": "",
+  "objections": [{ "objection": "", "counter": "" }],
+  "greed_trigger": ""
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+      });
+
+      const aiEnhancement = JSON.parse(completion.choices[0].message.content || '{}');
+
+      // Build the complete intelligence package
+      const decisionMakerProfile = calculateDecisionMakerProfile(business, category);
+      const roiTimeline = generateBusinessROITimeline(business, category, ticketRange, financialLeaks);
+      const competitorMirror = generateCompetitorMirror(business, category);
+      const greedTriggers = generateBusinessGreedTriggers(business, category, financialLeaks);
+
+      const colombiaMarketIntel: ColombiaMarketIntel = {
+        category,
+        city: business.city || 'Cartagena',
+        min_ticket: ticketRange.min_ticket,
+        max_ticket: ticketRange.max_ticket,
+        recommended_ticket: ticketRange.avg_ticket,
+        missing_systems: financialLeaks.gaps_detected,
+        monthly_loss_estimate: financialLeaks.monthly_loss,
+        annual_loss_estimate: financialLeaks.monthly_loss * 12,
+        tech_gaps: financialLeaks.tech_gaps,
+        primary_triggers: getRandomTriggers(category),
+        conpes_positioning: CONPES_POSITIONING.credibility_statements,
+        local_competition_level: financialLeaks.competition_level,
+        competitor_warnings: competitorMirror.warnings,
+        implementation_days: ticketRange.implementation_days,
+        roi_timeframe_days: roiTimeline.break_even_days,
+      };
+
+      const blackCardIntelligence: BlackCardIntelligence = {
+        category_solutions: { [category]: solutions },
+        colombia_stats: COLOMBIA_STATS,
+        vertical_ticket_ranges: { [category]: ticketRange },
+        colombia_psychology_triggers: COLOMBIA_PSYCHOLOGY_TRIGGERS,
+        conpes_positioning: CONPES_POSITIONING,
+        decision_maker_types: DECISION_MAKER_TYPES,
+        buying_styles: BUYING_STYLES,
+        decision_maker_profile: decisionMakerProfile,
+        colombia_market_intel: colombiaMarketIntel,
+      };
+
+      res.json({
+        business_id: business.id,
+        business_name: business.name,
+        intelligence: blackCardIntelligence,
+        ai_enhancement: aiEnhancement,
+        financial_leaks: financialLeaks,
+        roi_timeline: roiTimeline,
+        competitor_mirror: competitorMirror,
+        greed_triggers: greedTriggers,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error generating Black Card intelligence with AI:", error);
+      res.status(500).json({ message: "Failed to generate Black Card intelligence" });
     }
   });
 
@@ -2505,4 +2897,432 @@ async function scrapeWebsiteMetadata(websiteUrl: string): Promise<Partial<Insert
     console.error(`Failed to scrape ${websiteUrl}:`, error);
     return {};
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BLACK CARD INTELLIGENCE HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function calculateDecisionMakerProfile(business: Business, category: string): DecisionMakerProfile {
+  const rating = business.rating || 4.0;
+  const reviewCount = business.reviewCount || 0;
+  const hasWebsite = !!business.website;
+  const hasEmail = !!business.email;
+  
+  // Determine personality type based on business signals
+  let personalityType: "Visionary" | "Operator" | "Skeptic" | "Delegator" = "Operator";
+  let buyingStyle: "Impulsive" | "Analytical" | "Consensus" | "Value-driven" = "Value-driven";
+  let riskTolerance: "High" | "Medium" | "Low" | "Medium-High" = "Medium";
+  
+  if (rating >= 4.5 && reviewCount > 100) {
+    personalityType = "Visionary";
+    riskTolerance = "Medium-High";
+  } else if (rating < 4.0) {
+    personalityType = "Skeptic";
+    buyingStyle = "Analytical";
+    riskTolerance = "Low";
+  } else if (!hasWebsite && !hasEmail) {
+    personalityType = "Operator";
+    buyingStyle = "Impulsive";
+  }
+  
+  // Category-specific adjustments
+  const highTouchCategories = ['concierge', 'villa_rental', 'boat_charter', 'hotel'];
+  const operationalCategories = ['restaurant', 'spa', 'club', 'bar'];
+  
+  if (highTouchCategories.includes(category)) {
+    buyingStyle = "Analytical";
+  } else if (operationalCategories.includes(category)) {
+    buyingStyle = reviewCount > 50 ? "Value-driven" : "Impulsive";
+  }
+
+  return {
+    estimated_age_range: category === 'club' || category === 'dj' ? "28-40" : "35-55",
+    likely_role: highTouchCategories.includes(category) ? "Owner/GM" : "Owner-Operator",
+    personality_type: personalityType,
+    buying_style: buyingStyle,
+    risk_tolerance: riskTolerance,
+    primary_motivation: rating >= 4.5 ? "Growth" : rating < 4.0 ? "Security" : "Freedom",
+    fear_pattern: !hasWebsite ? "Being invisible to tourists" : rating < 4.0 ? "Losing to better-reviewed competition" : "Missing growth opportunities",
+    status_trigger: `Being seen as the most ${category === 'restaurant' ? 'booked restaurant' : category === 'hotel' ? 'sought-after hotel' : 'premium service'} in ${business.city || 'the city'}`,
+    preferred_language_style: personalityType === "Analytical" ? "Data-driven" : personalityType === "Visionary" ? "Story-driven" : "Direct",
+    response_speed_preference: buyingStyle === "Impulsive" ? "Immediate" : buyingStyle === "Analytical" ? "Takes-time" : "Same-day",
+    opening_approach: personalityType === "Skeptic" ? "Lead with proof and case studies" : "Lead with pain point recognition",
+    proof_type_needed: personalityType === "Analytical" ? "ROI calculations and competitor data" : "Social proof from similar businesses",
+    objection_likely: riskTolerance === "Low" ? "price" : "time",
+    closing_style: buyingStyle === "Impulsive" ? "Direct close with urgency" : "Consultative close with trial offer",
+  };
+}
+
+interface FinancialLeaksResult {
+  monthly_loss: number;
+  annual_loss: number;
+  gaps_detected: string[];
+  loss_breakdown: { gap: string; loss: number; explanation: string }[];
+  tech_gaps: {
+    has_booking_system: boolean;
+    has_whatsapp_business: boolean;
+    has_online_payment: boolean;
+    has_review_management: boolean;
+    is_mobile_optimized: boolean;
+    website_exists: boolean;
+    gaps_detected: string[];
+    gap_count: number;
+    automation_readiness_score: number;
+  };
+  competition_level: "low" | "medium" | "high";
+}
+
+function calculateBusinessFinancialLeaks(
+  business: Business, 
+  category: string, 
+  ticketRange: { min_ticket: number; max_ticket: number; avg_ticket: number; monthly_loss_range: [number, number] }
+): FinancialLeaksResult {
+  const rating = business.rating || 4.0;
+  const reviewCount = business.reviewCount || 0;
+  const hasWebsite = !!business.website;
+  const hasEmail = !!business.email;
+  const hasWhatsapp = !!business.whatsapp;
+  const hasInstagram = !!business.instagram;
+  
+  const gaps: string[] = [];
+  const lossBreakdown: { gap: string; loss: number; explanation: string }[] = [];
+  let totalLoss = 0;
+  
+  const [minLoss, maxLoss] = ticketRange.monthly_loss_range;
+  const baseLoss = (minLoss + maxLoss) / 2;
+  
+  // Rating-based loss calculation
+  if (rating < 4.0) {
+    const ratingLoss = Math.round(baseLoss * 0.3);
+    gaps.push("Low rating affecting bookings");
+    lossBreakdown.push({ gap: "Low rating", loss: ratingLoss, explanation: "Each 0.1 star drop = 5-9% revenue loss" });
+    totalLoss += ratingLoss;
+  } else if (rating < 4.3) {
+    const ratingLoss = Math.round(baseLoss * 0.15);
+    gaps.push("Rating below premium threshold");
+    lossBreakdown.push({ gap: "Below premium rating", loss: ratingLoss, explanation: "Premium guests filter for 4.5+ ratings" });
+    totalLoss += ratingLoss;
+  }
+  
+  // Review count analysis
+  if (reviewCount < 20) {
+    const reviewLoss = Math.round(baseLoss * 0.25);
+    gaps.push("Low review count hurting visibility");
+    lossBreakdown.push({ gap: "Low review velocity", loss: reviewLoss, explanation: "Fewer reviews = lower search ranking + trust" });
+    totalLoss += reviewLoss;
+  } else if (reviewCount < 50) {
+    const reviewLoss = Math.round(baseLoss * 0.1);
+    gaps.push("Review count below competitors");
+    lossBreakdown.push({ gap: "Moderate review count", loss: reviewLoss, explanation: "Competitors with 100+ reviews outrank you" });
+    totalLoss += reviewLoss;
+  }
+  
+  // Website presence
+  if (!hasWebsite) {
+    const websiteLoss = Math.round(baseLoss * 0.35);
+    gaps.push("No website - invisible to search");
+    lossBreakdown.push({ gap: "No website", loss: websiteLoss, explanation: "30% of tourists find businesses via website search" });
+    totalLoss += websiteLoss;
+  }
+  
+  // Email presence
+  if (!hasEmail) {
+    const emailLoss = Math.round(baseLoss * 0.15);
+    gaps.push("No email - losing B2B leads");
+    lossBreakdown.push({ gap: "No email contact", loss: emailLoss, explanation: "Corporate/group bookings require email communication" });
+    totalLoss += emailLoss;
+  }
+  
+  // WhatsApp presence
+  if (!hasWhatsapp) {
+    const whatsappLoss = Math.round(baseLoss * 0.25);
+    gaps.push("No WhatsApp - 66% of Colombians buy via chat");
+    lossBreakdown.push({ gap: "No WhatsApp automation", loss: whatsappLoss, explanation: "66% purchase rate via WhatsApp in Colombia" });
+    totalLoss += whatsappLoss;
+  }
+  
+  // Instagram presence
+  if (!hasInstagram) {
+    const igLoss = Math.round(baseLoss * 0.2);
+    gaps.push("No Instagram - missing tourist discovery");
+    lossBreakdown.push({ gap: "No Instagram presence", loss: igLoss, explanation: "Tourists discover experiences via Instagram" });
+    totalLoss += igLoss;
+  }
+  
+  // Ensure minimum loss is within range
+  if (totalLoss < minLoss) totalLoss = minLoss;
+  if (totalLoss > maxLoss * 1.5) totalLoss = Math.round(maxLoss * 1.5);
+  
+  // Calculate tech gaps
+  const techGaps = {
+    has_booking_system: hasWebsite,
+    has_whatsapp_business: hasWhatsapp,
+    has_online_payment: hasWebsite,
+    has_review_management: reviewCount > 50,
+    is_mobile_optimized: hasWebsite,
+    website_exists: hasWebsite,
+    gaps_detected: gaps,
+    gap_count: gaps.length,
+    automation_readiness_score: Math.max(0, 100 - (gaps.length * 15)),
+  };
+  
+  // Competition level based on review count in category
+  const competitionLevel: "low" | "medium" | "high" = 
+    reviewCount > 200 ? "high" : reviewCount > 50 ? "medium" : "low";
+  
+  return {
+    monthly_loss: totalLoss,
+    annual_loss: totalLoss * 12,
+    gaps_detected: gaps,
+    loss_breakdown: lossBreakdown,
+    tech_gaps: techGaps,
+    competition_level: competitionLevel,
+  };
+}
+
+interface ROITimelineResult {
+  break_even_days: number;
+  monthly_savings: number;
+  year_one_roi: number;
+  payback_period_months: number;
+  milestones: { day: number; milestone: string }[];
+}
+
+function generateBusinessROITimeline(
+  business: Business,
+  category: string,
+  ticketRange: { implementation_days: number; avg_ticket: number },
+  financialLeaks: FinancialLeaksResult
+): ROITimelineResult {
+  const implementationDays = ticketRange.implementation_days;
+  const avgTicket = ticketRange.avg_ticket;
+  const monthlyRecapture = Math.round(financialLeaks.monthly_loss * 0.6); // Assume 60% recapture
+  
+  const estimatedCost = avgTicket;
+  const breakEvenDays = Math.round((estimatedCost / (monthlyRecapture / 30)) + implementationDays);
+  const yearOneROI = Math.round(((monthlyRecapture * 12 - estimatedCost) / estimatedCost) * 100);
+  
+  return {
+    break_even_days: breakEvenDays,
+    monthly_savings: monthlyRecapture,
+    year_one_roi: yearOneROI,
+    payback_period_months: Math.round((estimatedCost / monthlyRecapture) * 10) / 10,
+    milestones: [
+      { day: 1, milestone: "System setup and integration begins" },
+      { day: Math.round(implementationDays / 2), milestone: "Core automation live (WhatsApp, booking)" },
+      { day: implementationDays, milestone: "Full system deployment complete" },
+      { day: implementationDays + 7, milestone: "First automated bookings/responses" },
+      { day: breakEvenDays, milestone: "Break-even point reached" },
+      { day: 90, milestone: "ROI optimization phase begins" },
+    ],
+  };
+}
+
+interface CompetitorMirrorResult {
+  competitors_likely_have: string[];
+  your_gaps: string[];
+  warnings: string[];
+  advantage_opportunities: string[];
+}
+
+function generateCompetitorMirror(business: Business, category: string): CompetitorMirrorResult {
+  const hasWebsite = !!business.website;
+  const hasInstagram = !!business.instagram;
+  const reviewCount = business.reviewCount || 0;
+  
+  const competitorsHave: string[] = [];
+  const yourGaps: string[] = [];
+  const warnings: string[] = [];
+  const opportunities: string[] = [];
+  
+  if (!hasWebsite) {
+    competitorsHave.push("Professional website with online booking");
+    yourGaps.push("No web presence");
+    warnings.push("Top competitors in your category have 24/7 online booking");
+  }
+  
+  if (!hasInstagram) {
+    competitorsHave.push("Active Instagram with 1000+ followers");
+    yourGaps.push("No Instagram presence");
+    warnings.push("Tourists discover competitors on Instagram - you're invisible");
+  }
+  
+  if (reviewCount < 50) {
+    competitorsHave.push("100+ Google reviews with active response");
+    yourGaps.push("Low review count");
+    warnings.push("Competitors with more reviews appear higher in search");
+  }
+  
+  // Category-specific competitor analysis
+  const categoryCompetitorFeatures: Record<string, string[]> = {
+    restaurant: ["WhatsApp reservation bot", "QR code menus", "Review response automation"],
+    hotel: ["Direct booking chatbot", "Pre-arrival upsell sequences", "OTA bypass strategies"],
+    concierge: ["Client preference CRM", "Vendor coordination automation", "24/7 response coverage"],
+    boat_charter: ["Instant quote system", "Weather-based rescheduling", "Automated deposits"],
+    tour_operator: ["Booking bot", "Automated itineraries", "Post-tour review collection"],
+  };
+  
+  const features = categoryCompetitorFeatures[category] || categoryCompetitorFeatures.restaurant;
+  competitorsHave.push(...features.slice(0, 2));
+  opportunities.push(`Be first in your area with ${features[0]}`);
+  opportunities.push(`Gain 6-month head start on automation`);
+  
+  return {
+    competitors_likely_have: competitorsHave,
+    your_gaps: yourGaps,
+    warnings: warnings,
+    advantage_opportunities: opportunities,
+  };
+}
+
+interface GreedTriggersResult {
+  primary_greed_trigger: string;
+  supporting_triggers: string[];
+  fomo_statement: string;
+  gain_quantification: string;
+}
+
+function generateBusinessGreedTriggers(
+  business: Business,
+  category: string,
+  financialLeaks: FinancialLeaksResult
+): GreedTriggersResult {
+  const monthlyLoss = financialLeaks.monthly_loss;
+  const annualLoss = financialLeaks.annual_loss;
+  
+  const primaryTrigger = `You're leaving $${monthlyLoss.toLocaleString()}/month on the table. That's $${annualLoss.toLocaleString()}/year walking to your competitors.`;
+  
+  const supportingTriggers = [
+    `With automation, similar ${category}s see 30-50% more bookings in 90 days`,
+    `Your competitors are already doing this - the question is how long until they get ALL your leads`,
+    `Every day without this system is another day of lost revenue`,
+  ];
+  
+  const fomoStatement = `The first ${category} in ${business.city || 'your area'} to automate will own the market for the next 2 years`;
+  
+  const gainQuantification = `Recapture just 60% of your leaks = $${Math.round(monthlyLoss * 0.6).toLocaleString()}/month = $${Math.round(annualLoss * 0.6).toLocaleString()}/year`;
+  
+  return {
+    primary_greed_trigger: primaryTrigger,
+    supporting_triggers: supportingTriggers,
+    fomo_statement: fomoStatement,
+    gain_quantification: gainQuantification,
+  };
+}
+
+interface ObjectionHandlingResult {
+  likely_objections: string[];
+  responses: { objection: string; counter: string; framework: string }[];
+  preemptive_statements: string[];
+}
+
+function getRelevantObjections(business: Business, category: string): ObjectionHandlingResult {
+  const rating = business.rating || 4.0;
+  const hasWebsite = !!business.website;
+  
+  const likelyObjections: string[] = [];
+  const responses: { objection: string; counter: string; framework: string }[] = [];
+  const preemptive: string[] = [];
+  
+  // Price objection is always likely
+  likelyObjections.push("Es muy caro / It's too expensive");
+  responses.push({
+    objection: "Es muy caro",
+    counter: "I understand price is important. But consider: you're currently losing $X/month from missed bookings. This system pays for itself in 30-45 days. What's the cost of NOT having it?",
+    framework: "loss_aversion",
+  });
+  
+  // Time objection
+  likelyObjections.push("No tengo tiempo / I'm too busy");
+  responses.push({
+    objection: "No tengo tiempo",
+    counter: "That's exactly why you need this - you're too busy answering messages manually. Setup takes 15 minutes of your time, then you get hours back every week.",
+    framework: "scarcity",
+  });
+  
+  // Skepticism if low rating
+  if (rating < 4.2) {
+    likelyObjections.push("No creo que funcione / I don't think it works");
+    responses.push({
+      objection: "No creo que funcione",
+      counter: "I have 3 similar businesses in your city using this right now. Want me to connect you with one for a reference?",
+      framework: "social_proof",
+    });
+  }
+  
+  // Tech resistance if no website
+  if (!hasWebsite) {
+    likelyObjections.push("No soy bueno con tecnología / I'm not tech-savvy");
+    responses.push({
+      objection: "No soy bueno con tecnología",
+      counter: "Perfect - that's why I handle everything. You just need WhatsApp, which you already use. I set up, train, and support you completely.",
+      framework: "reciprocity",
+    });
+  }
+  
+  preemptive.push("I know what you're thinking - 'this sounds complicated.' It's not. 15 minutes of your time, and I handle the rest.");
+  preemptive.push("Before you say you're too busy - that's exactly why you need this. To get your time back.");
+  
+  return {
+    likely_objections: likelyObjections,
+    responses: responses,
+    preemptive_statements: preemptive,
+  };
+}
+
+interface OfferMutationResult {
+  base_offer: string;
+  customized_offer: string;
+  urgency_element: string;
+  guarantee: string;
+  bonuses: string[];
+}
+
+function generateBusinessOfferMutation(
+  business: Business,
+  category: string,
+  financialLeaks: FinancialLeaksResult
+): OfferMutationResult {
+  const primaryGap = financialLeaks.gaps_detected[0] || "No automation";
+  const solutions = CATEGORY_SOLUTIONS[category] || CATEGORY_SOLUTIONS.restaurant;
+  const leadSolution = solutions.core_solutions[0];
+  
+  const baseOffer = `${category.charAt(0).toUpperCase() + category.slice(1)} AI Automation Package`;
+  
+  let customizedOffer = `${leadSolution}`;
+  if (financialLeaks.gaps_detected.length > 2) {
+    customizedOffer += ` + ${solutions.core_solutions[1]}`;
+  }
+  
+  const urgency = `Lock in founding member pricing before we reach capacity in ${business.city || 'your city'}`;
+  
+  const guarantee = "30-day money-back guarantee if you don't see measurable improvement";
+  
+  const bonuses = [
+    "Free 30-minute strategy call ($200 value)",
+    "Priority WhatsApp support for 90 days",
+    "Competitor analysis report for your area",
+  ];
+  
+  return {
+    base_offer: baseOffer,
+    customized_offer: customizedOffer,
+    urgency_element: urgency,
+    guarantee: guarantee,
+    bonuses: bonuses,
+  };
+}
+
+function getRandomTriggers(category: string): string[] {
+  const allTriggers = [
+    ...COLOMBIA_PSYCHOLOGY_TRIGGERS.freedom_triggers,
+    ...COLOMBIA_PSYCHOLOGY_TRIGGERS.urgency_triggers,
+    ...COLOMBIA_PSYCHOLOGY_TRIGGERS.tourist_capture_triggers,
+    ...COLOMBIA_PSYCHOLOGY_TRIGGERS.competition_triggers,
+  ];
+  
+  // Shuffle and pick 3
+  const shuffled = allTriggers.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 3);
 }

@@ -501,6 +501,637 @@ export const VERTICAL_INTELLIGENCE: Record<string, {
   },
 };
 
+export const CATEGORY_SOLUTIONS: Record<string, {
+  core_solutions: string[];
+  quick_wins: string[];
+  advanced_features: string[];
+  metrics_improved: string[];
+}> = {
+  restaurant: {
+    core_solutions: [
+      "AI WhatsApp bot for reservations (24/7, multilingual)",
+      "QR-code ordering system (reduce wait staff dependency)",
+      "Automated review request & response system",
+      "Dynamic pricing for off-peak hours",
+      "No-show prediction + deposit automation",
+      "Table turnover optimization",
+      "Customer preference memory (allergies, favorites, occasions)",
+    ],
+    quick_wins: [
+      "WhatsApp auto-reply in 24 hours",
+      "Review response templates live in 48 hours",
+      "QR menu setup in 1 week",
+    ],
+    advanced_features: [
+      "Predictive inventory based on reservations",
+      "Staff scheduling optimization",
+      "Loyalty program with AI recommendations",
+      "Competitor pricing monitoring",
+    ],
+    metrics_improved: [
+      "No-show rate: -40%",
+      "Review response time: -90%",
+      "Off-peak revenue: +25%",
+      "Repeat customer rate: +35%",
+    ],
+  },
+  hotel: {
+    core_solutions: [
+      "Direct booking engine (bypass OTA commissions)",
+      "24/7 AI concierge (multilingual guest support)",
+      "Pre-arrival upsell automation (transfers, tours, dining)",
+      "Review velocity system (automated review requests)",
+      "Dynamic pricing engine",
+      "Guest preference database",
+      "Housekeeping coordination automation",
+    ],
+    quick_wins: [
+      "OTA bypass booking link in 48 hours",
+      "Pre-arrival email sequence in 1 week",
+      "WhatsApp concierge live in 72 hours",
+    ],
+    advanced_features: [
+      "Revenue management system",
+      "Competitor rate monitoring",
+      "Guest sentiment analysis",
+      "Predictive maintenance alerts",
+    ],
+    metrics_improved: [
+      "Direct bookings: +40%",
+      "OTA commission savings: $3-8k/month",
+      "Upsell revenue: +30%",
+      "Guest satisfaction: +25%",
+    ],
+  },
+  concierge: {
+    core_solutions: [
+      "Client preference database (remembers everything)",
+      "Vendor booking automation (restaurants, boats, chefs)",
+      "CRM for follow-ups and client lifecycle",
+      "AI itinerary planning and suggestions",
+      "Multi-client coordination dashboard",
+      "Vendor performance tracking",
+      "Automated billing and invoicing",
+    ],
+    quick_wins: [
+      "Client database import in 48 hours",
+      "Vendor contact system in 1 week",
+      "Auto-response for after-hours in 24 hours",
+    ],
+    advanced_features: [
+      "Predictive client needs (anniversary reminders, preferences)",
+      "Dynamic pricing for services",
+      "White-label booking platform",
+      "Commission tracking automation",
+    ],
+    metrics_improved: [
+      "Client capacity: +100%",
+      "Repeat client rate: +40%",
+      "Vendor coordination time: -60%",
+      "After-hours response: 24/7",
+    ],
+  },
+  tour_operator: {
+    core_solutions: [
+      "AI booking assistant (handles inquiries while on tours)",
+      "Automated deposit collection",
+      "Weather-based rescheduling automation",
+      "Guest communication sequences (confirmations, reminders, reviews)",
+      "Multi-tour calendar management",
+      "Guide assignment optimization",
+      "Review automation system",
+    ],
+    quick_wins: [
+      "Booking bot live in 48 hours",
+      "Deposit system in 1 week",
+      "Reminder automation in 24 hours",
+    ],
+    advanced_features: [
+      "Dynamic pricing based on demand",
+      "Group coordination tools",
+      "Partner commission tracking",
+      "Seasonal forecasting",
+    ],
+    metrics_improved: [
+      "Booking capture: +50%",
+      "No-shows: -60%",
+      "Review velocity: +200%",
+      "Owner time saved: 15+ hrs/week",
+    ],
+  },
+  boat_charter: {
+    core_solutions: [
+      "AI booking system (quotes + availability instantly)",
+      "Captain/crew scheduling automation",
+      "Weather monitoring + auto-rescheduling",
+      "Guest preference tracking (music, drinks, routes)",
+      "Maintenance scheduling",
+      "Multi-vessel fleet management",
+      "Deposit and payment automation",
+    ],
+    quick_wins: [
+      "Instant quote bot in 48 hours",
+      "Calendar sync in 24 hours",
+      "Weather alerts in 1 week",
+    ],
+    advanced_features: [
+      "Dynamic pricing by demand/season",
+      "Fuel cost optimization",
+      "Partner commission tracking",
+      "Fleet utilization analytics",
+    ],
+    metrics_improved: [
+      "Inquiry response: <5 minutes (vs 4+ hours)",
+      "Booking conversion: +40%",
+      "Fleet utilization: +30%",
+      "No-shows: -50%",
+    ],
+  },
+  villa_rental: {
+    core_solutions: [
+      "Direct booking engine (bypass Airbnb/VRBO fees)",
+      "Calendar + payment integration",
+      "Guest messaging automation (check-in, local guides, checkout)",
+      "Turnover coordination system",
+      "Upsell concierge services (chef, boat, tours)",
+      "Revenue management (dynamic pricing)",
+      "Maintenance request automation",
+    ],
+    quick_wins: [
+      "Direct booking page in 1 week",
+      "Check-in automation in 48 hours",
+      "Turnover alerts in 24 hours",
+    ],
+    advanced_features: [
+      "Multi-property dashboard",
+      "Owner reporting automation",
+      "Competitor rate monitoring",
+      "Guest screening automation",
+    ],
+    metrics_improved: [
+      "Direct bookings: +50%",
+      "Platform fees saved: $500-2k/month/property",
+      "Guest communication time: -80%",
+      "Upsell revenue: +40%",
+    ],
+  },
+  spa: {
+    core_solutions: [
+      "Online booking with automated reminders",
+      "Staff scheduling optimization",
+      "POS integration for seamless checkout",
+      "Loyalty and membership management",
+      "Upsell package recommendations",
+      "Review automation",
+      "Referral program automation",
+    ],
+    quick_wins: [
+      "Online booking in 48 hours",
+      "Reminder system in 24 hours",
+      "Review requests in 1 week",
+    ],
+    advanced_features: [
+      "Treatment recommendation AI",
+      "Inventory management",
+      "Staff performance analytics",
+      "Seasonal promotion automation",
+    ],
+    metrics_improved: [
+      "No-shows: -50%",
+      "Rebooking rate: +40%",
+      "Average ticket: +25% (upsells)",
+      "Review velocity: +300%",
+    ],
+  },
+  club: {
+    core_solutions: [
+      "Guest list management (digital, real-time)",
+      "Table booking with dynamic minimums",
+      "VIP loyalty program",
+      "Event promotion and ticketing",
+      "Bottle service automation",
+      "Promoter commission tracking",
+      "Social media integration",
+    ],
+    quick_wins: [
+      "Digital guest list in 24 hours",
+      "Table booking bot in 48 hours",
+      "Event page automation in 1 week",
+    ],
+    advanced_features: [
+      "Spend-based VIP tiers",
+      "Predictive crowd management",
+      "Dynamic pricing for tables",
+      "Influencer tracking",
+    ],
+    metrics_improved: [
+      "Table revenue: +35%",
+      "No-shows: -40%",
+      "VIP retention: +50%",
+      "Event attendance: +30%",
+    ],
+  },
+  transportation: {
+    core_solutions: [
+      "AI booking and dispatch bot",
+      "Dynamic pricing engine",
+      "Route optimization",
+      "Fleet management dashboard",
+      "24/7 multilingual reservation assistant",
+      "Driver assignment automation",
+      "Real-time tracking for clients",
+    ],
+    quick_wins: [
+      "Booking bot in 48 hours",
+      "Dispatch automation in 1 week",
+      "Client tracking in 72 hours",
+    ],
+    advanced_features: [
+      "Predictive demand modeling",
+      "Fuel efficiency optimization",
+      "Partner/affiliate tracking",
+      "Airport flight monitoring",
+    ],
+    metrics_improved: [
+      "Booking response: <2 minutes",
+      "Fleet utilization: +40%",
+      "Fuel costs: -15%",
+      "Customer satisfaction: +35%",
+    ],
+  },
+  photographer: {
+    core_solutions: [
+      "Booking and inquiry automation",
+      "Contract and deposit collection",
+      "Client communication sequences",
+      "Gallery delivery automation",
+      "Review request system",
+      "Referral tracking",
+      "Calendar management",
+    ],
+    quick_wins: [
+      "Inquiry auto-response in 24 hours",
+      "Contract automation in 1 week",
+      "Review requests in 48 hours",
+    ],
+    advanced_features: [
+      "AI-powered photo culling suggestions",
+      "Client portal for selections",
+      "Upsell package recommendations",
+      "Seasonal pricing automation",
+    ],
+    metrics_improved: [
+      "Inquiry response: <5 minutes",
+      "Booking conversion: +30%",
+      "Admin time: -50%",
+      "Referral rate: +40%",
+    ],
+  },
+  videographer: {
+    core_solutions: [
+      "Project inquiry automation",
+      "Quote and contract system",
+      "Milestone payment tracking",
+      "Client communication portal",
+      "Delivery and feedback automation",
+      "Testimonial collection",
+      "Calendar management",
+    ],
+    quick_wins: [
+      "Inquiry bot in 48 hours",
+      "Quote templates in 24 hours",
+      "Milestone tracking in 1 week",
+    ],
+    advanced_features: [
+      "Project timeline automation",
+      "Revision request management",
+      "Upsell service recommendations",
+      "Multi-project dashboard",
+    ],
+    metrics_improved: [
+      "Inquiry response: <10 minutes",
+      "Project turnaround: -20%",
+      "Client satisfaction: +35%",
+      "Referral rate: +45%",
+    ],
+  },
+  dj: {
+    core_solutions: [
+      "Booking and inquiry automation",
+      "Contract and deposit collection",
+      "Song request management",
+      "Equipment logistics tracking",
+      "Review and referral system",
+      "Calendar management",
+      "Event prep checklists",
+    ],
+    quick_wins: [
+      "Booking bot in 24 hours",
+      "Contract automation in 48 hours",
+      "Song request system in 1 week",
+    ],
+    advanced_features: [
+      "Dynamic pricing by date/venue",
+      "Equipment inventory management",
+      "Multi-event coordination",
+      "Social proof automation",
+    ],
+    metrics_improved: [
+      "Inquiry response: <5 minutes",
+      "Booking conversion: +35%",
+      "Admin time: -45%",
+      "Repeat bookings: +40%",
+    ],
+  },
+  chef: {
+    core_solutions: [
+      "Booking and inquiry automation",
+      "Menu planning tools",
+      "Client preference database",
+      "Ingredient sourcing automation",
+      "Contract and payment collection",
+      "Review and referral system",
+      "Calendar management",
+    ],
+    quick_wins: [
+      "Inquiry bot in 24 hours",
+      "Menu templates in 48 hours",
+      "Booking calendar in 1 week",
+    ],
+    advanced_features: [
+      "AI menu suggestions based on preferences",
+      "Cost optimization",
+      "Dietary restriction management",
+      "Multi-event coordination",
+    ],
+    metrics_improved: [
+      "Booking response: <10 minutes",
+      "Conversion rate: +35%",
+      "Repeat clients: +50%",
+      "Admin time: -40%",
+    ],
+  },
+  event_planner: {
+    core_solutions: [
+      "Client inquiry automation",
+      "Vendor coordination system",
+      "Timeline and task management",
+      "Budget tracking automation",
+      "Client communication portal",
+      "Contract and payment automation",
+      "Post-event review system",
+    ],
+    quick_wins: [
+      "Inquiry bot in 48 hours",
+      "Vendor database in 1 week",
+      "Timeline templates in 72 hours",
+    ],
+    advanced_features: [
+      "AI vendor recommendations",
+      "Budget optimization suggestions",
+      "Guest management integration",
+      "Multi-event dashboard",
+    ],
+    metrics_improved: [
+      "Vendor coordination: -60% time",
+      "Client satisfaction: +40%",
+      "Event capacity: +50%",
+      "Referral rate: +35%",
+    ],
+  },
+  real_estate: {
+    core_solutions: [
+      "Lead capture and qualification bots",
+      "Appointment scheduling automation",
+      "Property listing automation",
+      "Targeted marketing (WhatsApp, email)",
+      "CRM with follow-up sequences",
+      "Virtual tour integration",
+      "Document automation",
+    ],
+    quick_wins: [
+      "Lead bot in 48 hours",
+      "Scheduling automation in 24 hours",
+      "WhatsApp campaigns in 1 week",
+    ],
+    advanced_features: [
+      "AI property matching",
+      "Market analysis automation",
+      "Investor portal",
+      "Commission tracking",
+    ],
+    metrics_improved: [
+      "Lead response: <3 minutes",
+      "Qualification rate: +50%",
+      "Showing no-shows: -40%",
+      "Close rate: +25%",
+    ],
+  },
+};
+
+export const COLOMBIA_STATS = {
+  tourism: {
+    visitors_2024: 6200000,
+    target_2026: 7500000,
+    growth_rate: "21%",
+    cartagena_occupancy: "75%",
+    top_cities: ["Bogota", "Cartagena", "Medellin", "Santa Marta"],
+  },
+  digital_behavior: {
+    whatsapp_purchase_rate: 0.66,
+    bogota_online_shopping: 0.73,
+    abandon_without_fast_response: 0.50,
+    no_web_presence_rate: 0.30,
+  },
+  ai_adoption: {
+    fintech_ai_usage: 0.66,
+    ai_cost_reduction: 0.44,
+    ai_speed_improvement: 0.56,
+    latam_ai_adoption_rank: 1,
+  },
+  conpes_4144: {
+    approved_date: "February 14, 2025",
+    investment_cop: 479273000000,
+    investment_usd: 110000000,
+    target_year: 2030,
+    strategic_axes: 6,
+    concrete_actions: 106,
+  },
+} as const;
+
+export const VERTICAL_TICKET_RANGES: Record<string, {
+  min_ticket: number;
+  max_ticket: number;
+  avg_ticket: number;
+  monthly_loss_range: [number, number];
+  implementation_days: number;
+}> = {
+  restaurant: { min_ticket: 500, max_ticket: 3000, avg_ticket: 1500, monthly_loss_range: [2000, 15000], implementation_days: 7 },
+  hotel: { min_ticket: 1500, max_ticket: 5000, avg_ticket: 3000, monthly_loss_range: [5000, 30000], implementation_days: 14 },
+  tour_operator: { min_ticket: 1000, max_ticket: 3000, avg_ticket: 1800, monthly_loss_range: [3000, 12000], implementation_days: 10 },
+  club: { min_ticket: 1000, max_ticket: 4000, avg_ticket: 2000, monthly_loss_range: [4000, 20000], implementation_days: 10 },
+  boat_charter: { min_ticket: 1500, max_ticket: 10000, avg_ticket: 4000, monthly_loss_range: [8000, 40000], implementation_days: 14 },
+  spa: { min_ticket: 500, max_ticket: 2000, avg_ticket: 1000, monthly_loss_range: [1500, 8000], implementation_days: 7 },
+  concierge: { min_ticket: 2000, max_ticket: 8000, avg_ticket: 4000, monthly_loss_range: [10000, 50000], implementation_days: 14 },
+  villa_rental: { min_ticket: 2000, max_ticket: 8000, avg_ticket: 4000, monthly_loss_range: [8000, 35000], implementation_days: 14 },
+  photographer: { min_ticket: 800, max_ticket: 2500, avg_ticket: 1500, monthly_loss_range: [2000, 8000], implementation_days: 7 },
+  videographer: { min_ticket: 1000, max_ticket: 3000, avg_ticket: 1800, monthly_loss_range: [2500, 10000], implementation_days: 10 },
+  dj: { min_ticket: 500, max_ticket: 2000, avg_ticket: 1000, monthly_loss_range: [1500, 6000], implementation_days: 5 },
+  chef: { min_ticket: 800, max_ticket: 3000, avg_ticket: 1500, monthly_loss_range: [2000, 10000], implementation_days: 7 },
+  event_planner: { min_ticket: 1500, max_ticket: 5000, avg_ticket: 2500, monthly_loss_range: [5000, 20000], implementation_days: 14 },
+  transportation: { min_ticket: 500, max_ticket: 2000, avg_ticket: 1000, monthly_loss_range: [1500, 8000], implementation_days: 7 },
+  real_estate: { min_ticket: 1000, max_ticket: 5000, avg_ticket: 2500, monthly_loss_range: [5000, 25000], implementation_days: 10 },
+};
+
+export const COLOMBIA_PSYCHOLOGY_TRIGGERS = {
+  freedom_triggers: [
+    "No abriste este negocio para contestar WhatsApps a las 10pm. — Phil McGill",
+    "You didn't open this place to answer WhatsApps at 10pm. — Phil McGill",
+    "¿Cuantas noches has perdido respondiendo mensajes que un bot podria manejar? — Phil",
+    "Tu tiempo vale mas que responder '¿A que hora abren?' 50 veces al dia. — Phil McGill",
+  ],
+  urgency_triggers: [
+    "Cada dia sin automatizacion es un dia de dinero perdido. — Phil McGill",
+    "Every day without automation is a day of money lost. — Phil McGill",
+    "Mientras lees esto, 3 clientes potenciales se fueron con tu competencia porque no respondiste a tiempo. — Phil",
+    "El 50% de los colombianos abandonan si no reciben respuesta rapida. ¿Cuantos perdiste hoy? — Phil McGill",
+  ],
+  tourist_capture_triggers: [
+    "La mayoria de turistas nunca regresan. ¿Los estas capturando la primera vez? — Phil McGill",
+    "Most tourists never come back. Are you capturing them the first time? — Phil McGill",
+    "6.2 millones de turistas visitaron Colombia el ano pasado. ¿Cuantos se fueron sin conocerte? — Phil",
+    "Un turista que no reserva en 24 horas, reserva con otro. ¿Tu sistema responde en 24 segundos? — Phil McGill",
+  ],
+  competition_triggers: [
+    "Tu competencia ya tiene esto. La pregunta es: ¿cuanto mas vas a esperar? — Phil McGill",
+    "El 66% de los colombianos compran despues de chatear por WhatsApp. ¿Estas ahi cuando escriben? — Phil",
+    "Los negocios con automatizacion cierran 3x mas ventas. Los demas se preguntan por que. — Phil McGill",
+  ],
+  vision_triggers: [
+    "Imagina vender todas tus mesas cada noche — automaticamente. — Phil McGill",
+    "Imagine selling out your tables every night — automatically. — Phil McGill",
+    "¿Que diria tu huesped si le ofrecieras un concierge AI 24/7? — Phil",
+    "What would your guest say if you offered 24/7 concierge AI? — Phil McGill",
+    "En 6 meses, o tienes automatizacion o estas perdiendo contra los que si la tienen. — Phil",
+  ],
+  government_leverage_triggers: [
+    "Colombia acaba de aprobar $110M USD para modernizacion AI (CONPES 4144). Los negocios que se muevan primero tendran ventaja de 2 anos. — Phil McGill",
+    "El gobierno esta empujando AI en turismo. ¿Vas a esperar a que tu competencia reciba los incentivos primero? — Phil",
+    "CONPES 4144 significa que la automatizacion no es opcional — es el nuevo estandar. — Phil McGill",
+  ],
+} as const;
+
+export const CONPES_POSITIONING = {
+  credibility_statements: [
+    "Nuestras soluciones estan alineadas con la Politica Nacional de AI de Colombia (CONPES 4144) — cumplimiento total, escalable, a prueba de futuro. — Phil McGill",
+    "Our solutions align with Colombia's National AI Policy (CONPES 4144); compliant, scalable, future-proof. — Phil McGill",
+  ],
+  urgency_statements: [
+    "Colombia acaba de aprobar su Politica Nacional de AI y destino $110M USD para llevar automatizacion a negocios en todo el pais. Si no actuas ahora, tu competidor lo hara — y tendra un ano de ventaja. — Phil McGill",
+    "Colombia just approved its National AI Policy and allocated $110M to bring automation to businesses nationwide. If you don't act now, your competitor will—and they'll have a year head-start. — Phil McGill",
+  ],
+  six_pillars: [
+    "Etica y Gobernanza — regulacion, transparencia, estandares eticos",
+    "Datos e Infraestructura — construccion de infraestructura de datos",
+    "I+D+i — financiamiento para investigacion e innovacion AI",
+    "Talento Digital — capacitacion y educacion en AI",
+    "Mitigacion de Riesgos — marcos de uso responsable",
+    "Adopcion y Difusion — implementacion en sector publico y privado",
+  ],
+  incentive_hook: [
+    "Algunos negocios califican para apoyo gubernamental o co-financiamiento al integrar AI. Yo me encargo de la aplicacion y la implementacion. — Phil McGill",
+    "Some businesses qualify for government-backed support when integrating AI. I handle the application AND implementation. — Phil McGill",
+  ],
+} as const;
+
+export const DECISION_MAKER_TYPES = [
+  "Visionary",
+  "Operator", 
+  "Skeptic",
+  "Delegator",
+] as const;
+
+export const BUYING_STYLES = [
+  "Impulsive",
+  "Analytical",
+  "Consensus",
+  "Value-driven",
+] as const;
+
+export interface CategorySolution {
+  core_solutions: string[];
+  quick_wins: string[];
+  advanced_features: string[];
+  metrics_improved: string[];
+}
+
+export interface VerticalTicketRange {
+  min_ticket: number;
+  max_ticket: number;
+  avg_ticket: number;
+  monthly_loss_range: [number, number];
+  implementation_days: number;
+}
+
+export interface DecisionMakerProfile {
+  estimated_age_range: string;
+  likely_role: string;
+  personality_type: typeof DECISION_MAKER_TYPES[number];
+  buying_style: typeof BUYING_STYLES[number];
+  risk_tolerance: "High" | "Medium" | "Low" | "Medium-High";
+  primary_motivation: "Growth" | "Freedom" | "Status" | "Security";
+  fear_pattern: string;
+  status_trigger: string;
+  preferred_language_style: "Direct" | "Consultative" | "Data-driven" | "Story-driven";
+  response_speed_preference: "Immediate" | "Same-day" | "Takes-time";
+  opening_approach: string;
+  proof_type_needed: string;
+  objection_likely: string;
+  closing_style: string;
+}
+
+export interface TechStackGaps {
+  has_booking_system: boolean;
+  has_whatsapp_business: boolean;
+  has_online_payment: boolean;
+  has_review_management: boolean;
+  is_mobile_optimized: boolean;
+  website_exists: boolean;
+  gaps_detected: string[];
+  gap_count: number;
+  automation_readiness_score: number;
+}
+
+export interface ColombiaMarketIntel {
+  category: string;
+  city: string;
+  min_ticket: number;
+  max_ticket: number;
+  recommended_ticket: number;
+  missing_systems: string[];
+  monthly_loss_estimate: number;
+  annual_loss_estimate: number;
+  tech_gaps: TechStackGaps | null;
+  primary_triggers: string[];
+  conpes_positioning: string[];
+  local_competition_level: "low" | "medium" | "high";
+  competitor_warnings: string[];
+  implementation_days: number;
+  roi_timeframe_days: number;
+}
+
+export interface BlackCardIntelligence {
+  category_solutions: Record<string, CategorySolution>;
+  colombia_stats: typeof COLOMBIA_STATS;
+  vertical_ticket_ranges: Record<string, VerticalTicketRange>;
+  colombia_psychology_triggers: typeof COLOMBIA_PSYCHOLOGY_TRIGGERS;
+  conpes_positioning: typeof CONPES_POSITIONING;
+  decision_maker_types: readonly string[];
+  buying_styles: readonly string[];
+  decision_maker_profile: DecisionMakerProfile | null;
+  colombia_market_intel: ColombiaMarketIntel | null;
+}
+
 export const OUTREACH_STATUSES = [
   { value: "pending", label: "Pending", color: "gray" },
   { value: "contacted", label: "Contacted", color: "blue" },

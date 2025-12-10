@@ -197,6 +197,11 @@ export default function Dashboard() {
                 <Zap className="h-4 w-4 mr-1" /> Ultimate
               </Button>
             </Link>
+            <Link href="/blackcard-intel">
+              <Button variant="ghost" size="sm" data-testid="nav-blackcard-intel">
+                <Layers className="h-4 w-4 mr-1" /> Black Card
+              </Button>
+            </Link>
             <Link href="/copilot">
               <Button variant="ghost" size="sm" data-testid="nav-copilot">
                 <Brain className="h-4 w-4 mr-1" /> Copilot
