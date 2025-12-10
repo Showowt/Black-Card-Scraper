@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, MapPin, Zap, Download, BarChart3, Mail } from "lucide-react";
+import { Building2, MapPin, Zap, Download, BarChart3, Mail, Users } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
   return (
@@ -11,9 +12,16 @@ export default function Landing() {
             <Building2 className="h-8 w-8 text-primary" />
             <span className="text-xl font-medium">Black Card Scanner</span>
           </div>
-          <Button asChild data-testid="button-login">
-            <a href="/api/login">Sign In</a>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link href="/team-login">
+              <Button variant="ghost" size="sm" data-testid="button-team-login">
+                <Users className="h-4 w-4 mr-1" /> Team Login
+              </Button>
+            </Link>
+            <Button asChild data-testid="button-login">
+              <a href="/api/login">Sign In</a>
+            </Button>
+          </div>
         </div>
       </header>
 
