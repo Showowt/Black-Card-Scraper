@@ -457,36 +457,53 @@ export default function IntelligencePanel({ business }: IntelligencePanelProps) 
               </TabsContent>
 
               <TabsContent value="instagram" className="mt-4">
-                {intel.instagram?.scrapeSuccess ? (
+                {intel.instagram?.handle ? (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="p-2 bg-muted rounded-md">
-                        <div className="text-lg font-bold">{intel.instagram.followers.toLocaleString()}</div>
-                        <div className="text-xs text-muted-foreground">Followers</div>
+                    {intel.instagram.scrapeSuccess && intel.instagram.followers > 0 ? (
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div className="p-2 bg-muted rounded-md">
+                          <div className="text-lg font-bold">{intel.instagram.followers.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Followers</div>
+                        </div>
+                        <div className="p-2 bg-muted rounded-md">
+                          <div className="text-lg font-bold">{intel.instagram.postsCount}</div>
+                          <div className="text-xs text-muted-foreground">Posts</div>
+                        </div>
+                        <div className="p-2 bg-muted rounded-md">
+                          <Badge variant="outline">{intel.instagram.followerTier}</Badge>
+                        </div>
                       </div>
-                      <div className="p-2 bg-muted rounded-md">
-                        <div className="text-lg font-bold">{intel.instagram.postsCount}</div>
-                        <div className="text-xs text-muted-foreground">Posts</div>
+                    ) : (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-md text-sm">
+                        <p className="text-amber-700 dark:text-amber-400">
+                          Profile stats blocked by Instagram - handle confirmed via website
+                        </p>
                       </div>
-                      <div className="p-2 bg-muted rounded-md">
-                        <Badge variant="outline">{intel.instagram.followerTier}</Badge>
+                    )}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <SiInstagram className="w-4 h-4 text-pink-500" />
+                        <span className="font-medium">@{intel.instagram.handle}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        Posting: {intel.instagram.postingFrequency} | Engagement: {intel.instagram.engagementEstimate}
-                      </span>
-                      <Button size="sm" variant="outline" asChild>
-                        <a href={intel.instagram.dmLink} target="_blank" rel="noopener" data-testid="link-instagram-dm">
-                          <MessageCircle className="w-4 h-4 mr-1" /> DM
-                        </a>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={`https://instagram.com/${intel.instagram.handle}`} target="_blank" rel="noopener" data-testid="link-instagram-profile">
+                            <Globe className="w-4 h-4 mr-1" /> Profile
+                          </a>
+                        </Button>
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={intel.instagram.dmLink} target="_blank" rel="noopener" data-testid="link-instagram-dm">
+                            <MessageCircle className="w-4 h-4 mr-1" /> DM
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-4 text-muted-foreground">
                     <SiInstagram className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">{intel.instagram?.error || 'No Instagram data available'}</p>
+                    <p className="text-sm">No Instagram handle found</p>
+                    <p className="text-xs mt-1">Use the Discover tab to search for it</p>
                   </div>
                 )}
               </TabsContent>

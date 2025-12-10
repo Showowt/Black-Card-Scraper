@@ -38,27 +38,26 @@ function Router() {
       {/* Team login is always accessible */}
       <Route path="/team-login" component={TeamLogin} />
       
-      {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
-        <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/business/:id" component={BusinessDetail} />
-          <Route path="/statistics" component={Statistics} />
-          <Route path="/outreach" component={Outreach} />
-          <Route path="/outreach-ready" component={OutreachReady} />
-          <Route path="/ultimate-outreach" component={UltimateOutreach} />
-          <Route path="/copilot" component={Copilot} />
-          <Route path="/operations" component={Operations} />
-          <Route path="/events" component={Events} />
-          <Route path="/intent-signals" component={IntentSignals} />
-          <Route path="/venue-monitors" component={VenueMonitors} />
-          <Route path="/authority-content" component={AuthorityContent} />
-          <Route path="/blackcard-intel" component={BlackCardIntel} />
-          <Route path="/blackcard-intel/:id" component={BlackCardIntel} />
-          <Route path="/team" component={TeamManagement} />
-        </>
-      )}
+      {/* Unauthenticated routes */}
+      {!isAuthenticated && <Route path="/" component={Landing} />}
+      
+      {/* Authenticated routes */}
+      {isAuthenticated && <Route path="/" component={Dashboard} />}
+      {isAuthenticated && <Route path="/business/:id" component={BusinessDetail} />}
+      {isAuthenticated && <Route path="/statistics" component={Statistics} />}
+      {isAuthenticated && <Route path="/outreach" component={Outreach} />}
+      {isAuthenticated && <Route path="/outreach-ready" component={OutreachReady} />}
+      {isAuthenticated && <Route path="/ultimate-outreach" component={UltimateOutreach} />}
+      {isAuthenticated && <Route path="/copilot" component={Copilot} />}
+      {isAuthenticated && <Route path="/operations" component={Operations} />}
+      {isAuthenticated && <Route path="/events" component={Events} />}
+      {isAuthenticated && <Route path="/intent-signals" component={IntentSignals} />}
+      {isAuthenticated && <Route path="/venue-monitors" component={VenueMonitors} />}
+      {isAuthenticated && <Route path="/authority-content" component={AuthorityContent} />}
+      {isAuthenticated && <Route path="/blackcard-intel" component={BlackCardIntel} />}
+      {isAuthenticated && <Route path="/blackcard-intel/:id" component={BlackCardIntel} />}
+      {isAuthenticated && <Route path="/team" component={TeamManagement} />}
+      
       <Route component={NotFound} />
     </Switch>
   );
