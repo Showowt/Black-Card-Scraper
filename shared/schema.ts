@@ -19,8 +19,47 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   profileImageUrl: text("profile_image_url"),
+  role: text("role").default("team_member"),
+  authProvider: text("auth_provider").default("replit"),
+  passwordHash: text("password_hash"),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const teamInvitations = pgTable("team_invitations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 32 }).unique().notNull(),
+  email: text("email"),
+  role: text("role").default("team_member"),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  usedBy: varchar("used_by", { length: 255 }).references(() => users.id),
+  usedAt: timestamp("used_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const magicLinkTokens = pgTable("magic_link_tokens", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar("token", { length: 64 }).unique().notNull(),
+  email: text("email").notNull(),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const activityLog = pgTable("activity_log", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: varchar("entity_id", { length: 255 }),
+  details: jsonb("details"),
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const businesses = pgTable("businesses", {
@@ -107,6 +146,25 @@ export const outreachCampaigns = pgTable("outreach_campaigns", {
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
+  lastLoginAt: true,
+});
+
+export const insertTeamInvitationSchema = createInsertSchema(teamInvitations).omit({
+  id: true,
+  usedAt: true,
+  usedBy: true,
+  createdAt: true,
+});
+
+export const insertMagicLinkTokenSchema = createInsertSchema(magicLinkTokens).omit({
+  id: true,
+  usedAt: true,
+  createdAt: true,
+});
+
+export const insertActivityLogSchema = createInsertSchema(activityLog).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertBusinessSchema = createInsertSchema(businesses).omit({
@@ -130,12 +188,24 @@ export const insertOutreachCampaignSchema = createInsertSchema(outreachCampaigns
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertTeamInvitation = z.infer<typeof insertTeamInvitationSchema>;
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type InsertMagicLinkToken = z.infer<typeof insertMagicLinkTokenSchema>;
+export type MagicLinkToken = typeof magicLinkTokens.$inferSelect;
+export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type ActivityLog = typeof activityLog.$inferSelect;
 export type InsertBusiness = z.infer<typeof insertBusinessSchema>;
 export type Business = typeof businesses.$inferSelect;
 export type InsertScan = z.infer<typeof insertScanSchema>;
 export type Scan = typeof scans.$inferSelect;
 export type InsertOutreachCampaign = z.infer<typeof insertOutreachCampaignSchema>;
 export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
+
+export const USER_ROLES = ["admin", "team_member"] as const;
+export type UserRole = typeof USER_ROLES[number];
+
+export const AUTH_PROVIDERS = ["replit", "email", "magic_link"] as const;
+export type AuthProvider = typeof AUTH_PROVIDERS[number];
 
 export const CITIES = [
   { value: "cartagena", label: "Cartagena", coordinates: { lat: 10.3910, lng: -75.4794 } },

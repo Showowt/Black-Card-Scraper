@@ -8,8 +8,12 @@ import {
   type VenueMonitor, type InsertVenueMonitor,
   type InstagramPost, type InsertInstagramPost,
   type AuthorityContent, type InsertAuthorityContent,
+  type TeamInvitation, type InsertTeamInvitation,
+  type MagicLinkToken, type InsertMagicLinkToken,
+  type ActivityLog, type InsertActivityLog,
   users, businesses, scans, outreachCampaigns,
-  events, intentSignals, venueMonitors, instagramPosts, authorityContent
+  events, intentSignals, venueMonitors, instagramPosts, authorityContent,
+  teamInvitations, magicLinkTokens, activityLog
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, like, and, or, gte, lte, sql, count, isNull, isNotNull } from "drizzle-orm";
@@ -17,7 +21,27 @@ import { eq, desc, asc, like, and, or, gte, lte, sql, count, isNull, isNotNull }
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   upsertUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<User>): Promise<User | undefined>;
+  
+  // Team Invitations
+  getTeamInvitation(id: string): Promise<TeamInvitation | undefined>;
+  getTeamInvitationByCode(code: string): Promise<TeamInvitation | undefined>;
+  getTeamInvitations(createdBy?: string): Promise<TeamInvitation[]>;
+  createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation>;
+  updateTeamInvitation(id: string, invitation: Partial<TeamInvitation>): Promise<TeamInvitation | undefined>;
+  deleteTeamInvitation(id: string): Promise<void>;
+  
+  // Magic Link Tokens
+  getMagicLinkToken(token: string): Promise<MagicLinkToken | undefined>;
+  createMagicLinkToken(magicLink: InsertMagicLinkToken): Promise<MagicLinkToken>;
+  markMagicLinkUsed(token: string): Promise<void>;
+  
+  // Activity Log
+  getActivityLogs(filters?: ActivityLogFilters): Promise<ActivityLog[]>;
+  createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   
   // Businesses
   getBusiness(id: string): Promise<Business | undefined>;
@@ -175,6 +199,15 @@ export interface ContentFilters {
   limit?: number;
 }
 
+export interface ActivityLogFilters {
+  userId?: string;
+  action?: string;
+  entityType?: string;
+  entityId?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export class DatabaseStorage implements IStorage {
   // Users
   async getUser(id: string): Promise<User | undefined> {
@@ -198,6 +231,115 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  // Team Invitations
+  async getTeamInvitation(id: string): Promise<TeamInvitation | undefined> {
+    const [invitation] = await db.select().from(teamInvitations).where(eq(teamInvitations.id, id));
+    return invitation;
+  }
+
+  async getTeamInvitationByCode(code: string): Promise<TeamInvitation | undefined> {
+    const [invitation] = await db.select().from(teamInvitations).where(eq(teamInvitations.code, code));
+    return invitation;
+  }
+
+  async getTeamInvitations(createdBy?: string): Promise<TeamInvitation[]> {
+    if (createdBy) {
+      return await db.select().from(teamInvitations)
+        .where(eq(teamInvitations.createdBy, createdBy))
+        .orderBy(desc(teamInvitations.createdAt));
+    }
+    return await db.select().from(teamInvitations).orderBy(desc(teamInvitations.createdAt));
+  }
+
+  async createTeamInvitation(invitation: InsertTeamInvitation): Promise<TeamInvitation> {
+    const [result] = await db.insert(teamInvitations).values(invitation).returning();
+    return result;
+  }
+
+  async updateTeamInvitation(id: string, invitation: Partial<TeamInvitation>): Promise<TeamInvitation | undefined> {
+    const [result] = await db
+      .update(teamInvitations)
+      .set(invitation)
+      .where(eq(teamInvitations.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTeamInvitation(id: string): Promise<void> {
+    await db.delete(teamInvitations).where(eq(teamInvitations.id, id));
+  }
+
+  // Magic Link Tokens
+  async getMagicLinkToken(token: string): Promise<MagicLinkToken | undefined> {
+    const [result] = await db.select().from(magicLinkTokens).where(eq(magicLinkTokens.token, token));
+    return result;
+  }
+
+  async createMagicLinkToken(magicLink: InsertMagicLinkToken): Promise<MagicLinkToken> {
+    const [result] = await db.insert(magicLinkTokens).values(magicLink).returning();
+    return result;
+  }
+
+  async markMagicLinkUsed(token: string): Promise<void> {
+    await db.update(magicLinkTokens).set({ usedAt: new Date() }).where(eq(magicLinkTokens.token, token));
+  }
+
+  // Activity Log
+  async getActivityLogs(filters?: ActivityLogFilters): Promise<ActivityLog[]> {
+    const conditions = [];
+    
+    if (filters?.userId) {
+      conditions.push(eq(activityLog.userId, filters.userId));
+    }
+    if (filters?.action) {
+      conditions.push(eq(activityLog.action, filters.action));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(activityLog.entityType, filters.entityType));
+    }
+    if (filters?.entityId) {
+      conditions.push(eq(activityLog.entityId, filters.entityId));
+    }
+
+    let query = db.select().from(activityLog);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    query = query.orderBy(desc(activityLog.createdAt)) as any;
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as any;
+    }
+
+    return await query;
+  }
+
+  async createActivityLog(log: InsertActivityLog): Promise<ActivityLog> {
+    const [result] = await db.insert(activityLog).values(log).returning();
+    return result;
   }
 
   // Businesses

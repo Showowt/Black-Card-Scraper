@@ -1,8 +1,10 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import { z } from "zod";
+import bcrypt from "bcrypt";
+import cryptoRandomString from "crypto-random-string";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, getSession } from "./replitAuth";
 import { 
   CITIES, CATEGORIES, TEXT_SEARCH_SUPPLEMENTS, VERTICAL_INTELLIGENCE, CATEGORY_SOLUTIONS, OBJECTION_PATTERNS,
   EVENT_TIERS, EVENT_CATEGORIES, EVENT_SOURCES, INTENT_LEVELS, CARTAGENA_VENUES_TO_MONITOR, CONTENT_TYPES,
@@ -87,6 +89,411 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Team Authentication Routes
+  
+  // Team member login (email + password)
+  app.post('/api/team/login', async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.passwordHash || user.authProvider !== 'email') {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Account is disabled" });
+      }
+
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Update last login
+      await storage.updateUser(user.id, { lastLoginAt: new Date() });
+
+      // Log activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: 'login',
+        entityType: 'user',
+        entityId: user.id,
+        details: { method: 'email' },
+        ipAddress: req.ip,
+      });
+
+      // Set session
+      req.login({ claims: { sub: user.id, email: user.email } }, (err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json({ user, message: "Login successful" });
+      });
+    } catch (error) {
+      console.error("Team login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Team member registration (with invite code)
+  app.post('/api/team/register', async (req: any, res) => {
+    try {
+      const { inviteCode, email, password, firstName, lastName } = req.body;
+
+      if (!inviteCode || !email || !password) {
+        return res.status(400).json({ message: "Invite code, email, and password are required" });
+      }
+
+      // Validate invite code
+      const invitation = await storage.getTeamInvitationByCode(inviteCode);
+      if (!invitation) {
+        return res.status(400).json({ message: "Invalid invite code" });
+      }
+      if (!invitation.isActive) {
+        return res.status(400).json({ message: "This invite has been deactivated" });
+      }
+      if (invitation.usedAt) {
+        return res.status(400).json({ message: "This invite has already been used" });
+      }
+      if (new Date() > invitation.expiresAt) {
+        return res.status(400).json({ message: "This invite has expired" });
+      }
+      if (invitation.email && invitation.email.toLowerCase() !== email.toLowerCase()) {
+        return res.status(400).json({ message: "This invite is for a different email address" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create user
+      const userId = cryptoRandomString({ length: 24 });
+      const user = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        role: invitation.role || 'team_member',
+        authProvider: 'email',
+        passwordHash,
+        isActive: true,
+      });
+
+      // Mark invitation as used
+      await storage.updateTeamInvitation(invitation.id, {
+        usedBy: user.id,
+        usedAt: new Date(),
+        isActive: false,
+      });
+
+      // Log activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: 'register',
+        entityType: 'user',
+        entityId: user.id,
+        details: { inviteCode },
+        ipAddress: req.ip,
+      });
+
+      // Set session
+      req.login({ claims: { sub: user.id, email: user.email } }, (err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Registration successful but login failed" });
+        }
+        res.json({ user, message: "Registration successful" });
+      });
+    } catch (error) {
+      console.error("Team registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Request magic link
+  app.post('/api/team/magic-link', async (req: any, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists
+        return res.json({ message: "If an account exists with this email, a login link will be sent" });
+      }
+
+      if (!user.isActive) {
+        return res.json({ message: "If an account exists with this email, a login link will be sent" });
+      }
+
+      // Generate magic link token
+      const token = cryptoRandomString({ length: 64 });
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      await storage.createMagicLinkToken({
+        token,
+        email,
+        userId: user.id,
+        expiresAt,
+      });
+
+      // In production, this would send an email. For now, return the token.
+      const magicLink = `${req.protocol}://${req.get('host')}/team-login?token=${token}`;
+      
+      console.log(`Magic link for ${email}: ${magicLink}`);
+
+      // Log activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: 'magic_link_requested',
+        entityType: 'user',
+        entityId: user.id,
+        ipAddress: req.ip,
+      });
+
+      res.json({ 
+        message: "If an account exists with this email, a login link will be sent",
+        // For development, include the link
+        ...(process.env.NODE_ENV !== 'production' && { magicLink, token })
+      });
+    } catch (error) {
+      console.error("Magic link error:", error);
+      res.status(500).json({ message: "Failed to send magic link" });
+    }
+  });
+
+  // Verify magic link
+  app.get('/api/team/verify-magic-link', async (req: any, res) => {
+    try {
+      const token = req.query.token as string;
+
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
+      const magicLink = await storage.getMagicLinkToken(token);
+      if (!magicLink) {
+        return res.status(400).json({ message: "Invalid or expired token" });
+      }
+
+      if (magicLink.usedAt) {
+        return res.status(400).json({ message: "This link has already been used" });
+      }
+
+      if (new Date() > magicLink.expiresAt) {
+        return res.status(400).json({ message: "This link has expired" });
+      }
+
+      // Get user
+      const user = await storage.getUser(magicLink.userId!);
+      if (!user || !user.isActive) {
+        return res.status(400).json({ message: "Account not found or disabled" });
+      }
+
+      // Mark token as used
+      await storage.markMagicLinkUsed(token);
+
+      // Update last login and auth provider
+      await storage.updateUser(user.id, { 
+        lastLoginAt: new Date(),
+        authProvider: 'magic_link',
+      });
+
+      // Log activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: 'login',
+        entityType: 'user',
+        entityId: user.id,
+        details: { method: 'magic_link' },
+        ipAddress: req.ip,
+      });
+
+      // Set session
+      req.login({ claims: { sub: user.id, email: user.email } }, (err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+        res.json({ user, message: "Login successful" });
+      });
+    } catch (error) {
+      console.error("Magic link verify error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // Admin: Create invite
+  app.post('/api/team/invites', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { email, role = 'team_member', expiresInDays = 7 } = req.body;
+
+      const code = cryptoRandomString({ length: 12, type: 'alphanumeric' }).toUpperCase();
+      const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+
+      const invitation = await storage.createTeamInvitation({
+        code,
+        email: email || null,
+        role,
+        createdBy: userId,
+        expiresAt,
+        isActive: true,
+      });
+
+      // Log activity
+      await storage.createActivityLog({
+        userId,
+        action: 'create_invite',
+        entityType: 'team_invitation',
+        entityId: invitation.id,
+        details: { email, role },
+        ipAddress: req.ip,
+      });
+
+      res.json(invitation);
+    } catch (error) {
+      console.error("Create invite error:", error);
+      res.status(500).json({ message: "Failed to create invite" });
+    }
+  });
+
+  // Admin: List invites
+  app.get('/api/team/invites', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const invitations = await storage.getTeamInvitations();
+      res.json(invitations);
+    } catch (error) {
+      console.error("List invites error:", error);
+      res.status(500).json({ message: "Failed to list invites" });
+    }
+  });
+
+  // Admin: Delete invite
+  app.delete('/api/team/invites/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      await storage.deleteTeamInvitation(req.params.id);
+      res.json({ message: "Invite deleted" });
+    } catch (error) {
+      console.error("Delete invite error:", error);
+      res.status(500).json({ message: "Failed to delete invite" });
+    }
+  });
+
+  // Admin: List team members
+  app.get('/api/team/members', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const users = await storage.getUsers();
+      // Don't include password hashes
+      const safeUsers = users.map(u => ({
+        ...u,
+        passwordHash: undefined,
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("List members error:", error);
+      res.status(500).json({ message: "Failed to list team members" });
+    }
+  });
+
+  // Admin: Update team member
+  app.patch('/api/team/members/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { role, isActive } = req.body;
+      const updates: any = {};
+      if (role !== undefined) updates.role = role;
+      if (isActive !== undefined) updates.isActive = isActive;
+
+      const updatedUser = await storage.updateUser(req.params.id, updates);
+
+      // Log activity
+      await storage.createActivityLog({
+        userId,
+        action: 'update_member',
+        entityType: 'user',
+        entityId: req.params.id,
+        details: updates,
+        ipAddress: req.ip,
+      });
+
+      res.json({ ...updatedUser, passwordHash: undefined });
+    } catch (error) {
+      console.error("Update member error:", error);
+      res.status(500).json({ message: "Failed to update team member" });
+    }
+  });
+
+  // Activity log
+  app.get('/api/team/activity', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const filters = {
+        userId: req.query.userId as string,
+        action: req.query.action as string,
+        entityType: req.query.entityType as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+
+      const logs = await storage.getActivityLogs(filters);
+      res.json(logs);
+    } catch (error) {
+      console.error("Activity log error:", error);
+      res.status(500).json({ message: "Failed to fetch activity log" });
     }
   });
 
