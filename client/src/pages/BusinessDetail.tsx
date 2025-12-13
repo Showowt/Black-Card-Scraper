@@ -58,6 +58,7 @@ export default function BusinessDetail() {
   const [contactRole, setContactRole] = useState("");
   const [showStrategy, setShowStrategy] = useState(false);
   const [showCheatSheet, setShowCheatSheet] = useState(false);
+  const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
 
   const calculateDealScore = (session: CallSessionWithDetails) => {
     let score = 50;
@@ -1314,33 +1315,98 @@ export default function BusinessDetail() {
                         </div>
                       ) : callSessions && callSessions.length > 0 ? (
                         <div className="space-y-2">
-                          <Label className="text-xs text-muted-foreground">Call History</Label>
-                          <ScrollArea className="h-[200px]">
+                          <Label className="text-xs text-muted-foreground">Call History ({callSessions.length} calls)</Label>
+                          <ScrollArea className="h-[300px]">
                             <div className="space-y-2">
                               {callSessions.map((session) => (
                                 <div
                                   key={session.id}
-                                  className="flex items-center justify-between p-3 rounded-md border"
+                                  className="rounded-md border"
                                   data-testid={`session-${session.id}`}
                                 >
-                                  <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-full bg-primary/10">
-                                      <Phone className="h-3 w-3 text-primary" />
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium">{session.contactName || "Unknown Contact"}</div>
-                                      <div className="text-xs text-muted-foreground">
-                                        {session.durationMinutes ? `${session.durationMinutes} min` : 'N/A'} - {session.status}
+                                  <div 
+                                    className="flex items-center justify-between p-3 cursor-pointer hover-elevate"
+                                    onClick={() => setExpandedCallId(expandedCallId === session.id ? null : session.id)}
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="p-2 rounded-full bg-primary/10">
+                                        <Phone className="h-3 w-3 text-primary" />
+                                      </div>
+                                      <div>
+                                        <div className="text-sm font-medium">{session.contactName || "Unknown Contact"}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                          {new Date(session.startedAt).toLocaleDateString()} at {new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          {session.durationMinutes ? ` • ${session.durationMinutes} min` : ''}
+                                        </div>
                                       </div>
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                      {session.dealScore !== null && session.dealScore !== undefined && (
+                                        <Badge variant="secondary" className={getDealScoreColor(session.dealScore)}>
+                                          Score: {session.dealScore}
+                                        </Badge>
+                                      )}
+                                      <ChevronDown className={`h-4 w-4 transition-transform ${expandedCallId === session.id ? 'rotate-180' : ''}`} />
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    {session.dealScore && (
-                                      <Badge variant="secondary" className={getDealScoreColor(session.dealScore)}>
-                                        Score: {session.dealScore}
-                                      </Badge>
-                                    )}
-                                  </div>
+                                  
+                                  {expandedCallId === session.id && (
+                                    <div className="px-3 pb-3 pt-0 border-t space-y-3">
+                                      <div className="grid grid-cols-2 gap-2 pt-3">
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">Contact</span>
+                                          <p className="text-sm">{session.contactName || 'N/A'} {session.contactRole ? `(${session.contactRole})` : ''}</p>
+                                        </div>
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">Status</span>
+                                          <p className="text-sm capitalize">{session.status}</p>
+                                        </div>
+                                      </div>
+                                      
+                                      {(session.buyerType || session.urgency || session.authority || session.budget) && (
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">Signals Captured</span>
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {session.buyerType && <Badge variant="outline" className="text-xs">{BUYER_TYPES.find(b => b.value === session.buyerType)?.label || session.buyerType}</Badge>}
+                                            {session.urgency && <Badge variant="outline" className="text-xs">{URGENCY_LEVELS.find(u => u.value === session.urgency)?.label || session.urgency}</Badge>}
+                                            {session.authority && <Badge variant="outline" className="text-xs">{AUTHORITY_LEVELS.find(a => a.value === session.authority)?.label || session.authority}</Badge>}
+                                            {session.budget && <Badge variant="outline" className="text-xs">{BUDGET_LEVELS.find(b => b.value === session.budget)?.label || session.budget}</Badge>}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {session.notes && (
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">Notes</span>
+                                          <p className="text-sm mt-1 whitespace-pre-wrap">{session.notes}</p>
+                                        </div>
+                                      )}
+                                      
+                                      {(session.needsDemo || session.needsProposal || session.needsCaseStudy || session.needsTrial) && (
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">What They Need</span>
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {session.needsDemo && <Badge variant="secondary" className="text-xs">Demo</Badge>}
+                                            {session.needsProposal && <Badge variant="secondary" className="text-xs">Proposal</Badge>}
+                                            {session.needsCaseStudy && <Badge variant="secondary" className="text-xs">Case Study</Badge>}
+                                            {session.needsTrial && <Badge variant="secondary" className="text-xs">Trial</Badge>}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {(session.nextAction || session.followUpDate) && (
+                                        <div>
+                                          <span className="text-xs text-muted-foreground">Next Steps</span>
+                                          {session.nextAction && <p className="text-sm mt-1">{session.nextAction}</p>}
+                                          {session.followUpDate && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              Follow-up: {new Date(session.followUpDate).toLocaleDateString()}
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
