@@ -20,8 +20,10 @@ import {
   Building2, ArrowLeft, Phone, Mail, Globe, MapPin, Star, 
   ExternalLink, Clock, Zap, RefreshCw, Copy, Check, LogOut, Search,
   AlertTriangle, Target, DollarSign, Shield, Heart, Clock3, Sparkles, Send,
-  Play, Pause, StopCircle, Plus, ChevronDown, MessageSquare
+  Play, Pause, StopCircle, Plus, ChevronDown, MessageSquare,
+  BarChart3, Flame, Eye, Crown, Gem, Calendar, FileText, Lightbulb, Users, DoorClosed
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SiInstagram, SiFacebook, SiWhatsapp } from "react-icons/si";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
