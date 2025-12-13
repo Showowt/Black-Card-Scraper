@@ -30,7 +30,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import ClaudeCopilot from "@/components/ClaudeCopilot";
 import IntelligencePanel from "@/components/IntelligencePanel";
 import type { Business, OutreachCampaign, CallSession, CallObjection, CallPainPoint } from "@shared/schema";
-import { CITIES, CATEGORIES, OUTREACH_STATUSES, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES } from "@shared/schema";
+import { CITIES, CATEGORIES, OUTREACH_STATUSES, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES, CALL_DISPOSITIONS } from "@shared/schema";
 
 interface CallSessionWithDetails extends CallSession {
   objections?: CallObjection[];
@@ -59,6 +59,7 @@ export default function BusinessDetail() {
   const [showStrategy, setShowStrategy] = useState(false);
   const [showCheatSheet, setShowCheatSheet] = useState(false);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
+  const [selectedDisposition, setSelectedDisposition] = useState<string>("");
 
   const calculateDealScore = (session: CallSessionWithDetails) => {
     let score = 50;
@@ -336,10 +337,29 @@ export default function BusinessDetail() {
         durationMinutes: minutes,
         status: "completed",
         dealScore,
+        disposition: selectedDisposition || undefined,
       });
+
+      // Sync followUpDate and disposition to business
+      const businessUpdate: Record<string, any> = {
+        lastContactedAt: new Date(),
+      };
+      if (activeSession.followUpDate) {
+        businessUpdate.followUpDate = activeSession.followUpDate;
+      }
+      if (selectedDisposition) {
+        businessUpdate.lastDisposition = selectedDisposition;
+      }
+      
+      apiRequest("PATCH", `/api/businesses/${businessId}`, businessUpdate)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ["/api/businesses", businessId] });
+          queryClient.invalidateQueries({ queryKey: ["/api/businesses/follow-ups"] });
+        });
 
       const painSummary = activeSession.painPoints?.map(p => p.painText).join(", ") || "";
       const objectionSummary = activeSession.objections?.filter(o => !o.addressed).map(o => o.objectionType).join(", ") || "";
+      const dispositionLabel = selectedDisposition ? CALL_DISPOSITIONS.find(d => d.value === selectedDisposition)?.label : "";
       const callSummary = [
         `Call ${new Date().toLocaleDateString()}: ${minutes}min`,
         activeSession.buyerType ? `Type: ${activeSession.buyerType}` : "",
@@ -347,6 +367,7 @@ export default function BusinessDetail() {
         activeSession.authority ? `Authority: ${activeSession.authority}` : "",
         painSummary ? `Pain: ${painSummary}` : "",
         objectionSummary ? `Open objections: ${objectionSummary}` : "",
+        dispositionLabel ? `Disposition: ${dispositionLabel}` : "",
         `Deal Score: ${dealScore}`,
       ].filter(Boolean).join(" | ");
 
@@ -357,6 +378,7 @@ export default function BusinessDetail() {
     setIsRunning(false);
     setElapsedSeconds(0);
     setActiveSession(null);
+    setSelectedDisposition("");
   };
 
   // Resume active session on load
@@ -942,7 +964,17 @@ export default function BusinessDetail() {
                             </div>
                             <p className="text-xs text-muted-foreground">Duration</p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-2">
+                            <Select value={selectedDisposition} onValueChange={setSelectedDisposition}>
+                              <SelectTrigger className="w-32" data-testid="select-disposition">
+                                <SelectValue placeholder="Disposition" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {CALL_DISPOSITIONS.map(d => (
+                                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             {isRunning ? (
                               <Button size="icon" variant="outline" onClick={pauseTimer} data-testid="button-pause-call">
                                 <Pause className="h-4 w-4" />

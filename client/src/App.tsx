@@ -22,6 +22,7 @@ import BlackCardIntel from "@/pages/BlackCardIntel";
 import CallCompanion from "@/pages/CallCompanion";
 import TeamLogin from "@/pages/TeamLogin";
 import TeamManagement from "@/pages/TeamManagement";
+import FollowUps from "@/pages/FollowUps";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -59,6 +60,7 @@ function Router() {
       {isAuthenticated && <Route path="/blackcard-intel/:id" component={BlackCardIntel} />}
       {isAuthenticated && <Route path="/call-companion" component={CallCompanion} />}
       {isAuthenticated && <Route path="/team" component={TeamManagement} />}
+      {isAuthenticated && <Route path="/follow-ups" component={FollowUps} />}
       
       <Route component={NotFound} />
     </Switch>
