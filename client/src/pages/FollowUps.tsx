@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Building2, Calendar, Phone, MapPin, Star, ArrowRight, 
-  Clock, CheckCircle, AlertCircle, LogOut, ArrowLeft
+  Clock, CheckCircle, AlertCircle, LogOut, ArrowLeft, Filter, X
 } from "lucide-react";
 import { format, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import type { Business, CallSession } from "@shared/schema";
@@ -20,6 +22,8 @@ import { CITIES, CATEGORIES, CALL_DISPOSITIONS } from "@shared/schema";
 export default function FollowUps() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [dispositionFilter, setDispositionFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: businesses, isLoading } = useQuery<Business[]>({
     queryKey: ['/api/businesses/follow-ups'],
@@ -50,6 +54,15 @@ export default function FollowUps() {
     return { label: `In ${days} days`, color: "green", icon: CheckCircle };
   };
 
+  // Filter helper function
+  const filterBusinesses = (list: Business[]) => {
+    return list.filter(b => {
+      const matchesDisposition = dispositionFilter === "all" || b.lastDisposition === dispositionFilter;
+      const matchesSearch = !searchQuery || b.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesDisposition && matchesSearch;
+    });
+  };
+
   const overdueFollowUps = businesses?.filter(b => {
     if (!b.followUpDate) return false;
     const date = new Date(b.followUpDate);
@@ -67,12 +80,20 @@ export default function FollowUps() {
     return !isPast(date) && !isToday(date);
   }) || [];
 
+  // Apply filters to each group
+  const overdueFiltered = filterBusinesses(overdueFollowUps);
+  const todayFiltered = filterBusinesses(todayFollowUps);
+  const upcomingFiltered = filterBusinesses(upcomingFollowUps);
+
   const dispositionStats = allCalls?.reduce((acc, call) => {
     if (call.disposition) {
       acc[call.disposition] = (acc[call.disposition] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>) || {};
+
+  const totalCalls = allCalls?.length || 0;
+  const completedCalls = allCalls?.filter(c => c.status === "completed").length || 0;
 
   if (isLoading) {
     return (
@@ -259,12 +280,21 @@ export default function FollowUps() {
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg">Disposition Summary</CardTitle>
+              <CardTitle className="text-lg">Disposition Summary (Click to Filter)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {CALL_DISPOSITIONS.map(disp => (
-                  <div key={disp.value} className="text-center p-3 rounded-md bg-muted/50">
+                  <button
+                    key={disp.value}
+                    onClick={() => setDispositionFilter(dispositionFilter === disp.value ? "all" : disp.value)}
+                    className={`text-center p-3 rounded-md transition-all cursor-pointer ${
+                      dispositionFilter === disp.value 
+                        ? 'ring-2 ring-primary bg-primary/10' 
+                        : 'bg-muted/50 hover-elevate'
+                    }`}
+                    data-testid={`filter-disposition-${disp.value}`}
+                  >
                     <div className={`text-2xl font-bold ${
                       disp.color === 'green' ? 'text-green-500' :
                       disp.color === 'blue' ? 'text-blue-500' :
@@ -275,53 +305,124 @@ export default function FollowUps() {
                       {dispositionStats[disp.value] || 0}
                     </div>
                     <div className="text-xs text-muted-foreground">{disp.label}</div>
-                  </div>
+                  </button>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Call Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Total Calls</span>
+                  <span className="font-bold text-lg">{totalCalls}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Completed</span>
+                  <span className="font-bold text-lg text-green-500">{completedCalls}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Conversion Rate</span>
+                  <span className="font-bold text-lg">
+                    {completedCalls > 0 
+                      ? `${Math.round((dispositionStats['closed_won'] || 0) / completedCalls * 100)}%`
+                      : '0%'
+                    }
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {overdueFollowUps.length > 0 && (
+        {/* Filters */}
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={dispositionFilter} onValueChange={setDispositionFilter}>
+            <SelectTrigger className="w-[180px]" data-testid="select-disposition-filter">
+              <SelectValue placeholder="All Dispositions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Dispositions</SelectItem>
+              {CALL_DISPOSITIONS.map(d => (
+                <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input 
+            placeholder="Search businesses..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-xs"
+            data-testid="input-search-businesses"
+          />
+          {(dispositionFilter !== "all" || searchQuery) && (
+            <Button variant="ghost" size="sm" onClick={() => { setDispositionFilter("all"); setSearchQuery(""); }} data-testid="button-clear-filters">
+              <X className="h-4 w-4 mr-1" /> Clear Filters
+            </Button>
+          )}
+        </div>
+
+        {overdueFiltered.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-medium mb-3 flex items-center gap-2 text-red-500">
               <AlertCircle className="h-5 w-5" />
-              Overdue ({overdueFollowUps.length})
+              Overdue ({overdueFiltered.length})
             </h2>
             <div className="grid gap-3">
-              {overdueFollowUps.map(business => (
+              {overdueFiltered.map(business => (
                 <FollowUpCard key={business.id} business={business} />
               ))}
             </div>
           </div>
         )}
 
-        {todayFollowUps.length > 0 && (
+        {todayFiltered.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-medium mb-3 flex items-center gap-2 text-amber-500">
               <Clock className="h-5 w-5" />
-              Today ({todayFollowUps.length})
+              Today ({todayFiltered.length})
             </h2>
             <div className="grid gap-3">
-              {todayFollowUps.map(business => (
+              {todayFiltered.map(business => (
                 <FollowUpCard key={business.id} business={business} />
               ))}
             </div>
           </div>
         )}
 
-        {upcomingFollowUps.length > 0 && (
+        {upcomingFiltered.length > 0 && (
           <div className="mb-8">
             <h2 className="text-lg font-medium mb-3 flex items-center gap-2 text-blue-500">
               <Calendar className="h-5 w-5" />
-              Upcoming ({upcomingFollowUps.length})
+              Upcoming ({upcomingFiltered.length})
             </h2>
             <div className="grid gap-3">
-              {upcomingFollowUps.map(business => (
+              {upcomingFiltered.map(business => (
                 <FollowUpCard key={business.id} business={business} />
               ))}
             </div>
           </div>
+        )}
+
+        {/* No results message when filters are active */}
+        {(dispositionFilter !== "all" || searchQuery) && 
+         overdueFiltered.length === 0 && todayFiltered.length === 0 && upcomingFiltered.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No Matching Follow-ups</h3>
+              <p className="text-muted-foreground mb-4">
+                No follow-ups match your current filters.
+              </p>
+              <Button variant="outline" onClick={() => { setDispositionFilter("all"); setSearchQuery(""); }} data-testid="button-clear-filters-empty">
+                Clear Filters
+              </Button>
+            </CardContent>
+          </Card>
         )}
 
         {(!businesses || businesses.length === 0) && (
