@@ -92,6 +92,8 @@ export const businesses = pgTable("businesses", {
   outreachStatus: text("outreach_status").default("pending"),
   outreachNotes: text("outreach_notes"),
   lastContactedAt: timestamp("last_contacted_at"),
+  followUpDate: timestamp("follow_up_date"),
+  lastDisposition: text("last_disposition"),
   scannedAt: timestamp("scanned_at").defaultNow(),
   enrichedAt: timestamp("enriched_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -2589,6 +2591,7 @@ export const callSessions = pgTable("call_sessions", {
   needsProposal: boolean("needs_proposal").default(false),
   needsCaseStudy: boolean("needs_case_study").default(false),
   needsTrial: boolean("needs_trial").default(false),
+  disposition: text("disposition"),
   status: text("status").default("active"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -2664,4 +2667,15 @@ export const OBJECTION_TYPES = [
   { value: "authority", label: "Authority", icon: "user" },
   { value: "competitor", label: "Competitor", icon: "vs" },
   { value: "need", label: "No Need", icon: "question" },
+] as const;
+
+export const CALL_DISPOSITIONS = [
+  { value: "interested", label: "Interested", color: "green", description: "Ready to move forward" },
+  { value: "callback", label: "Callback Scheduled", color: "blue", description: "Follow-up scheduled" },
+  { value: "send_info", label: "Send Info", color: "amber", description: "Requested more information" },
+  { value: "not_interested", label: "Not Interested", color: "red", description: "Declined" },
+  { value: "voicemail", label: "Voicemail", color: "gray", description: "Left message" },
+  { value: "no_answer", label: "No Answer", color: "gray", description: "Did not pick up" },
+  { value: "wrong_number", label: "Wrong Number", color: "red", description: "Bad contact info" },
+  { value: "gatekeeper", label: "Gatekeeper", color: "amber", description: "Couldn't reach decision maker" },
 ] as const;
