@@ -2483,3 +2483,185 @@ export const VERTICAL_DEEP_INTEL: Record<string, {
     },
   },
 };
+
+// ========== GUEST INTELLIGENCE (GENOME PROTOCOL) ==========
+
+export const guestProfiles = pgTable("guest_profiles", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id", { length: 255 }),
+  propertyName: text("property_name"),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  completeness: integer("completeness").default(0),
+  isVip: boolean("is_vip").default(false),
+  lifetimeValue: real("lifetime_value").default(0),
+  communicationChannel: text("communication_channel"),
+  responseStyle: text("response_style"),
+  bestContactTime: text("best_contact_time"),
+  decisionSpeed: text("decision_speed"),
+  decisionDriver: text("decision_driver"),
+  priceSensitivity: integer("price_sensitivity"),
+  upgradePropensity: integer("upgrade_propensity"),
+  environmentPref: text("environment_pref"),
+  temperaturePref: text("temperature_pref"),
+  chronotype: text("chronotype"),
+  dietaryPref: text("dietary_pref"),
+  travelStyle: text("travel_style"),
+  typicalGroupSize: integer("typical_group_size"),
+  specialOccasions: text("special_occasions"),
+  decisionRole: text("decision_role"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const guestSignals = pgTable("guest_signals", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id", { length: 255 }).references(() => guestProfiles.id),
+  signalType: text("signal_type").notNull(),
+  collectionMechanism: text("collection_mechanism"),
+  value: text("value"),
+  confidence: integer("confidence"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const guestVipActivity = pgTable("guest_vip_activity", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  profileId: varchar("profile_id", { length: 255 }).references(() => guestProfiles.id),
+  activityType: text("activity_type").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertGuestProfileSchema = createInsertSchema(guestProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertGuestSignalSchema = createInsertSchema(guestSignals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGuestVipActivitySchema = createInsertSchema(guestVipActivity).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertGuestProfile = z.infer<typeof insertGuestProfileSchema>;
+export type GuestProfile = typeof guestProfiles.$inferSelect;
+export type InsertGuestSignal = z.infer<typeof insertGuestSignalSchema>;
+export type GuestSignal = typeof guestSignals.$inferSelect;
+export type InsertGuestVipActivity = z.infer<typeof insertGuestVipActivitySchema>;
+export type GuestVipActivity = typeof guestVipActivity.$inferSelect;
+
+export const COLLECTION_MECHANISMS = [
+  { id: "concierge_capture", name: "Concierge Capture", description: "Choice reveals preference" },
+  { id: "preference_cascade", name: "Preference Cascade", description: "Binary micro-choices" },
+  { id: "relief_reveal", name: "Relief Reveal", description: "Care context extraction" },
+  { id: "anticipation_engine", name: "Anticipation Engine", description: "Predict & confirm" },
+] as const;
+
+// ========== CALL COMPANION ==========
+
+export const callSessions = pgTable("call_sessions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  businessId: varchar("business_id", { length: 255 }).references(() => businesses.id),
+  businessName: text("business_name"),
+  contactName: text("contact_name"),
+  contactRole: text("contact_role"),
+  phone: text("phone"),
+  businessType: text("business_type"),
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  durationMinutes: integer("duration_minutes"),
+  dealScore: integer("deal_score").default(50),
+  buyerType: text("buyer_type"),
+  urgency: text("urgency"),
+  authority: text("authority"),
+  budget: text("budget"),
+  notes: text("notes"),
+  nextAction: text("next_action"),
+  followUpDate: timestamp("follow_up_date"),
+  needsDemo: boolean("needs_demo").default(false),
+  needsProposal: boolean("needs_proposal").default(false),
+  needsCaseStudy: boolean("needs_case_study").default(false),
+  needsTrial: boolean("needs_trial").default(false),
+  status: text("status").default("active"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const callObjections = pgTable("call_objections", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id", { length: 255 }).references(() => callSessions.id),
+  objectionType: text("objection_type").notNull(),
+  addressed: boolean("addressed").default(false),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export const callPainPoints = pgTable("call_pain_points", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id", { length: 255 }).references(() => callSessions.id),
+  painText: text("pain_text").notNull(),
+  severity: integer("severity").default(5),
+  addedAt: timestamp("added_at").defaultNow(),
+});
+
+export const insertCallSessionSchema = createInsertSchema(callSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCallObjectionSchema = createInsertSchema(callObjections).omit({
+  id: true,
+  addedAt: true,
+});
+
+export const insertCallPainPointSchema = createInsertSchema(callPainPoints).omit({
+  id: true,
+  addedAt: true,
+});
+
+export type InsertCallSession = z.infer<typeof insertCallSessionSchema>;
+export type CallSession = typeof callSessions.$inferSelect;
+export type InsertCallObjection = z.infer<typeof insertCallObjectionSchema>;
+export type CallObjection = typeof callObjections.$inferSelect;
+export type InsertCallPainPoint = z.infer<typeof insertCallPainPointSchema>;
+export type CallPainPoint = typeof callPainPoints.$inferSelect;
+
+export const BUYER_TYPES = [
+  { value: "analytical", label: "Analytical", icon: "data", description: "Needs data and proof" },
+  { value: "driver", label: "Driver", icon: "results", description: "Focused on results" },
+  { value: "expressive", label: "Expressive", icon: "vision", description: "Driven by vision" },
+  { value: "amiable", label: "Amiable", icon: "trust", description: "Values relationships" },
+] as const;
+
+export const URGENCY_LEVELS = [
+  { value: "bleeding", label: "Bleeding", icon: "fire", description: "Needs it NOW" },
+  { value: "urgent", label: "Urgent", icon: "bolt", description: "Soon" },
+  { value: "planning", label: "Planning", icon: "calendar", description: "Later" },
+  { value: "browsing", label: "Browsing", icon: "eye", description: "Cold" },
+] as const;
+
+export const AUTHORITY_LEVELS = [
+  { value: "sole", label: "Sole Decision", icon: "crown", description: "Can decide alone" },
+  { value: "influencer", label: "Influencer", icon: "chat", description: "Needs approval" },
+  { value: "gatekeeper", label: "Gatekeeper", icon: "door", description: "Blocker" },
+] as const;
+
+export const BUDGET_LEVELS = [
+  { value: "flexible", label: "Flexible", icon: "gem", description: "Has budget" },
+  { value: "price_first", label: "Price First", icon: "dollar", description: "Price focused" },
+  { value: "constrained", label: "Constrained", icon: "tight", description: "Limited budget" },
+] as const;
+
+export const OBJECTION_TYPES = [
+  { value: "price", label: "Price", icon: "money" },
+  { value: "timing", label: "Timing", icon: "clock" },
+  { value: "trust", label: "Trust", icon: "question" },
+  { value: "authority", label: "Authority", icon: "user" },
+  { value: "competitor", label: "Competitor", icon: "vs" },
+  { value: "need", label: "No Need", icon: "question" },
+] as const;

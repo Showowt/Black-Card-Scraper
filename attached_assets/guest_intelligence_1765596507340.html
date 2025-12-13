@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guest Intelligence Dashboard | GENOME PROTOCOL™</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .genome-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .dna-helix {
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(102, 126, 234, 0.1) 10px,
+                rgba(102, 126, 234, 0.1) 20px
+            );
+        }
+        .stat-card:hover { transform: translateY(-2px); transition: all 0.2s ease; }
+        .completeness-ring {
+            stroke-dasharray: 283;
+            stroke-dashoffset: calc(283 - (283 * var(--percent)) / 100);
+            transition: stroke-dashoffset 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="genome-gradient text-white">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold flex items-center gap-2">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                            <path d="M12 6v12M6 12h12"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        GENOME PROTOCOL™
+                    </h1>
+                    <p class="text-purple-200 text-sm mt-1">Guest Intelligence Dashboard</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="property-select" class="bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white">
+                        <option value="hotel_casa_san_agustin">Hotel Casa San Agustín</option>
+                        <option value="villa_cartagena">Villa Cartagena Premium</option>
+                        <option value="restaurante_carmen">Restaurante Carmen</option>
+                    </select>
+                    <span class="text-sm text-purple-200" id="last-updated">Updated: Just now</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Profiles -->
+            <div class="bg-white rounded-xl shadow-sm p-6 stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Total Profiles</p>
+                        <p class="text-3xl font-bold text-gray-900" id="total-profiles">847</p>
+                        <p class="text-sm text-green-600 mt-1">↑ 23 this week</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avg Completeness -->
+            <div class="bg-white rounded-xl shadow-sm p-6 stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Avg Completeness</p>
+                        <p class="text-3xl font-bold text-gray-900" id="avg-completeness">67%</p>
+                        <p class="text-sm text-green-600 mt-1">↑ 8% vs last month</p>
+                    </div>
+                    <div class="relative w-16 h-16">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                            <circle cx="32" cy="32" r="28" stroke="#8b5cf6" stroke-width="4" fill="none" 
+                                    class="completeness-ring" style="--percent: 67"/>
+                        </svg>
+                        <span class="absolute inset-0 flex items-center justify-center text-sm font-semibold text-purple-600">67%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIP Guests -->
+            <div class="bg-white rounded-xl shadow-sm p-6 stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">VIP Guests</p>
+                        <p class="text-3xl font-bold text-gray-900" id="vip-count">43</p>
+                        <p class="text-sm text-gray-500 mt-1">$127K lifetime value</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signals Today -->
+            <div class="bg-white rounded-xl shadow-sm p-6 stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Signals Today</p>
+                        <p class="text-3xl font-bold text-gray-900" id="signals-today">156</p>
+                        <p class="text-sm text-blue-600 mt-1">32 high-confidence</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Profile Completeness Distribution -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Profile Completeness</h3>
+                <canvas id="completeness-chart" height="200"></canvas>
+                <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-400"></span>
+                        <span class="text-gray-600">Minimal (&lt;25%)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-yellow-400"></span>
+                        <span class="text-gray-600">Basic (25-50%)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+                        <span class="text-gray-600">Good (50-75%)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-green-400"></span>
+                        <span class="text-gray-600">Complete (&gt;75%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Signal Sources -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Collection Mechanisms</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <span class="text-purple-600 font-bold">CC</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Concierge Capture</p>
+                                <p class="text-sm text-gray-500">Choice reveals preference</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-semibold text-gray-900">312</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <span class="text-blue-600 font-bold">PC</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Preference Cascade</p>
+                                <p class="text-sm text-gray-500">Binary micro-choices</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-semibold text-gray-900">287</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                                <span class="text-green-600 font-bold">RR</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Relief Reveal</p>
+                                <p class="text-sm text-gray-500">Care context extraction</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-semibold text-gray-900">198</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                                <span class="text-orange-600 font-bold">AE</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Anticipation Engine</p>
+                                <p class="text-sm text-gray-500">Predict & confirm</p>
+                            </div>
+                        </div>
+                        <span class="text-lg font-semibold text-gray-900">89</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent VIP Activity -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">VIP Activity</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                            MR
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">María Rodríguez</p>
+                            <p class="text-sm text-gray-500">Profile: 89% complete • $4,230 LTV</p>
+                        </div>
+                        <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+                    </div>
+                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                            JC
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">John Carter</p>
+                            <p class="text-sm text-gray-500">Profile: 76% complete • $3,890 LTV</p>
+                        </div>
+                        <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Booking</span>
+                    </div>
+                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold">
+                            AS
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">Ana Sánchez</p>
+                            <p class="text-sm text-gray-500">Profile: 82% complete • $2,150 LTV</p>
+                        </div>
+                        <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">Concierge</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Guest Profile Detail Modal (Sample) -->
+        <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Sample Guest Profile: María Rodríguez</h3>
+                <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    VIP Guest
+                </span>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Communication DNA -->
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                            </span>
+                            Communication
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Channel</span>
+                                <span class="font-medium text-gray-900">WhatsApp</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Response Style</span>
+                                <span class="font-medium text-gray-900">Detailed</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Best Time</span>
+                                <span class="font-medium text-gray-900">Evening</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Emoji Usage</span>
+                                <span class="font-medium text-gray-900">Frequent 😊</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Decision DNA -->
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </span>
+                            Decision Style
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Speed</span>
+                                <span class="font-medium text-gray-900">Moderate</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Driver</span>
+                                <span class="font-medium text-gray-900">Experience</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Price Sensitivity</span>
+                                <span class="font-medium text-green-600">Low (23)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Upgrade Propensity</span>
+                                <span class="font-medium text-green-600">High (78)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensory DNA -->
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                </svg>
+                            </span>
+                            Sensory Preferences
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Environment</span>
+                                <span class="font-medium text-gray-900">Quiet</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Temperature</span>
+                                <span class="font-medium text-gray-900">Cool (20°C)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Chronotype</span>
+                                <span class="font-medium text-gray-900">Night Owl</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Dietary</span>
+                                <span class="font-medium text-gray-900">Vegetarian</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Relationship Context -->
+                    <div class="space-y-3">
+                        <h4 class="font-semibold text-gray-700 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded bg-orange-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </span>
+                            Relationship
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Travel Style</span>
+                                <span class="font-medium text-gray-900">Couple</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Group Size</span>
+                                <span class="font-medium text-gray-900">2</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Occasions</span>
+                                <span class="font-medium text-gray-900">Anniversary</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Decision Role</span>
+                                <span class="font-medium text-gray-900">Primary</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Personalization Insights -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-100">
+                    <h4 class="font-semibold text-gray-800 mb-3">🎯 Personalization Insights</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <p class="font-medium text-gray-700">Communication Tips</p>
+                            <ul class="mt-1 text-gray-600 space-y-1">
+                                <li>• Use emojis - she responds well</li>
+                                <li>• Provide detailed information</li>
+                                <li>• Contact in evening hours</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700">Upsell Opportunities</p>
+                            <ul class="mt-1 text-gray-600 space-y-1">
+                                <li>• Room upgrade (78% propensity)</li>
+                                <li>• Anniversary package</li>
+                                <li>• Spa experience</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-700">Service Priorities</p>
+                            <ul class="mt-1 text-gray-600 space-y-1">
+                                <li>• Quiet room, high floor</li>
+                                <li>• Vegetarian menu options</li>
+                                <li>• Late checkout preference</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="font-bold text-lg">GENOME PROTOCOL™</p>
+                    <p class="text-gray-400 text-sm">Powered by MachineMind AI</p>
+                </div>
+                <div class="text-right text-sm text-gray-400">
+                    <p>Building customer intelligence through service,</p>
+                    <p>not interrogation.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Completeness Distribution Chart
+        const ctx = document.getElementById('completeness-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Complete', 'Good', 'Basic', 'Minimal'],
+                datasets: [{
+                    data: [127, 289, 312, 119],
+                    backgroundColor: [
+                        '#22c55e',
+                        '#3b82f6',
+                        '#eab308',
+                        '#ef4444'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Property selector change handler
+        document.getElementById('property-select').addEventListener('change', function(e) {
+            // In production, this would fetch data for the selected property
+            console.log('Selected property:', e.target.value);
+        });
+    </script>
+</body>
+</html>
