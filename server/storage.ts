@@ -55,6 +55,7 @@ export interface IStorage {
   getBusiness(id: string): Promise<Business | undefined>;
   getBusinessByPlaceId(placeId: string): Promise<Business | undefined>;
   getBusinesses(filters?: BusinessFilters): Promise<Business[]>;
+  getBusinessesWithFollowUps(): Promise<Business[]>;
   createBusiness(business: InsertBusiness): Promise<Business>;
   updateBusiness(id: string, business: Partial<InsertBusiness>): Promise<Business | undefined>;
   deleteBusiness(id: string): Promise<void>;
@@ -499,6 +500,12 @@ export class DatabaseStorage implements IStorage {
 
   async deleteBusiness(id: string): Promise<void> {
     await db.delete(businesses).where(eq(businesses.id, id));
+  }
+
+  async getBusinessesWithFollowUps(): Promise<Business[]> {
+    return await db.select().from(businesses)
+      .where(sql`${businesses.followUpDate} IS NOT NULL`)
+      .orderBy(asc(businesses.followUpDate));
   }
 
   async getBusinessStats(): Promise<BusinessStats> {

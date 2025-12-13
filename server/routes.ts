@@ -10,7 +10,7 @@ import {
   EVENT_TIERS, EVENT_CATEGORIES, EVENT_SOURCES, INTENT_LEVELS, CARTAGENA_VENUES_TO_MONITOR, CONTENT_TYPES,
   COLOMBIA_STATS, VERTICAL_TICKET_RANGES, COLOMBIA_PSYCHOLOGY_TRIGGERS, CONPES_POSITIONING,
   DECISION_MAKER_TYPES, BUYING_STYLES, PSYCHOLOGY_HOOKS, SIGNAL_OFFER_MATRIX,
-  COLLECTION_MECHANISMS, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES,
+  COLLECTION_MECHANISMS, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES, CALL_DISPOSITIONS,
   type Business, type InsertBusiness, type OutreachCampaign,
   type Event, type InsertEvent, type IntentSignal, type InsertIntentSignal,
   type VenueMonitor, type InsertVenueMonitor, type InstagramPost, type InsertInstagramPost,
@@ -534,6 +534,17 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Get all businesses with scheduled follow-ups
+  app.get('/api/businesses/follow-ups', isAuthenticated, async (req: any, res) => {
+    try {
+      const businesses = await storage.getBusinessesWithFollowUps();
+      res.json(businesses);
+    } catch (error) {
+      console.error("Error fetching follow-ups:", error);
+      res.status(500).json({ message: "Failed to fetch follow-ups" });
     }
   });
 
