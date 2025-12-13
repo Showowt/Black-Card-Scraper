@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,21 +9,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Building2, ArrowLeft, Phone, Mail, Globe, MapPin, Star, 
   ExternalLink, Clock, Zap, RefreshCw, Copy, Check, LogOut, Search,
-  AlertTriangle, Target, DollarSign, Shield, Heart, Clock3, Sparkles, Send
+  AlertTriangle, Target, DollarSign, Shield, Heart, Clock3, Sparkles, Send,
+  Play, Pause, StopCircle, Plus, ChevronDown, MessageSquare
 } from "lucide-react";
 import { SiInstagram, SiFacebook, SiWhatsapp } from "react-icons/si";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ClaudeCopilot from "@/components/ClaudeCopilot";
 import IntelligencePanel from "@/components/IntelligencePanel";
-import type { Business, OutreachCampaign } from "@shared/schema";
-import { CITIES, CATEGORIES, OUTREACH_STATUSES } from "@shared/schema";
+import type { Business, OutreachCampaign, CallSession, CallObjection, CallPainPoint } from "@shared/schema";
+import { CITIES, CATEGORIES, OUTREACH_STATUSES, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES } from "@shared/schema";
+
+interface CallSessionWithDetails extends CallSession {
+  objections?: CallObjection[];
+  painPoints?: CallPainPoint[];
+}
 
 export default function BusinessDetail() {
   const { user } = useAuth();
@@ -34,6 +44,16 @@ export default function BusinessDetail() {
   const [copied, setCopied] = useState(false);
   const [ultimateScripts, setUltimateScripts] = useState<any>(null);
   const [scriptsDialogOpen, setScriptsDialogOpen] = useState(false);
+
+  const [callCompanionOpen, setCallCompanionOpen] = useState(true);
+  const [callDialogOpen, setCallDialogOpen] = useState(false);
+  const [activeSession, setActiveSession] = useState<CallSessionWithDetails | null>(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [painPointInput, setPainPointInput] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactRole, setContactRole] = useState("");
 
   const { data: business, isLoading } = useQuery<Business>({
     queryKey: ["/api/businesses", businessId],
@@ -146,6 +166,206 @@ export default function BusinessDetail() {
       toast({ title: "Generation Failed", description: error.message, variant: "destructive" });
     },
   });
+
+  const { data: callSessions, isLoading: loadingCalls } = useQuery<CallSession[]>({
+    queryKey: ['/api/calls', 'byBusiness', businessId],
+    queryFn: async () => {
+      const res = await fetch(`/api/calls?businessId=${businessId}`, { credentials: 'include' });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!businessId,
+  });
+
+  const createCallSessionMutation = useMutation({
+    mutationFn: async (data: { businessName: string; contactName: string; contactRole: string; phone: string; businessType: string; businessId: string }) => {
+      const res = await apiRequest("POST", "/api/calls", data);
+      return res.json();
+    },
+    onSuccess: (session) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/calls', 'byBusiness', businessId] });
+      setActiveSession(session);
+      setCallDialogOpen(false);
+      setContactName("");
+      setContactRole("");
+      startTimer();
+      toast({ title: "Call started", description: "Timer is running" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create call session", variant: "destructive" });
+    },
+  });
+
+  const updateCallSessionMutation = useMutation({
+    mutationFn: async ({ id, ...data }: { id: string } & Partial<CallSession>) => {
+      const res = await apiRequest("PATCH", `/api/calls/${id}`, data);
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/calls', 'byBusiness', businessId] });
+      setActiveSession(prev => prev ? { ...prev, ...updated } : null);
+    },
+  });
+
+  const addObjectionMutation = useMutation({
+    mutationFn: async ({ sessionId, objectionType }: { sessionId: string; objectionType: string }) => {
+      const res = await apiRequest("POST", `/api/calls/${sessionId}/objections`, { objectionType });
+      return res.json();
+    },
+    onSuccess: (objection) => {
+      setActiveSession(prev => prev ? {
+        ...prev,
+        objections: [...(prev.objections || []), objection]
+      } : null);
+    },
+  });
+
+  const updateObjectionMutation = useMutation({
+    mutationFn: async ({ sessionId, objId, addressed }: { sessionId: string; objId: string; addressed: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/calls/${sessionId}/objections/${objId}`, { addressed });
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      setActiveSession(prev => prev ? {
+        ...prev,
+        objections: (prev.objections || []).map(o => o.id === updated.id ? updated : o)
+      } : null);
+    },
+  });
+
+  const addPainPointMutation = useMutation({
+    mutationFn: async ({ sessionId, painText, severity }: { sessionId: string; painText: string; severity?: number }) => {
+      const res = await apiRequest("POST", `/api/calls/${sessionId}/pain-points`, { painText, severity });
+      return res.json();
+    },
+    onSuccess: (painPoint) => {
+      setActiveSession(prev => prev ? {
+        ...prev,
+        painPoints: [...(prev.painPoints || []), painPoint]
+      } : null);
+      setPainPointInput("");
+    },
+  });
+
+  const startTimer = () => {
+    setIsRunning(true);
+    setElapsedSeconds(0);
+  };
+
+  const pauseTimer = () => {
+    setIsRunning(false);
+  };
+
+  const resumeTimer = () => {
+    setIsRunning(true);
+  };
+
+  const endCall = () => {
+    if (activeSession) {
+      const minutes = Math.ceil(elapsedSeconds / 60);
+      updateCallSessionMutation.mutate({
+        id: activeSession.id,
+        endedAt: new Date(),
+        durationMinutes: minutes,
+        status: "completed",
+      });
+    }
+    setIsRunning(false);
+    setElapsedSeconds(0);
+    setActiveSession(null);
+  };
+
+  // Resume active session on load
+  useEffect(() => {
+    if (!callSessions || callSessions.length === 0 || activeSession) return;
+    
+    const inProgressSession = callSessions.find(s => s.status === "in_progress");
+    if (inProgressSession) {
+      // Calculate elapsed time from startedAt
+      const startedAt = new Date(inProgressSession.startedAt);
+      const now = new Date();
+      const elapsedMs = now.getTime() - startedAt.getTime();
+      const elapsedSec = Math.max(0, Math.floor(elapsedMs / 1000));
+      
+      setActiveSession(inProgressSession as CallSessionWithDetails);
+      setElapsedSeconds(elapsedSec);
+      setIsRunning(true);
+      toast({ title: "Call resumed", description: "Continuing active session" });
+    }
+  }, [callSessions]);
+
+  // Timer interval effect
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds(s => s + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getDealScoreColor = (score: number) => {
+    if (score >= 70) return "text-green-500";
+    if (score >= 40) return "text-amber-500";
+    return "text-red-500";
+  };
+
+  const handleSignalClick = (type: string, value: string) => {
+    if (!activeSession) return;
+    updateCallSessionMutation.mutate({ id: activeSession.id, [type]: value });
+  };
+
+  const handleObjectionToggle = (objType: string) => {
+    if (!activeSession) return;
+    const existing = activeSession.objections?.find(o => o.objectionType === objType);
+    if (existing) {
+      updateObjectionMutation.mutate({ sessionId: activeSession.id, objId: existing.id, addressed: !existing.addressed });
+    } else {
+      addObjectionMutation.mutate({ sessionId: activeSession.id, objectionType: objType });
+    }
+  };
+
+  const handleAddPainPoint = () => {
+    if (!activeSession || !painPointInput.trim()) return;
+    addPainPointMutation.mutate({ sessionId: activeSession.id, painText: painPointInput.trim() });
+  };
+
+  const handleStartCall = () => {
+    if (!business) return;
+    
+    // Guard against multiple active sessions
+    const existingActiveSession = callSessions?.find(s => s.status === "in_progress");
+    if (existingActiveSession || activeSession) {
+      toast({ 
+        title: "Active call in progress", 
+        description: "Please end the current call before starting a new one",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createCallSessionMutation.mutate({
+      businessId: businessId!,
+      businessName: business.name,
+      phone: business.phone || "",
+      businessType: business.category,
+      contactName,
+      contactRole,
+    });
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -598,6 +818,316 @@ export default function BusinessDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <Collapsible open={callCompanionOpen} onOpenChange={setCallCompanionOpen}>
+            <Card>
+              <CardHeader className="pb-3">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center justify-between gap-4 cursor-pointer" data-testid="trigger-call-companion">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Call Companion</CardTitle>
+                      {activeSession && (
+                        <Badge variant="default" className="ml-2">Active Call</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${callCompanionOpen ? 'rotate-180' : ''}`} />
+                    </div>
+                  </div>
+                </CollapsibleTrigger>
+              </CardHeader>
+              
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {activeSession ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between gap-4 p-4 rounded-md bg-muted">
+                        <div>
+                          <div className="font-medium">{activeSession.businessName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {activeSession.contactName} {activeSession.contactRole && `(${activeSession.contactRole})`}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <div className="text-2xl font-mono font-bold" data-testid="text-call-timer">
+                              {formatTime(elapsedSeconds)}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Duration</p>
+                          </div>
+                          <div className="flex gap-2">
+                            {isRunning ? (
+                              <Button size="icon" variant="outline" onClick={pauseTimer} data-testid="button-pause-call">
+                                <Pause className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button size="icon" variant="outline" onClick={resumeTimer} data-testid="button-resume-call">
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button size="icon" variant="destructive" onClick={endCall} data-testid="button-end-call">
+                              <StopCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <Target className="h-4 w-4" /> Deal Score
+                        </Label>
+                        <div className="flex items-center gap-4">
+                          <div className={`text-3xl font-bold ${getDealScoreColor(activeSession.dealScore || 50)}`} data-testid="text-call-deal-score">
+                            {activeSession.dealScore || 50}
+                          </div>
+                          <Progress value={activeSession.dealScore || 50} className="flex-1 h-3" />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block">Buyer Type</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {BUYER_TYPES.map(bt => (
+                                <Button
+                                  key={bt.value}
+                                  size="sm"
+                                  variant={activeSession.buyerType === bt.value ? "default" : "outline"}
+                                  onClick={() => handleSignalClick("buyerType", bt.value)}
+                                  data-testid={`button-buyer-${bt.value}`}
+                                >
+                                  {bt.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block">Urgency</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {URGENCY_LEVELS.map(ul => (
+                                <Button
+                                  key={ul.value}
+                                  size="sm"
+                                  variant={activeSession.urgency === ul.value ? "default" : "outline"}
+                                  onClick={() => handleSignalClick("urgency", ul.value)}
+                                  data-testid={`button-urgency-${ul.value}`}
+                                >
+                                  {ul.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block">Authority</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {AUTHORITY_LEVELS.map(al => (
+                                <Button
+                                  key={al.value}
+                                  size="sm"
+                                  variant={activeSession.authority === al.value ? "default" : "outline"}
+                                  onClick={() => handleSignalClick("authority", al.value)}
+                                  data-testid={`button-authority-${al.value}`}
+                                >
+                                  {al.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block">Budget</Label>
+                            <div className="flex flex-wrap gap-1">
+                              {BUDGET_LEVELS.map(bl => (
+                                <Button
+                                  key={bl.value}
+                                  size="sm"
+                                  variant={activeSession.budget === bl.value ? "default" : "outline"}
+                                  onClick={() => handleSignalClick("budget", bl.value)}
+                                  data-testid={`button-budget-${bl.value}`}
+                                >
+                                  {bl.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Objections
+                            </Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {OBJECTION_TYPES.map(ot => {
+                                const objection = activeSession.objections?.find(o => o.objectionType === ot.value);
+                                const isActive = !!objection;
+                                const isAddressed = objection?.addressed;
+                                
+                                return (
+                                  <Button
+                                    key={ot.value}
+                                    size="sm"
+                                    variant={isAddressed ? "default" : isActive ? "secondary" : "outline"}
+                                    className="justify-start"
+                                    onClick={() => handleObjectionToggle(ot.value)}
+                                    data-testid={`button-objection-${ot.value}`}
+                                  >
+                                    {isAddressed ? <Check className="h-3 w-3 mr-1" /> : null}
+                                    {ot.label}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-2 block flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" /> Pain Points
+                            </Label>
+                            <div className="flex gap-2 mb-2">
+                              <Input
+                                placeholder="Add pain point..."
+                                value={painPointInput}
+                                onChange={(e) => setPainPointInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAddPainPoint()}
+                                data-testid="input-pain-point"
+                              />
+                              <Button size="icon" onClick={handleAddPainPoint} disabled={!painPointInput.trim()} data-testid="button-add-pain-point">
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <ScrollArea className="h-[100px]">
+                              {activeSession.painPoints && activeSession.painPoints.length > 0 ? (
+                                <div className="space-y-1">
+                                  {activeSession.painPoints.map((pp, idx) => (
+                                    <div key={pp.id || idx} className="p-2 rounded-md bg-muted text-sm" data-testid={`pain-point-${pp.id || idx}`}>
+                                      {pp.painText}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="h-full flex items-center justify-center text-muted-foreground text-xs">
+                                  No pain points captured yet
+                                </div>
+                              )}
+                            </ScrollArea>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-sm text-muted-foreground">Track calls, signals, and objections for this business</p>
+                        <Dialog open={callDialogOpen} onOpenChange={setCallDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button data-testid="button-start-business-call">
+                              <Play className="h-4 w-4 mr-1" /> Start Call
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Start Call with {business.name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="p-3 rounded-md bg-muted">
+                                <div className="text-sm font-medium">{business.name}</div>
+                                <div className="text-xs text-muted-foreground">{getCategoryLabel(business.category)}</div>
+                                {business.phone && <div className="text-xs text-muted-foreground">{business.phone}</div>}
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="contactName">Contact Name</Label>
+                                  <Input
+                                    id="contactName"
+                                    value={contactName}
+                                    onChange={(e) => setContactName(e.target.value)}
+                                    placeholder="Contact name"
+                                    data-testid="input-contact-name"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="contactRole">Role</Label>
+                                  <Input
+                                    id="contactRole"
+                                    value={contactRole}
+                                    onChange={(e) => setContactRole(e.target.value)}
+                                    placeholder="Owner, Manager, etc."
+                                    data-testid="input-contact-role"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                onClick={handleStartCall}
+                                disabled={createCallSessionMutation.isPending}
+                                data-testid="button-confirm-start-call"
+                              >
+                                {createCallSessionMutation.isPending ? "Starting..." : "Start Call"}
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+
+                      {loadingCalls ? (
+                        <div className="space-y-2">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : callSessions && callSessions.length > 0 ? (
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Call History</Label>
+                          <ScrollArea className="h-[200px]">
+                            <div className="space-y-2">
+                              {callSessions.map((session) => (
+                                <div
+                                  key={session.id}
+                                  className="flex items-center justify-between p-3 rounded-md border"
+                                  data-testid={`session-${session.id}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-full bg-primary/10">
+                                      <Phone className="h-3 w-3 text-primary" />
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-medium">{session.contactName || "Unknown Contact"}</div>
+                                      <div className="text-xs text-muted-foreground">
+                                        {session.durationMinutes ? `${session.durationMinutes} min` : 'N/A'} - {session.status}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {session.dealScore && (
+                                      <Badge variant="secondary" className={getDealScoreColor(session.dealScore)}>
+                                        Score: {session.dealScore}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center text-muted-foreground">
+                          <Phone className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          <p className="text-sm">No call history for this business</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         </div>
 
         <div className="mt-6">
