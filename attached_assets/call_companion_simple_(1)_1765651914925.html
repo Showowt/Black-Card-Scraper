@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Call Companion | MachineMind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .big-btn { min-height: 56px; font-size: 16px; }
+        .signal-btn { transition: all 0.1s; }
+        .signal-btn:active { transform: scale(0.95); }
+        .signal-btn.active { ring: 2px; }
+        .selected { background: #3b82f6 !important; color: white !important; }
+        .pain-high { border-left: 4px solid #ef4444; }
+        .pain-med { border-left: 4px solid #f59e0b; }
+        .pain-low { border-left: 4px solid #6b7280; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header - Always Visible -->
+    <header class="fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 z-50 px-4 py-3">
+        <div class="flex items-center justify-between max-w-2xl mx-auto">
+            <div class="flex items-center gap-3">
+                <div id="call-status" class="w-3 h-3 rounded-full bg-gray-500"></div>
+                <span id="timer" class="font-mono text-lg">00:00</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="deal-score-display" class="text-2xl font-bold text-yellow-400">50</span>
+                <span class="text-xs text-gray-400">SCORE</span>
+            </div>
+            <button onclick="toggleCall()" id="call-btn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium">
+                START
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-32 px-4 max-w-2xl mx-auto">
+        
+        <!-- Prospect Info -->
+        <section class="mb-6">
+            <input type="text" id="business-name" placeholder="Business Name" 
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-lg font-semibold mb-2">
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="contact-name" placeholder="Contact Name" 
+                       class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                <input type="text" id="contact-role" placeholder="Role (GM, Owner)" 
+                       class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <input type="text" id="phone" placeholder="Phone" 
+                       class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                <select id="business-type" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                    <option value="">Type...</option>
+                    <option value="hotel">Hotel</option>
+                    <option value="villa">Villa/Rental</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="tour">Tour Operator</option>
+                    <option value="concierge">Concierge</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- QUICK SIGNALS - The Main Event -->
+        <section class="mb-6">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">Quick Signals (tap to set)</h2>
+            
+            <!-- Buyer Type - CRITICAL -->
+            <div class="mb-4">
+                <p class="text-xs text-gray-400 mb-2">WHO ARE THEY? (pick one)</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setSignal('buyer_type', 'analytical', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">📊</div>
+                        <div class="text-xs mt-1">Data</div>
+                    </button>
+                    <button onclick="setSignal('buyer_type', 'driver', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">🎯</div>
+                        <div class="text-xs mt-1">Results</div>
+                    </button>
+                    <button onclick="setSignal('buyer_type', 'expressive', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">✨</div>
+                        <div class="text-xs mt-1">Vision</div>
+                    </button>
+                    <button onclick="setSignal('buyer_type', 'amiable', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">🤝</div>
+                        <div class="text-xs mt-1">Trust</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Urgency -->
+            <div class="mb-4">
+                <p class="text-xs text-gray-400 mb-2">HOW HOT? (pick one)</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setSignal('urgency', 'bleeding', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-red-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">🔥</div>
+                        <div class="text-xs mt-1">NOW</div>
+                    </button>
+                    <button onclick="setSignal('urgency', 'urgent', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-orange-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">⚡</div>
+                        <div class="text-xs mt-1">Soon</div>
+                    </button>
+                    <button onclick="setSignal('urgency', 'planning', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-yellow-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">📅</div>
+                        <div class="text-xs mt-1">Later</div>
+                    </button>
+                    <button onclick="setSignal('urgency', 'browsing', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">👀</div>
+                        <div class="text-xs mt-1">Cold</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Decision Power -->
+            <div class="mb-4">
+                <p class="text-xs text-gray-400 mb-2">CAN THEY DECIDE?</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setSignal('authority', 'sole', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-green-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">👑</div>
+                        <div class="text-xs mt-1">Yes, Alone</div>
+                    </button>
+                    <button onclick="setSignal('authority', 'influencer', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-yellow-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">💬</div>
+                        <div class="text-xs mt-1">Needs OK</div>
+                    </button>
+                    <button onclick="setSignal('authority', 'gatekeeper', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-gray-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">🚪</div>
+                        <div class="text-xs mt-1">Blocker</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Budget -->
+            <div class="mb-4">
+                <p class="text-xs text-gray-400 mb-2">MONEY TALK</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setSignal('budget', 'flexible', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-green-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">💎</div>
+                        <div class="text-xs mt-1">Has $$</div>
+                    </button>
+                    <button onclick="setSignal('budget', 'price_first', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-yellow-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">💵</div>
+                        <div class="text-xs mt-1">Price Focus</div>
+                    </button>
+                    <button onclick="setSignal('budget', 'constrained', this)" 
+                            class="signal-btn bg-gray-700 hover:bg-red-600 py-3 px-2 rounded-lg text-center">
+                        <div class="text-xl">😬</div>
+                        <div class="text-xs mt-1">Tight</div>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- OBJECTIONS - Quick Log -->
+        <section class="mb-6">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">Objections (tap when they say it)</h2>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="addObjection('price')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    💰 Price
+                </button>
+                <button onclick="addObjection('timing')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    ⏰ Timing
+                </button>
+                <button onclick="addObjection('trust')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    🤔 Trust
+                </button>
+                <button onclick="addObjection('authority')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    👤 Not Me
+                </button>
+                <button onclick="addObjection('competitor')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    🆚 Other
+                </button>
+                <button onclick="addObjection('need')" class="signal-btn bg-red-900/50 hover:bg-red-800 py-3 rounded-lg">
+                    ❓ No Need
+                </button>
+            </div>
+            <div id="objections-list" class="mt-3 space-y-2"></div>
+        </section>
+
+        <!-- PAIN POINTS -->
+        <section class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xs uppercase tracking-wider text-gray-500">Pain Points</h2>
+                <button onclick="showPainInput()" class="text-blue-400 text-sm">+ Add</button>
+            </div>
+            <div id="pain-input" class="hidden mb-3">
+                <input type="text" id="pain-text" placeholder="What's their pain?" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 mb-2">
+                <div class="flex gap-2">
+                    <select id="pain-severity" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2">
+                        <option value="8">🔥 Critical (8-10)</option>
+                        <option value="5" selected>⚡ Medium (4-7)</option>
+                        <option value="2">💤 Low (1-3)</option>
+                    </select>
+                    <button onclick="savePain()" class="bg-blue-600 px-4 rounded-lg">Save</button>
+                </div>
+            </div>
+            <div id="pain-list" class="space-y-2"></div>
+        </section>
+
+        <!-- NOTES - Free Form -->
+        <section class="mb-6">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">Notes</h2>
+            <textarea id="notes" rows="4" placeholder="Type anything... quotes, observations, follow-up items..."
+                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 resize-none"></textarea>
+        </section>
+
+        <!-- WHAT THEY NEED -->
+        <section class="mb-6">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">What They Need to Decide</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center gap-2 bg-gray-800 rounded-lg p-3 cursor-pointer">
+                    <input type="checkbox" id="need-demo" class="w-5 h-5 rounded"> 
+                    <span>Demo</span>
+                </label>
+                <label class="flex items-center gap-2 bg-gray-800 rounded-lg p-3 cursor-pointer">
+                    <input type="checkbox" id="need-proposal" class="w-5 h-5 rounded"> 
+                    <span>Proposal</span>
+                </label>
+                <label class="flex items-center gap-2 bg-gray-800 rounded-lg p-3 cursor-pointer">
+                    <input type="checkbox" id="need-case-study" class="w-5 h-5 rounded"> 
+                    <span>Case Study</span>
+                </label>
+                <label class="flex items-center gap-2 bg-gray-800 rounded-lg p-3 cursor-pointer">
+                    <input type="checkbox" id="need-trial" class="w-5 h-5 rounded"> 
+                    <span>Trial</span>
+                </label>
+            </div>
+        </section>
+
+        <!-- NEXT STEPS -->
+        <section class="mb-6">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">Next Step</h2>
+            <input type="text" id="next-action" placeholder="What's the next action?" 
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 mb-2">
+            <input type="date" id="follow-up-date" 
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+        </section>
+
+        <!-- CLOSING STRATEGY - Auto Generated -->
+        <section id="strategy-section" class="mb-6 hidden">
+            <h2 class="text-xs uppercase tracking-wider text-gray-500 mb-3">🎯 How to Close This One</h2>
+            <div id="strategy-content" class="bg-gradient-to-br from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/30">
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4">
+        <div class="max-w-2xl mx-auto flex gap-3">
+            <button onclick="saveProspect()" class="flex-1 bg-green-600 hover:bg-green-700 big-btn rounded-lg font-semibold">
+                💾 SAVE
+            </button>
+            <button onclick="showStrategy()" class="flex-1 bg-purple-600 hover:bg-purple-700 big-btn rounded-lg font-semibold">
+                🎯 STRATEGY
+            </button>
+            <button onclick="viewDatabase()" class="bg-gray-700 hover:bg-gray-600 big-btn px-4 rounded-lg">
+                📂
+            </button>
+        </div>
+    </footer>
+
+    <!-- Database View Modal -->
+    <div id="db-modal" class="fixed inset-0 bg-black/80 hidden z-50 overflow-y-auto">
+        <div class="min-h-screen p-4">
+            <div class="max-w-2xl mx-auto bg-gray-800 rounded-xl">
+                <div class="flex items-center justify-between p-4 border-b border-gray-700">
+                    <h2 class="text-lg font-semibold">Your Prospect Database</h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+                </div>
+                <div id="db-list" class="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+                </div>
+                <div class="p-4 border-t border-gray-700 flex gap-2">
+                    <button onclick="exportAll()" class="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-lg">
+                        📤 Export All (JSON)
+                    </button>
+                    <button onclick="clearAll()" class="bg-red-600 hover:bg-red-700 py-3 px-4 rounded-lg">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ STATE ============
+        let callActive = false;
+        let callStart = null;
+        let timerInterval = null;
+        
+        let prospect = {
+            id: generateId(),
+            business_name: '',
+            contact_name: '',
+            contact_role: '',
+            phone: '',
+            business_type: '',
+            buyer_type: null,
+            urgency: null,
+            authority: null,
+            budget: null,
+            objections: [],
+            pain_points: [],
+            notes: '',
+            needs: { demo: false, proposal: false, case_study: false, trial: false },
+            next_action: '',
+            follow_up_date: '',
+            deal_score: 50,
+            calls: [],
+            created_at: new Date().toISOString(),
+            updated_at: null
+        };
+
+        // ============ CALL TIMER ============
+        function toggleCall() {
+            if (callActive) {
+                endCall();
+            } else {
+                startCall();
+            }
+        }
+
+        function startCall() {
+            callActive = true;
+            callStart = new Date();
+            document.getElementById('call-status').className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse';
+            document.getElementById('call-btn').textContent = 'END';
+            document.getElementById('call-btn').className = 'bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-medium';
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function endCall() {
+            callActive = false;
+            clearInterval(timerInterval);
+            
+            const duration = Math.round((new Date() - callStart) / 1000 / 60);
+            prospect.calls.push({
+                date: new Date().toISOString(),
+                duration: duration
+            });
+            
+            document.getElementById('call-status').className = 'w-3 h-3 rounded-full bg-gray-500';
+            document.getElementById('call-btn').textContent = 'START';
+            document.getElementById('call-btn').className = 'bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium';
+            
+            showStrategy();
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((new Date() - callStart) / 1000);
+            const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const secs = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('timer').textContent = `${mins}:${secs}`;
+        }
+
+        // ============ SIGNAL CAPTURE ============
+        function setSignal(type, value, btn) {
+            prospect[type] = value;
+            
+            // Clear other buttons in same group
+            btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            
+            updateDealScore();
+        }
+
+        function addObjection(type) {
+            const obj = { type, timestamp: new Date().toISOString(), addressed: false };
+            prospect.objections.push(obj);
+            renderObjections();
+            updateDealScore();
+        }
+
+        function renderObjections() {
+            const container = document.getElementById('objections-list');
+            container.innerHTML = prospect.objections.map((o, i) => `
+                <div class="flex items-center justify-between bg-red-900/30 rounded-lg px-3 py-2">
+                    <span>${getObjIcon(o.type)} ${o.type}</span>
+                    <button onclick="toggleObjAddressed(${i})" class="text-sm ${o.addressed ? 'text-green-400' : 'text-gray-400'}">
+                        ${o.addressed ? '✅ Handled' : 'Mark Done'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleObjAddressed(i) {
+            prospect.objections[i].addressed = !prospect.objections[i].addressed;
+            renderObjections();
+            updateDealScore();
+        }
+
+        function getObjIcon(type) {
+            const icons = { price: '💰', timing: '⏰', trust: '🤔', authority: '👤', competitor: '🆚', need: '❓' };
+            return icons[type] || '⚠️';
+        }
+
+        // ============ PAIN POINTS ============
+        function showPainInput() {
+            document.getElementById('pain-input').classList.toggle('hidden');
+            document.getElementById('pain-text').focus();
+        }
+
+        function savePain() {
+            const text = document.getElementById('pain-text').value;
+            const severity = parseInt(document.getElementById('pain-severity').value);
+            if (!text) return;
+            
+            prospect.pain_points.push({ text, severity, timestamp: new Date().toISOString() });
+            renderPainPoints();
+            
+            document.getElementById('pain-text').value = '';
+            document.getElementById('pain-input').classList.add('hidden');
+            updateDealScore();
+        }
+
+        function renderPainPoints() {
+            const container = document.getElementById('pain-list');
+            container.innerHTML = prospect.pain_points.map((p, i) => {
+                const cls = p.severity >= 7 ? 'pain-high' : p.severity >= 4 ? 'pain-med' : 'pain-low';
+                return `
+                    <div class="bg-gray-800 rounded-lg px-4 py-3 ${cls}">
+                        <div class="flex justify-between items-start">
+                            <span>${p.text}</span>
+                            <span class="text-xs text-gray-500">${p.severity}/10</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============ DEAL SCORE ============
+        function updateDealScore() {
+            let score = 50;
+            
+            // Urgency
+            if (prospect.urgency === 'bleeding') score += 25;
+            else if (prospect.urgency === 'urgent') score += 15;
+            else if (prospect.urgency === 'planning') score += 5;
+            else if (prospect.urgency === 'browsing') score -= 10;
+            
+            // Authority
+            if (prospect.authority === 'sole') score += 15;
+            else if (prospect.authority === 'influencer') score += 5;
+            else if (prospect.authority === 'gatekeeper') score -= 10;
+            
+            // Budget
+            if (prospect.budget === 'flexible') score += 15;
+            else if (prospect.budget === 'price_first') score -= 5;
+            else if (prospect.budget === 'constrained') score -= 10;
+            
+            // Pain
+            if (prospect.pain_points.length > 0) {
+                const maxPain = Math.max(...prospect.pain_points.map(p => p.severity));
+                if (maxPain >= 7) score += 15;
+                else if (maxPain >= 4) score += 8;
+            }
+            
+            // Objections
+            const unaddressed = prospect.objections.filter(o => !o.addressed).length;
+            score -= unaddressed * 5;
+            
+            score = Math.max(0, Math.min(100, score));
+            prospect.deal_score = score;
+            
+            const display = document.getElementById('deal-score-display');
+            display.textContent = score;
+            display.className = `text-2xl font-bold ${score >= 70 ? 'text-green-400' : score >= 40 ? 'text-yellow-400' : 'text-red-400'}`;
+        }
+
+        // ============ STRATEGY ============
+        function showStrategy() {
+            const section = document.getElementById('strategy-section');
+            const content = document.getElementById('strategy-content');
+            
+            let html = '';
+            
+            // Based on buyer type
+            if (prospect.buyer_type) {
+                const strategies = {
+                    analytical: {
+                        approach: "Lead with DATA",
+                        do: ["Share specific ROI numbers", "Offer case study", "Give them time to analyze"],
+                        close: "Based on the numbers, what would you need to see to move forward?"
+                    },
+                    driver: {
+                        approach: "Be DIRECT, respect time",
+                        do: ["Get to results fast", "Give them control", "Focus on competitive edge"],
+                        close: "Ready to get started, or what's the holdup?"
+                    },
+                    expressive: {
+                        approach: "Sell the VISION",
+                        do: ["Paint the success picture", "Share exciting possibilities", "Build relationship"],
+                        close: "Can you see this working? What excites you most?"
+                    },
+                    amiable: {
+                        approach: "Build TRUST first",
+                        do: ["Reduce perceived risk", "Offer guarantees", "Don't pressure"],
+                        close: "What would help you feel confident about this?"
+                    }
+                };
+                
+                const s = strategies[prospect.buyer_type];
+                html += `
+                    <div class="mb-4">
+                        <div class="text-lg font-semibold text-purple-400 mb-2">${s.approach}</div>
+                        <ul class="space-y-1 text-sm text-gray-300">
+                            ${s.do.map(d => `<li>✓ ${d}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="bg-yellow-900/30 rounded-lg p-3 border border-yellow-500/30">
+                        <div class="text-xs text-yellow-400 mb-1">CLOSING QUESTION</div>
+                        <div class="text-white italic">"${s.close}"</div>
+                    </div>
+                `;
+            } else {
+                html += `<p class="text-gray-400">Set buyer type to get personalized closing strategy</p>`;
+            }
+            
+            // Objection warnings
+            const unaddressed = prospect.objections.filter(o => !o.addressed);
+            if (unaddressed.length > 0) {
+                html += `
+                    <div class="mt-4 bg-red-900/30 rounded-lg p-3 border border-red-500/30">
+                        <div class="text-xs text-red-400 mb-2">⚠️ MUST ADDRESS BEFORE CLOSE</div>
+                        ${unaddressed.map(o => `<div class="text-sm">• ${o.type} objection</div>`).join('')}
+                    </div>
+                `;
+            }
+            
+            // Score recommendation
+            const score = prospect.deal_score;
+            let rec = '';
+            if (score >= 70) rec = "🔥 HOT - Push for close this call";
+            else if (score >= 50) rec = "👍 WARM - Address concerns, book follow-up";
+            else if (score >= 30) rec = "🤔 LUKEWARM - Qualify harder, find more pain";
+            else rec = "❄️ COLD - Nurture or disqualify";
+            
+            html += `
+                <div class="mt-4 text-center py-3 bg-gray-900/50 rounded-lg">
+                    <div class="text-2xl font-bold mb-1">${score}</div>
+                    <div class="text-sm text-gray-400">${rec}</div>
+                </div>
+            `;
+            
+            content.innerHTML = html;
+            section.classList.remove('hidden');
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ============ SAVE & DATABASE ============
+        function collectFormData() {
+            prospect.business_name = document.getElementById('business-name').value;
+            prospect.contact_name = document.getElementById('contact-name').value;
+            prospect.contact_role = document.getElementById('contact-role').value;
+            prospect.phone = document.getElementById('phone').value;
+            prospect.business_type = document.getElementById('business-type').value;
+            prospect.notes = document.getElementById('notes').value;
+            prospect.next_action = document.getElementById('next-action').value;
+            prospect.follow_up_date = document.getElementById('follow-up-date').value;
+            prospect.needs = {
+                demo: document.getElementById('need-demo').checked,
+                proposal: document.getElementById('need-proposal').checked,
+                case_study: document.getElementById('need-case-study').checked,
+                trial: document.getElementById('need-trial').checked
+            };
+            prospect.updated_at = new Date().toISOString();
+        }
+
+        function saveProspect() {
+            collectFormData();
+            
+            if (!prospect.business_name) {
+                alert('Enter business name first');
+                return;
+            }
+            
+            // Get existing database
+            let db = JSON.parse(localStorage.getItem('prospect_db') || '[]');
+            
+            // Update or add
+            const existingIndex = db.findIndex(p => p.id === prospect.id);
+            if (existingIndex >= 0) {
+                db[existingIndex] = prospect;
+            } else {
+                db.push(prospect);
+            }
+            
+            localStorage.setItem('prospect_db', JSON.stringify(db));
+            
+            // Visual feedback
+            const btn = event.target;
+            btn.textContent = '✅ SAVED';
+            btn.classList.remove('bg-green-600');
+            btn.classList.add('bg-green-800');
+            setTimeout(() => {
+                btn.textContent = '💾 SAVE';
+                btn.classList.add('bg-green-600');
+                btn.classList.remove('bg-green-800');
+            }, 1500);
+        }
+
+        function viewDatabase() {
+            const db = JSON.parse(localStorage.getItem('prospect_db') || '[]');
+            const container = document.getElementById('db-list');
+            
+            if (db.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">No prospects saved yet</p>';
+            } else {
+                // Sort by updated date
+                db.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+                
+                container.innerHTML = db.map(p => `
+                    <div class="bg-gray-700/50 rounded-lg p-4 cursor-pointer hover:bg-gray-700" onclick='loadProspect("${p.id}")'>
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="font-semibold">${p.business_name}</div>
+                                <div class="text-sm text-gray-400">${p.contact_name || 'No contact'} • ${p.business_type || 'No type'}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xl font-bold ${p.deal_score >= 70 ? 'text-green-400' : p.deal_score >= 40 ? 'text-yellow-400' : 'text-red-400'}">${p.deal_score}</div>
+                                <div class="text-xs text-gray-500">${p.urgency || '—'}</div>
+                            </div>
+                        </div>
+                        ${p.follow_up_date ? `<div class="text-xs text-blue-400">📅 Follow up: ${p.follow_up_date}</div>` : ''}
+                        ${p.pain_points?.length ? `<div class="text-xs text-red-400 mt-1">🔥 ${p.pain_points.length} pain point(s)</div>` : ''}
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('db-modal').classList.remove('hidden');
+        }
+
+        function loadProspect(id) {
+            const db = JSON.parse(localStorage.getItem('prospect_db') || '[]');
+            const p = db.find(x => x.id === id);
+            if (!p) return;
+            
+            prospect = { ...p };
+            
+            // Populate form
+            document.getElementById('business-name').value = p.business_name || '';
+            document.getElementById('contact-name').value = p.contact_name || '';
+            document.getElementById('contact-role').value = p.contact_role || '';
+            document.getElementById('phone').value = p.phone || '';
+            document.getElementById('business-type').value = p.business_type || '';
+            document.getElementById('notes').value = p.notes || '';
+            document.getElementById('next-action').value = p.next_action || '';
+            document.getElementById('follow-up-date').value = p.follow_up_date || '';
+            
+            // Checkboxes
+            document.getElementById('need-demo').checked = p.needs?.demo || false;
+            document.getElementById('need-proposal').checked = p.needs?.proposal || false;
+            document.getElementById('need-case-study').checked = p.needs?.case_study || false;
+            document.getElementById('need-trial').checked = p.needs?.trial || false;
+            
+            // Render lists
+            renderObjections();
+            renderPainPoints();
+            updateDealScore();
+            
+            // Close modal
+            closeModal();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function closeModal() {
+            document.getElementById('db-modal').classList.add('hidden');
+        }
+
+        function exportAll() {
+            const db = JSON.parse(localStorage.getItem('prospect_db') || '[]');
+            const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `machinemind_prospects_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        function clearAll() {
+            if (confirm('Delete ALL prospects? This cannot be undone.')) {
+                localStorage.removeItem('prospect_db');
+                viewDatabase();
+            }
+        }
+
+        function newProspect() {
+            prospect = {
+                id: generateId(),
+                business_name: '',
+                contact_name: '',
+                contact_role: '',
+                phone: '',
+                business_type: '',
+                buyer_type: null,
+                urgency: null,
+                authority: null,
+                budget: null,
+                objections: [],
+                pain_points: [],
+                notes: '',
+                needs: { demo: false, proposal: false, case_study: false, trial: false },
+                next_action: '',
+                follow_up_date: '',
+                deal_score: 50,
+                calls: [],
+                created_at: new Date().toISOString(),
+                updated_at: null
+            };
+            
+            // Clear form
+            document.getElementById('business-name').value = '';
+            document.getElementById('contact-name').value = '';
+            document.getElementById('contact-role').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('business-type').value = '';
+            document.getElementById('notes').value = '';
+            document.getElementById('next-action').value = '';
+            document.getElementById('follow-up-date').value = '';
+            document.getElementById('need-demo').checked = false;
+            document.getElementById('need-proposal').checked = false;
+            document.getElementById('need-case-study').checked = false;
+            document.getElementById('need-trial').checked = false;
+            
+            // Clear signal buttons
+            document.querySelectorAll('.signal-btn').forEach(b => b.classList.remove('selected'));
+            
+            // Clear lists
+            document.getElementById('objections-list').innerHTML = '';
+            document.getElementById('pain-list').innerHTML = '';
+            
+            updateDealScore();
+        }
+
+        function generateId() {
+            return 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set today's date as default follow-up
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('follow-up-date').value = tomorrow.toISOString().split('T')[0];
+        });
+
+        // Auto-save on page unload
+        window.addEventListener('beforeunload', () => {
+            if (prospect.business_name) {
+                collectFormData();
+                let db = JSON.parse(localStorage.getItem('prospect_db') || '[]');
+                const existingIndex = db.findIndex(p => p.id === prospect.id);
+                if (existingIndex >= 0) {
+                    db[existingIndex] = prospect;
+                } else {
+                    db.push(prospect);
+                }
+                localStorage.setItem('prospect_db', JSON.stringify(db));
+            }
+        });
+    </script>
+</body>
+</html>

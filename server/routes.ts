@@ -1012,6 +1012,40 @@ export async function registerRoutes(
     }
   });
 
+  // Append outreach notes (atomic append to avoid race conditions)
+  app.post('/api/businesses/:id/outreach-notes', isAuthenticated, async (req: any, res) => {
+    try {
+      const { note, dealScore } = req.body;
+      if (!note || typeof note !== 'string') {
+        return res.status(400).json({ message: "Note is required" });
+      }
+      
+      const business = await storage.getBusiness(req.params.id);
+      if (!business) {
+        return res.status(404).json({ message: "Business not found" });
+      }
+      
+      const existingNotes = business.outreachNotes || "";
+      const newNotes = existingNotes ? `${existingNotes}\n${note}` : note;
+      
+      const updateData: any = { 
+        outreachNotes: newNotes,
+        lastContactedAt: new Date().toISOString(),
+      };
+      
+      if (typeof dealScore === 'number') {
+        updateData.aiScore = dealScore;
+      }
+      
+      const updated = await storage.updateBusiness(req.params.id, updateData);
+      
+      res.json(updated);
+    } catch (error) {
+      console.error("Error appending outreach notes:", error);
+      res.status(500).json({ message: "Failed to append outreach notes" });
+    }
+  });
+
   // Multi-channel outreach with Claude AI
   app.post('/api/outreach/multi-channel', isAuthenticated, async (req: any, res) => {
     try {

@@ -56,6 +56,58 @@ export default function BusinessDetail() {
   const [painPointInput, setPainPointInput] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
+  const [showStrategy, setShowStrategy] = useState(false);
+  const [showCheatSheet, setShowCheatSheet] = useState(false);
+
+  const calculateDealScore = (session: CallSessionWithDetails) => {
+    let score = 50;
+    const urgencyScores: Record<string, number> = { bleeding: 25, urgent: 15, planning: 5, browsing: -10 };
+    if (session.urgency) score += urgencyScores[session.urgency] || 0;
+    const authorityScores: Record<string, number> = { sole: 15, influencer: 5, gatekeeper: -10 };
+    if (session.authority) score += authorityScores[session.authority] || 0;
+    const budgetScores: Record<string, number> = { flexible: 15, price_first: -5, constrained: -10 };
+    if (session.budget) score += budgetScores[session.budget] || 0;
+    const maxSeverity = Math.max(...(session.painPoints?.map(p => p.severity || 0) || [0]));
+    if (maxSeverity >= 7) score += 15;
+    else if (maxSeverity >= 4) score += 8;
+    const unaddressed = session.objections?.filter(o => !o.addressed).length || 0;
+    score -= unaddressed * 5;
+    return Math.max(0, Math.min(100, score));
+  };
+
+  const getStrategyTips = (session: CallSessionWithDetails) => {
+    const tips: string[] = [];
+    if (session.buyerType === 'analytical') tips.push("Lead with DATA - ROI numbers, case studies, metrics. Don't rush the decision.");
+    if (session.buyerType === 'driver') tips.push("Be DIRECT - bottom line first. Respect their time. Focus on results.");
+    if (session.buyerType === 'expressive') tips.push("Paint the VISION - be enthusiastic. Share success stories with emotion.");
+    if (session.buyerType === 'amiable') tips.push("Build TRUST first - reduce perceived risk. Don't pressure. Offer guarantees.");
+    if (session.urgency === 'bleeding') tips.push("They're losing money NOW - emphasize immediate ROI and fast implementation.");
+    if (session.urgency === 'browsing') tips.push("Create urgency - show what they're missing. Plant seeds for future follow-up.");
+    if (session.authority === 'gatekeeper') tips.push("Get to the decision maker - ask to schedule a call with the owner.");
+    if (session.authority === 'influencer') tips.push("Arm them with materials to convince their partner/owner.");
+    if (session.budget === 'constrained') tips.push("Focus on ROI and payment plans. Show cost of inaction.");
+    const unaddressedObjs = session.objections?.filter(o => !o.addressed) || [];
+    if (unaddressedObjs.length > 0) tips.push(`Address remaining objections: ${unaddressedObjs.map(o => o.objectionType).join(', ')}`);
+    return tips;
+  };
+
+  const OBJECTION_RESPONSES: Record<string, string> = {
+    price: "Compared to what you're losing in unanswered inquiries, this pays for itself in the first week. What's ONE booking worth to you?",
+    timing: "Every day you wait, 67% of your inquiries go unanswered. What's that costing you this month?",
+    trust: "Totally understand. What specifically would you need to know to feel confident?",
+    authority: "Great - can we schedule a quick call with both of you? I'd love to answer their questions directly.",
+    competitor: "Smart to compare. What criteria are most important to you? [Then show where you win]",
+    need: "What happens to inquiries that come in at 2am? Are you answering those personally?",
+  };
+
+  const POWER_QUESTIONS = [
+    "What made you take this call today?",
+    "What happens when an inquiry comes in at 2am?",
+    "How many inquiries do you think you miss per week?",
+    "If you could wave a magic wand, what would change?",
+    "What's one booking worth to you?",
+    "Who else would need to be involved in this decision?",
+  ];
 
   const { data: business, isLoading } = useQuery<Business>({
     queryKey: ["/api/businesses", businessId],
@@ -128,6 +180,16 @@ export default function BusinessDetail() {
     },
     onError: (error: Error) => {
       toast({ title: "Scrape Failed", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const appendOutreachNotesMutation = useMutation({
+    mutationFn: async ({ note, dealScore }: { note: string; dealScore: number }) => {
+      const res = await apiRequest("POST", `/api/businesses/${businessId}/outreach-notes`, { note, dealScore });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/businesses", businessId] });
     },
   });
 
@@ -265,12 +327,31 @@ export default function BusinessDetail() {
   const endCall = () => {
     if (activeSession) {
       const minutes = Math.ceil(elapsedSeconds / 60);
+      const dealScore = calculateDealScore(activeSession);
+      
       updateCallSessionMutation.mutate({
         id: activeSession.id,
         endedAt: new Date(),
         durationMinutes: minutes,
         status: "completed",
+        dealScore,
       });
+
+      const painSummary = activeSession.painPoints?.map(p => p.painText).join(", ") || "";
+      const objectionSummary = activeSession.objections?.filter(o => !o.addressed).map(o => o.objectionType).join(", ") || "";
+      const callSummary = [
+        `Call ${new Date().toLocaleDateString()}: ${minutes}min`,
+        activeSession.buyerType ? `Type: ${activeSession.buyerType}` : "",
+        activeSession.urgency ? `Urgency: ${activeSession.urgency}` : "",
+        activeSession.authority ? `Authority: ${activeSession.authority}` : "",
+        painSummary ? `Pain: ${painSummary}` : "",
+        objectionSummary ? `Open objections: ${objectionSummary}` : "",
+        `Deal Score: ${dealScore}`,
+      ].filter(Boolean).join(" | ");
+
+      appendOutreachNotesMutation.mutate({ note: callSummary, dealScore });
+
+      toast({ title: "Call completed", description: `Deal score: ${dealScore}` });
     }
     setIsRunning(false);
     setElapsedSeconds(0);
@@ -1022,6 +1103,153 @@ export default function BusinessDetail() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Notes Section */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <FileText className="h-3 w-3" /> Notes
+                        </Label>
+                        <Textarea
+                          placeholder="Type anything... quotes, observations, follow-up items..."
+                          value={activeSession.notes || ""}
+                          onChange={(e) => updateCallSessionMutation.mutate({ id: activeSession.id, notes: e.target.value })}
+                          className="min-h-[80px]"
+                          data-testid="textarea-call-notes"
+                        />
+                      </div>
+
+                      {/* What They Need Section */}
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Target className="h-3 w-3" /> What They Need to Decide
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="flex items-center gap-2 p-2 rounded-md bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={activeSession.needsDemo || false}
+                              onCheckedChange={(checked) => updateCallSessionMutation.mutate({ id: activeSession.id, needsDemo: !!checked })}
+                              data-testid="checkbox-needs-demo"
+                            />
+                            <span className="text-sm">Demo</span>
+                          </label>
+                          <label className="flex items-center gap-2 p-2 rounded-md bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={activeSession.needsProposal || false}
+                              onCheckedChange={(checked) => updateCallSessionMutation.mutate({ id: activeSession.id, needsProposal: !!checked })}
+                              data-testid="checkbox-needs-proposal"
+                            />
+                            <span className="text-sm">Proposal</span>
+                          </label>
+                          <label className="flex items-center gap-2 p-2 rounded-md bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={activeSession.needsCaseStudy || false}
+                              onCheckedChange={(checked) => updateCallSessionMutation.mutate({ id: activeSession.id, needsCaseStudy: !!checked })}
+                              data-testid="checkbox-needs-case-study"
+                            />
+                            <span className="text-sm">Case Study</span>
+                          </label>
+                          <label className="flex items-center gap-2 p-2 rounded-md bg-muted cursor-pointer">
+                            <Checkbox
+                              checked={activeSession.needsTrial || false}
+                              onCheckedChange={(checked) => updateCallSessionMutation.mutate({ id: activeSession.id, needsTrial: !!checked })}
+                              data-testid="checkbox-needs-trial"
+                            />
+                            <span className="text-sm">Trial</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Next Steps Section */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Zap className="h-3 w-3" /> Next Action
+                          </Label>
+                          <Input
+                            placeholder="Schedule demo, send proposal..."
+                            value={activeSession.nextAction || ""}
+                            onChange={(e) => updateCallSessionMutation.mutate({ id: activeSession.id, nextAction: e.target.value })}
+                            data-testid="input-next-action"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Calendar className="h-3 w-3" /> Follow-up Date
+                          </Label>
+                          <Input
+                            type="date"
+                            value={activeSession.followUpDate ? new Date(activeSession.followUpDate).toISOString().split('T')[0] : ""}
+                            onChange={(e) => updateCallSessionMutation.mutate({ id: activeSession.id, followUpDate: e.target.value ? new Date(e.target.value) : null })}
+                            data-testid="input-follow-up-date"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Strategy Generator */}
+                      <Collapsible open={showStrategy} onOpenChange={setShowStrategy}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between" data-testid="button-show-strategy">
+                            <span className="flex items-center gap-2">
+                              <Lightbulb className="h-4 w-4 text-amber-500" /> Closing Strategy
+                            </span>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${showStrategy ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-3">
+                          <div className="space-y-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/20">
+                            {getStrategyTips(activeSession).length > 0 ? (
+                              getStrategyTips(activeSession).map((tip, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm">
+                                  <Sparkles className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                                  <span>{tip}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Capture more signals to get personalized closing tips</p>
+                            )}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+
+                      {/* Cheat Sheet */}
+                      <Collapsible open={showCheatSheet} onOpenChange={setShowCheatSheet}>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="outline" className="w-full justify-between" data-testid="button-show-cheatsheet">
+                            <span className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-primary" /> Call Cheat Sheet
+                            </span>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${showCheatSheet ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-3 space-y-4">
+                          {/* Power Questions */}
+                          <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
+                            <h4 className="text-xs font-medium text-primary mb-2 flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" /> Power Questions
+                            </h4>
+                            <div className="space-y-1">
+                              {POWER_QUESTIONS.map((q, idx) => (
+                                <div key={idx} className="text-sm p-1.5 rounded bg-background/50">{q}</div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Objection Responses */}
+                          <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20">
+                            <h4 className="text-xs font-medium text-destructive mb-2 flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Objection Quick Responses
+                            </h4>
+                            <div className="space-y-2">
+                              {Object.entries(OBJECTION_RESPONSES).map(([key, response]) => (
+                                <div key={key} className="text-sm">
+                                  <div className="font-medium capitalize">{key}:</div>
+                                  <div className="text-muted-foreground text-xs">{response}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </div>
                   ) : (
                     <div className="space-y-4">
