@@ -19,6 +19,8 @@ import IntentSignals from "@/pages/IntentSignals";
 import VenueMonitors from "@/pages/VenueMonitors";
 import AuthorityContent from "@/pages/AuthorityContent";
 import BlackCardIntel from "@/pages/BlackCardIntel";
+import GuestIntelligence from "@/pages/GuestIntelligence";
+import CallCompanion from "@/pages/CallCompanion";
 import TeamLogin from "@/pages/TeamLogin";
 import TeamManagement from "@/pages/TeamManagement";
 
@@ -56,6 +58,8 @@ function Router() {
       {isAuthenticated && <Route path="/authority-content" component={AuthorityContent} />}
       {isAuthenticated && <Route path="/blackcard-intel" component={BlackCardIntel} />}
       {isAuthenticated && <Route path="/blackcard-intel/:id" component={BlackCardIntel} />}
+      {isAuthenticated && <Route path="/guest-intel" component={GuestIntelligence} />}
+      {isAuthenticated && <Route path="/call-companion" component={CallCompanion} />}
       {isAuthenticated && <Route path="/team" component={TeamManagement} />}
       
       <Route component={NotFound} />

@@ -11,9 +11,17 @@ import {
   type TeamInvitation, type InsertTeamInvitation,
   type MagicLinkToken, type InsertMagicLinkToken,
   type ActivityLog, type InsertActivityLog,
+  type GuestProfile, type InsertGuestProfile,
+  type GuestSignal, type InsertGuestSignal,
+  type GuestVipActivity, type InsertGuestVipActivity,
+  type CallSession, type InsertCallSession,
+  type CallObjection, type InsertCallObjection,
+  type CallPainPoint, type InsertCallPainPoint,
   users, businesses, scans, outreachCampaigns,
   events, intentSignals, venueMonitors, instagramPosts, authorityContent,
-  teamInvitations, magicLinkTokens, activityLog
+  teamInvitations, magicLinkTokens, activityLog,
+  guestProfiles, guestSignals, guestVipActivity,
+  callSessions, callObjections, callPainPoints
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, like, and, or, gte, lte, sql, count, isNull, isNotNull } from "drizzle-orm";
@@ -101,6 +109,30 @@ export interface IStorage {
   createAuthorityContent(content: InsertAuthorityContent): Promise<AuthorityContent>;
   updateAuthorityContent(id: string, content: Partial<InsertAuthorityContent>): Promise<AuthorityContent | undefined>;
   deleteAuthorityContent(id: string): Promise<void>;
+  
+  // Guest Intelligence
+  getGuestProfiles(filters?: GuestProfileFilters): Promise<GuestProfile[]>;
+  getGuestProfile(id: string): Promise<GuestProfile | undefined>;
+  createGuestProfile(profile: InsertGuestProfile): Promise<GuestProfile>;
+  updateGuestProfile(id: string, updates: Partial<InsertGuestProfile>): Promise<GuestProfile | undefined>;
+  getGuestSignals(profileId: string): Promise<GuestSignal[]>;
+  createGuestSignal(signal: InsertGuestSignal): Promise<GuestSignal>;
+  getGuestVipActivity(limit?: number): Promise<GuestVipActivity[]>;
+  createGuestVipActivity(activity: InsertGuestVipActivity): Promise<GuestVipActivity>;
+  getGuestIntelSummary(propertyId?: string): Promise<GuestIntelSummary>;
+  getCompletenessDistribution(propertyId?: string): Promise<CompletenessDistribution>;
+  getCollectionMechanismStats(): Promise<MechanismStat[]>;
+  
+  // Call Companion
+  getCallSessions(filters?: CallSessionFilters): Promise<CallSession[]>;
+  getCallSession(id: string): Promise<CallSession | undefined>;
+  createCallSession(session: InsertCallSession): Promise<CallSession>;
+  updateCallSession(id: string, updates: Partial<InsertCallSession>): Promise<CallSession | undefined>;
+  getCallObjections(sessionId: string): Promise<CallObjection[]>;
+  createCallObjection(objection: InsertCallObjection): Promise<CallObjection>;
+  updateCallObjection(id: string, addressed: boolean): Promise<CallObjection | undefined>;
+  getCallPainPoints(sessionId: string): Promise<CallPainPoint[]>;
+  createCallPainPoint(painPoint: InsertCallPainPoint): Promise<CallPainPoint>;
 }
 
 export interface BusinessFilters {
@@ -204,6 +236,41 @@ export interface ActivityLogFilters {
   action?: string;
   entityType?: string;
   entityId?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface GuestProfileFilters {
+  propertyId?: string;
+  isVip?: boolean;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface GuestIntelSummary {
+  totalProfiles: number;
+  avgCompleteness: number;
+  vipCount: number;
+  signalsToday: number;
+  totalLifetimeValue: number;
+}
+
+export interface CompletenessDistribution {
+  minimal: number;
+  basic: number;
+  good: number;
+  complete: number;
+}
+
+export interface MechanismStat {
+  mechanism: string;
+  count: number;
+}
+
+export interface CallSessionFilters {
+  businessId?: string;
+  status?: string;
   limit?: number;
   offset?: number;
 }
@@ -798,6 +865,156 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAuthorityContent(id: string): Promise<void> {
     await db.delete(authorityContent).where(eq(authorityContent.id, id));
+  }
+
+  // Guest Intelligence
+  async getGuestProfiles(filters?: GuestProfileFilters): Promise<GuestProfile[]> {
+    const conditions = [];
+    if (filters?.propertyId) conditions.push(eq(guestProfiles.propertyId, filters.propertyId));
+    if (filters?.isVip !== undefined) conditions.push(eq(guestProfiles.isVip, filters.isVip));
+    if (filters?.search) {
+      conditions.push(or(
+        like(guestProfiles.name, `%${filters.search}%`),
+        like(guestProfiles.email, `%${filters.search}%`)
+      ));
+    }
+    let query = db.select().from(guestProfiles);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(guestProfiles.createdAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    if (filters?.offset) query = query.offset(filters.offset) as any;
+    return await query;
+  }
+
+  async getGuestProfile(id: string): Promise<GuestProfile | undefined> {
+    const [profile] = await db.select().from(guestProfiles).where(eq(guestProfiles.id, id));
+    return profile;
+  }
+
+  async createGuestProfile(profile: InsertGuestProfile): Promise<GuestProfile> {
+    const [created] = await db.insert(guestProfiles).values(profile).returning();
+    return created;
+  }
+
+  async updateGuestProfile(id: string, updates: Partial<InsertGuestProfile>): Promise<GuestProfile | undefined> {
+    const [updated] = await db.update(guestProfiles).set({ ...updates, updatedAt: new Date() }).where(eq(guestProfiles.id, id)).returning();
+    return updated;
+  }
+
+  async getGuestSignals(profileId: string): Promise<GuestSignal[]> {
+    return await db.select().from(guestSignals).where(eq(guestSignals.profileId, profileId)).orderBy(desc(guestSignals.createdAt));
+  }
+
+  async createGuestSignal(signal: InsertGuestSignal): Promise<GuestSignal> {
+    const [created] = await db.insert(guestSignals).values(signal).returning();
+    return created;
+  }
+
+  async getGuestVipActivity(limit: number = 20): Promise<GuestVipActivity[]> {
+    return await db.select().from(guestVipActivity).orderBy(desc(guestVipActivity.createdAt)).limit(limit);
+  }
+
+  async createGuestVipActivity(activity: InsertGuestVipActivity): Promise<GuestVipActivity> {
+    const [created] = await db.insert(guestVipActivity).values(activity).returning();
+    return created;
+  }
+
+  async getGuestIntelSummary(propertyId?: string): Promise<GuestIntelSummary> {
+    const conditions = propertyId ? [eq(guestProfiles.propertyId, propertyId)] : [];
+    const profiles = conditions.length > 0 
+      ? await db.select().from(guestProfiles).where(and(...conditions))
+      : await db.select().from(guestProfiles);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const signalsToday = await db.select().from(guestSignals).where(gte(guestSignals.createdAt, today));
+    
+    const totalCompleteness = profiles.reduce((sum, p) => sum + (p.completeness || 0), 0);
+    const totalLifetimeValue = profiles.reduce((sum, p) => sum + (p.lifetimeValue || 0), 0);
+    
+    return {
+      totalProfiles: profiles.length,
+      avgCompleteness: profiles.length > 0 ? Math.round(totalCompleteness / profiles.length) : 0,
+      vipCount: profiles.filter(p => p.isVip).length,
+      signalsToday: signalsToday.length,
+      totalLifetimeValue,
+    };
+  }
+
+  async getCompletenessDistribution(propertyId?: string): Promise<CompletenessDistribution> {
+    const conditions = propertyId ? [eq(guestProfiles.propertyId, propertyId)] : [];
+    const profiles = conditions.length > 0 
+      ? await db.select().from(guestProfiles).where(and(...conditions))
+      : await db.select().from(guestProfiles);
+    
+    return {
+      minimal: profiles.filter(p => (p.completeness || 0) < 25).length,
+      basic: profiles.filter(p => (p.completeness || 0) >= 25 && (p.completeness || 0) < 50).length,
+      good: profiles.filter(p => (p.completeness || 0) >= 50 && (p.completeness || 0) < 75).length,
+      complete: profiles.filter(p => (p.completeness || 0) >= 75).length,
+    };
+  }
+
+  async getCollectionMechanismStats(): Promise<MechanismStat[]> {
+    const signals = await db.select().from(guestSignals);
+    const mechanismCounts: Record<string, number> = {};
+    for (const s of signals) {
+      if (s.collectionMechanism) {
+        mechanismCounts[s.collectionMechanism] = (mechanismCounts[s.collectionMechanism] || 0) + 1;
+      }
+    }
+    return Object.entries(mechanismCounts).map(([mechanism, count]) => ({ mechanism, count }));
+  }
+
+  // Call Companion
+  async getCallSessions(filters?: CallSessionFilters): Promise<CallSession[]> {
+    const conditions = [];
+    if (filters?.businessId) conditions.push(eq(callSessions.businessId, filters.businessId));
+    if (filters?.status) conditions.push(eq(callSessions.status, filters.status));
+    let query = db.select().from(callSessions);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(callSessions.startedAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    if (filters?.offset) query = query.offset(filters.offset) as any;
+    return await query;
+  }
+
+  async getCallSession(id: string): Promise<CallSession | undefined> {
+    const [session] = await db.select().from(callSessions).where(eq(callSessions.id, id));
+    return session;
+  }
+
+  async createCallSession(session: InsertCallSession): Promise<CallSession> {
+    const [created] = await db.insert(callSessions).values(session).returning();
+    return created;
+  }
+
+  async updateCallSession(id: string, updates: Partial<InsertCallSession>): Promise<CallSession | undefined> {
+    const [updated] = await db.update(callSessions).set(updates).where(eq(callSessions.id, id)).returning();
+    return updated;
+  }
+
+  async getCallObjections(sessionId: string): Promise<CallObjection[]> {
+    return await db.select().from(callObjections).where(eq(callObjections.sessionId, sessionId)).orderBy(desc(callObjections.addedAt));
+  }
+
+  async createCallObjection(objection: InsertCallObjection): Promise<CallObjection> {
+    const [created] = await db.insert(callObjections).values(objection).returning();
+    return created;
+  }
+
+  async updateCallObjection(id: string, addressed: boolean): Promise<CallObjection | undefined> {
+    const [updated] = await db.update(callObjections).set({ addressed }).where(eq(callObjections.id, id)).returning();
+    return updated;
+  }
+
+  async getCallPainPoints(sessionId: string): Promise<CallPainPoint[]> {
+    return await db.select().from(callPainPoints).where(eq(callPainPoints.sessionId, sessionId)).orderBy(desc(callPainPoints.addedAt));
+  }
+
+  async createCallPainPoint(painPoint: InsertCallPainPoint): Promise<CallPainPoint> {
+    const [created] = await db.insert(callPainPoints).values(painPoint).returning();
+    return created;
   }
 }
 

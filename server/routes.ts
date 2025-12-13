@@ -10,12 +10,15 @@ import {
   EVENT_TIERS, EVENT_CATEGORIES, EVENT_SOURCES, INTENT_LEVELS, CARTAGENA_VENUES_TO_MONITOR, CONTENT_TYPES,
   COLOMBIA_STATS, VERTICAL_TICKET_RANGES, COLOMBIA_PSYCHOLOGY_TRIGGERS, CONPES_POSITIONING,
   DECISION_MAKER_TYPES, BUYING_STYLES, PSYCHOLOGY_HOOKS, SIGNAL_OFFER_MATRIX,
+  COLLECTION_MECHANISMS, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES,
   type Business, type InsertBusiness, type OutreachCampaign,
   type Event, type InsertEvent, type IntentSignal, type InsertIntentSignal,
   type VenueMonitor, type InsertVenueMonitor, type InstagramPost, type InsertInstagramPost,
   type AuthorityContent, type InsertAuthorityContent,
   type BlackCardIntelligence, type DecisionMakerProfile, type ColombiaMarketIntel,
-  insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema
+  insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema,
+  insertGuestProfileSchema, insertGuestSignalSchema, insertGuestVipActivitySchema,
+  insertCallSessionSchema, insertCallObjectionSchema, insertCallPainPointSchema
 } from "@shared/schema";
 import OpenAI from "openai";
 import {
@@ -2909,6 +2912,256 @@ Respond in JSON format with these exact keys:
     } catch (error) {
       console.error("Error discovering Instagram for business:", error);
       res.status(500).json({ message: "Failed to discover Instagram handle" });
+    }
+  });
+
+  // ========== GUEST INTELLIGENCE API ==========
+  
+  // Get summary stats
+  app.get('/api/guest-intel/summary', isAuthenticated, async (req: any, res) => {
+    try {
+      const propertyId = req.query.propertyId as string | undefined;
+      const summary = await storage.getGuestIntelSummary(propertyId);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching guest intel summary:", error);
+      res.status(500).json({ message: "Failed to fetch summary" });
+    }
+  });
+
+  // Get completeness distribution
+  app.get('/api/guest-intel/distribution', isAuthenticated, async (req: any, res) => {
+    try {
+      const propertyId = req.query.propertyId as string | undefined;
+      const distribution = await storage.getCompletenessDistribution(propertyId);
+      res.json(distribution);
+    } catch (error) {
+      console.error("Error fetching completeness distribution:", error);
+      res.status(500).json({ message: "Failed to fetch distribution" });
+    }
+  });
+
+  // Get collection mechanism stats
+  app.get('/api/guest-intel/mechanisms', isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getCollectionMechanismStats();
+      res.json({ mechanisms: stats, definitions: COLLECTION_MECHANISMS });
+    } catch (error) {
+      console.error("Error fetching mechanism stats:", error);
+      res.status(500).json({ message: "Failed to fetch mechanism stats" });
+    }
+  });
+
+  // Get VIP activity
+  app.get('/api/guest-intel/vip-activity', isAuthenticated, async (req: any, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const activity = await storage.getGuestVipActivity(limit);
+      res.json(activity);
+    } catch (error) {
+      console.error("Error fetching VIP activity:", error);
+      res.status(500).json({ message: "Failed to fetch VIP activity" });
+    }
+  });
+
+  // List guest profiles
+  app.get('/api/guest-intel/profiles', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        propertyId: req.query.propertyId as string,
+        isVip: req.query.isVip === 'true' ? true : req.query.isVip === 'false' ? false : undefined,
+        search: req.query.search as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+      const profiles = await storage.getGuestProfiles(filters);
+      res.json(profiles);
+    } catch (error) {
+      console.error("Error fetching guest profiles:", error);
+      res.status(500).json({ message: "Failed to fetch profiles" });
+    }
+  });
+
+  // Get single guest profile
+  app.get('/api/guest-intel/profiles/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getGuestProfile(req.params.id);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      const signals = await storage.getGuestSignals(req.params.id);
+      res.json({ ...profile, signals });
+    } catch (error) {
+      console.error("Error fetching guest profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  // Create guest profile
+  app.post('/api/guest-intel/profiles', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertGuestProfileSchema.parse(req.body);
+      const profile = await storage.createGuestProfile(validated);
+      res.json(profile);
+    } catch (error) {
+      console.error("Error creating guest profile:", error);
+      res.status(500).json({ message: "Failed to create profile" });
+    }
+  });
+
+  // Update guest profile
+  app.patch('/api/guest-intel/profiles/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.updateGuestProfile(req.params.id, req.body);
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Error updating guest profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Add guest signal
+  app.post('/api/guest-intel/profiles/:id/signals', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertGuestSignalSchema.parse({ ...req.body, profileId: req.params.id });
+      const signal = await storage.createGuestSignal(validated);
+      res.json(signal);
+    } catch (error) {
+      console.error("Error creating guest signal:", error);
+      res.status(500).json({ message: "Failed to create signal" });
+    }
+  });
+
+  // Create VIP activity
+  app.post('/api/guest-intel/vip-activity', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertGuestVipActivitySchema.parse(req.body);
+      const activity = await storage.createGuestVipActivity(validated);
+      res.json(activity);
+    } catch (error) {
+      console.error("Error creating VIP activity:", error);
+      res.status(500).json({ message: "Failed to create VIP activity" });
+    }
+  });
+
+  // ========== CALL COMPANION API ==========
+  
+  // Get call config (buyer types, urgency levels, etc)
+  app.get('/api/calls/config', isAuthenticated, async (req: any, res) => {
+    res.json({
+      buyerTypes: BUYER_TYPES,
+      urgencyLevels: URGENCY_LEVELS,
+      authorityLevels: AUTHORITY_LEVELS,
+      budgetLevels: BUDGET_LEVELS,
+      objectionTypes: OBJECTION_TYPES,
+    });
+  });
+
+  // List call sessions
+  app.get('/api/calls', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        businessId: req.query.businessId as string,
+        status: req.query.status as string,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+        offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      };
+      const sessions = await storage.getCallSessions(filters);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching call sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  // Get single call session with objections and pain points
+  app.get('/api/calls/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const session = await storage.getCallSession(req.params.id);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      const objections = await storage.getCallObjections(req.params.id);
+      const painPoints = await storage.getCallPainPoints(req.params.id);
+      res.json({ ...session, objections, painPoints });
+    } catch (error) {
+      console.error("Error fetching call session:", error);
+      res.status(500).json({ message: "Failed to fetch session" });
+    }
+  });
+
+  // Start new call session
+  app.post('/api/calls', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertCallSessionSchema.parse(req.body);
+      const session = await storage.createCallSession(validated);
+      res.json(session);
+    } catch (error) {
+      console.error("Error creating call session:", error);
+      res.status(500).json({ message: "Failed to create session" });
+    }
+  });
+
+  // Update call session (end call, update signals, etc)
+  app.patch('/api/calls/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const updates = { ...req.body };
+      // Convert date strings to Date objects for Drizzle
+      if (updates.endedAt && typeof updates.endedAt === 'string') {
+        updates.endedAt = new Date(updates.endedAt);
+      }
+      if (updates.followUpDate && typeof updates.followUpDate === 'string') {
+        updates.followUpDate = new Date(updates.followUpDate);
+      }
+      const session = await storage.updateCallSession(req.params.id, updates);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      res.json(session);
+    } catch (error) {
+      console.error("Error updating call session:", error);
+      res.status(500).json({ message: "Failed to update session" });
+    }
+  });
+
+  // Add objection to call
+  app.post('/api/calls/:id/objections', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertCallObjectionSchema.parse({ ...req.body, sessionId: req.params.id });
+      const objection = await storage.createCallObjection(validated);
+      res.json(objection);
+    } catch (error) {
+      console.error("Error creating call objection:", error);
+      res.status(500).json({ message: "Failed to create objection" });
+    }
+  });
+
+  // Toggle objection addressed
+  app.patch('/api/calls/:sessionId/objections/:objId', isAuthenticated, async (req: any, res) => {
+    try {
+      const objection = await storage.updateCallObjection(req.params.objId, req.body.addressed);
+      if (!objection) {
+        return res.status(404).json({ message: "Objection not found" });
+      }
+      res.json(objection);
+    } catch (error) {
+      console.error("Error updating objection:", error);
+      res.status(500).json({ message: "Failed to update objection" });
+    }
+  });
+
+  // Add pain point to call
+  app.post('/api/calls/:id/pain-points', isAuthenticated, async (req: any, res) => {
+    try {
+      const validated = insertCallPainPointSchema.parse({ ...req.body, sessionId: req.params.id });
+      const painPoint = await storage.createCallPainPoint(validated);
+      res.json(painPoint);
+    } catch (error) {
+      console.error("Error creating pain point:", error);
+      res.status(500).json({ message: "Failed to create pain point" });
     }
   });
 
