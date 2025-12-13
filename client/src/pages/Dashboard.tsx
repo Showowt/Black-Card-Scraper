@@ -207,6 +207,16 @@ export default function Dashboard() {
                 <Brain className="h-4 w-4 mr-1" /> Copilot
               </Button>
             </Link>
+            <Link href="/guest-intel">
+              <Button variant="ghost" size="sm" data-testid="nav-guest-intel">
+                <Users className="h-4 w-4 mr-1" /> Guest Intel
+              </Button>
+            </Link>
+            <Link href="/call-companion">
+              <Button variant="ghost" size="sm" data-testid="nav-call-companion">
+                <Phone className="h-4 w-4 mr-1" /> Calls
+              </Button>
+            </Link>
             <Link href="/operations">
               <Button variant="ghost" size="sm" data-testid="nav-operations">
                 <Terminal className="h-4 w-4 mr-1" /> Operations
