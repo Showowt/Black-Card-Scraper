@@ -490,9 +490,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateBusiness(id: string, business: Partial<InsertBusiness>): Promise<Business | undefined> {
+    // Convert date strings to Date objects for timestamp columns
+    const data: Record<string, any> = { ...business, updatedAt: new Date() };
+    if (data.lastContactedAt && typeof data.lastContactedAt === 'string') {
+      data.lastContactedAt = new Date(data.lastContactedAt);
+    }
+    if (data.followUpDate && typeof data.followUpDate === 'string') {
+      data.followUpDate = new Date(data.followUpDate);
+    }
+    
     const [updated] = await db
       .update(businesses)
-      .set({ ...business, updatedAt: new Date() })
+      .set(data)
       .where(eq(businesses.id, id))
       .returning();
     return updated;

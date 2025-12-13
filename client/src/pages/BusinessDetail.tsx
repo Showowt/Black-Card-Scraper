@@ -344,10 +344,14 @@ export default function BusinessDetail() {
 
       // Sync followUpDate and disposition to business
       const businessUpdate: Record<string, any> = {
-        lastContactedAt: new Date(),
+        lastContactedAt: new Date().toISOString(),
       };
       if (activeSession.followUpDate) {
-        businessUpdate.followUpDate = activeSession.followUpDate;
+        // Convert string to ISO string format for the backend
+        const followUpDateStr = typeof activeSession.followUpDate === 'string' 
+          ? activeSession.followUpDate 
+          : new Date(activeSession.followUpDate).toISOString();
+        businessUpdate.followUpDate = followUpDateStr;
       }
       if (selectedDisposition) {
         businessUpdate.lastDisposition = selectedDisposition;
