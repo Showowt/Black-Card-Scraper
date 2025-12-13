@@ -60,6 +60,8 @@ export default function BusinessDetail() {
   const [showCheatSheet, setShowCheatSheet] = useState(false);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
   const [selectedDisposition, setSelectedDisposition] = useState<string>("");
+  const [notesInput, setNotesInput] = useState("");
+  const [nextActionInput, setNextActionInput] = useState("");
 
   const calculateDealScore = (session: CallSessionWithDetails) => {
     let score = 50;
@@ -416,6 +418,17 @@ export default function BusinessDetail() {
       }
     };
   }, [isRunning]);
+
+  // Sync local input state when activeSession changes
+  useEffect(() => {
+    if (activeSession) {
+      setNotesInput(activeSession.notes || "");
+      setNextActionInput(activeSession.nextAction || "");
+    } else {
+      setNotesInput("");
+      setNextActionInput("");
+    }
+  }, [activeSession?.id]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -1144,8 +1157,13 @@ export default function BusinessDetail() {
                         </Label>
                         <Textarea
                           placeholder="Type anything... quotes, observations, follow-up items..."
-                          value={activeSession.notes || ""}
-                          onChange={(e) => updateCallSessionMutation.mutate({ id: activeSession.id, notes: e.target.value })}
+                          value={notesInput}
+                          onChange={(e) => setNotesInput(e.target.value)}
+                          onBlur={() => {
+                            if (notesInput !== activeSession.notes) {
+                              updateCallSessionMutation.mutate({ id: activeSession.id, notes: notesInput });
+                            }
+                          }}
                           className="min-h-[80px]"
                           data-testid="textarea-call-notes"
                         />
@@ -1200,8 +1218,13 @@ export default function BusinessDetail() {
                           </Label>
                           <Input
                             placeholder="Schedule demo, send proposal..."
-                            value={activeSession.nextAction || ""}
-                            onChange={(e) => updateCallSessionMutation.mutate({ id: activeSession.id, nextAction: e.target.value })}
+                            value={nextActionInput}
+                            onChange={(e) => setNextActionInput(e.target.value)}
+                            onBlur={() => {
+                              if (nextActionInput !== activeSession.nextAction) {
+                                updateCallSessionMutation.mutate({ id: activeSession.id, nextAction: nextActionInput });
+                              }
+                            }}
                             data-testid="input-next-action"
                           />
                         </div>
