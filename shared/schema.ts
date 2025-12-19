@@ -203,8 +203,39 @@ export type Scan = typeof scans.$inferSelect;
 export type InsertOutreachCampaign = z.infer<typeof insertOutreachCampaignSchema>;
 export type OutreachCampaign = typeof outreachCampaigns.$inferSelect;
 
-export const USER_ROLES = ["admin", "team_member"] as const;
+export const USER_ROLES = ["admin", "team_member", "rep"] as const;
 export type UserRole = typeof USER_ROLES[number];
+
+// Role permissions matrix
+export const ROLE_PERMISSIONS = {
+  admin: {
+    canScan: true,
+    canDelete: true,
+    canViewUsers: true,
+    canManageUsers: true,
+    canExport: true,
+    canViewCostControls: true,
+    canManageSettings: true,
+  },
+  team_member: {
+    canScan: false,
+    canDelete: false,
+    canViewUsers: true,
+    canManageUsers: false,
+    canExport: true,
+    canViewCostControls: false,
+    canManageSettings: false,
+  },
+  rep: {
+    canScan: false,
+    canDelete: false,
+    canViewUsers: false,
+    canManageUsers: false,
+    canExport: false,
+    canViewCostControls: false,
+    canManageSettings: false,
+  },
+} as const;
 
 export const AUTH_PROVIDERS = ["replit", "email", "magic_link"] as const;
 export type AuthProvider = typeof AUTH_PROVIDERS[number];
@@ -2679,3 +2710,92 @@ export const CALL_DISPOSITIONS = [
   { value: "wrong_number", label: "Wrong Number", color: "red", description: "Bad contact info" },
   { value: "gatekeeper", label: "Gatekeeper", color: "amber", description: "Couldn't reach decision maker" },
 ] as const;
+
+// ========== SALES SCRIPTS ==========
+
+export const SCRIPT_CATEGORIES = [
+  { value: "opener", label: "Openers", description: "Initial contact scripts" },
+  { value: "discovery", label: "Discovery", description: "Qualification questions" },
+  { value: "objection", label: "Objection Handling", description: "Overcome resistance" },
+  { value: "closing", label: "Closing", description: "Close the deal" },
+  { value: "followup", label: "Follow-up", description: "Post-call sequences" },
+  { value: "whatsapp", label: "WhatsApp", description: "Messaging templates" },
+  { value: "voicemail", label: "Voicemail", description: "VM drop scripts" },
+] as const;
+
+export const salesScripts = pgTable("sales_scripts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  content: text("content").notNull(),
+  businessType: text("business_type"),
+  language: text("language").default("en"),
+  tags: text("tags").array(),
+  usageCount: integer("usage_count").default(0),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSalesScriptSchema = createInsertSchema(salesScripts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSalesScript = z.infer<typeof insertSalesScriptSchema>;
+export type SalesScript = typeof salesScripts.$inferSelect;
+
+// ========== COST CONTROLS & USAGE TRACKING ==========
+
+export const usageRecords = pgTable("usage_records", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  actionType: text("action_type").notNull(),
+  resourceType: text("resource_type"),
+  quantity: integer("quantity").default(1),
+  cost: real("cost").default(0),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const usageLimits = pgTable("usage_limits", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).references(() => users.id),
+  limitType: text("limit_type").notNull(),
+  dailyLimit: integer("daily_limit"),
+  monthlyLimit: integer("monthly_limit"),
+  currentDaily: integer("current_daily").default(0),
+  currentMonthly: integer("current_monthly").default(0),
+  lastResetDaily: timestamp("last_reset_daily").defaultNow(),
+  lastResetMonthly: timestamp("last_reset_monthly").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const ACTION_TYPES = [
+  { value: "scan", label: "Business Scan", cost: 0.01 },
+  { value: "enrich", label: "AI Enrichment", cost: 0.02 },
+  { value: "outreach_generate", label: "Outreach Generation", cost: 0.03 },
+  { value: "blackcard_intel", label: "Black Card Intel", cost: 0.05 },
+  { value: "content_generate", label: "Content Generation", cost: 0.04 },
+  { value: "scrape", label: "Website Scrape", cost: 0.005 },
+] as const;
+
+export const insertUsageRecordSchema = createInsertSchema(usageRecords).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUsageLimitSchema = createInsertSchema(usageLimits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertUsageRecord = z.infer<typeof insertUsageRecordSchema>;
+export type UsageRecord = typeof usageRecords.$inferSelect;
+export type InsertUsageLimit = z.infer<typeof insertUsageLimitSchema>;
+export type UsageLimit = typeof usageLimits.$inferSelect;
