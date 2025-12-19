@@ -277,11 +277,13 @@ export default function Dashboard() {
           <h1 className="text-2xl font-medium" data-testid="text-page-title">Business Dashboard</h1>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" asChild data-testid="button-export-csv">
-              <a href={`/api/export/csv?city=${filterCity}&category=${filterCategory}`} download>
-                <Download className="h-4 w-4 mr-1" /> Export CSV
-              </a>
-            </Button>
+            {user?.role !== 'rep' && (
+              <Button variant="outline" asChild data-testid="button-export-csv">
+                <a href={`/api/export/csv?city=${filterCity}&category=${filterCategory}`} download>
+                  <Download className="h-4 w-4 mr-1" /> Export CSV
+                </a>
+              </Button>
+            )}
             
             <Dialog open={scanDialogOpen} onOpenChange={handleScanDialogClose}>
               <DialogTrigger asChild>

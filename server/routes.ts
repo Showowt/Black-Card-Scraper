@@ -775,6 +775,24 @@ export async function registerRoutes(
     }
   };
 
+  // Non-rep middleware (allows admin and team_member, blocks reps)
+  const isNotRep = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.role === 'rep') {
+        return res.status(403).json({ message: "Access denied for sales reps" });
+      }
+      next();
+    } catch (error) {
+      console.error("Role check error:", error);
+      res.status(500).json({ message: "Authorization failed" });
+    }
+  };
+
   app.delete('/api/businesses/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteBusiness(req.params.id);
@@ -2107,8 +2125,8 @@ export async function registerRoutes(
     }
   });
 
-  // Export
-  app.get('/api/export/csv', isAuthenticated, async (req: any, res) => {
+  // Export (restricted from reps)
+  app.get('/api/export/csv', isAuthenticated, isNotRep, async (req: any, res) => {
     try {
       const filters = {
         city: req.query.city as string,
@@ -2143,7 +2161,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get('/api/export/movvia', isAuthenticated, async (req: any, res) => {
+  app.get('/api/export/movvia', isAuthenticated, isNotRep, async (req: any, res) => {
     try {
       const filters = {
         city: req.query.city as string,
