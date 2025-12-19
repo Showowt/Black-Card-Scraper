@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Building2, LogOut, Phone, Play, Pause, StopCircle, 
   Plus, User, Clock, Target, Brain, AlertCircle, Check,
-  Fingerprint, BarChart3, Zap, Timer, Crown, DollarSign,
+  BarChart3, Zap, Timer, Crown, DollarSign,
   MessageSquare, Calendar, ChevronRight
 } from "lucide-react";
 import type { CallSession, CallObjection, CallPainPoint, Business } from "@shared/schema";
@@ -221,9 +221,9 @@ export default function CallCompanion() {
             <Link href="/">
               <Button variant="ghost" size="sm" data-testid="nav-dashboard">Dashboard</Button>
             </Link>
-            <Link href="/guest-intel">
-              <Button variant="ghost" size="sm" data-testid="nav-guest-intel">
-                <Fingerprint className="h-4 w-4 mr-1" /> Guest Intel
+            <Link href="/follow-ups">
+              <Button variant="ghost" size="sm" data-testid="nav-follow-ups">
+                <Calendar className="h-4 w-4 mr-1" /> Follow-ups
               </Button>
             </Link>
             <Link href="/call-companion">
