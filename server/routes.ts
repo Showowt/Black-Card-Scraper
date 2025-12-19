@@ -2125,8 +2125,8 @@ export async function registerRoutes(
     }
   });
 
-  // Export (restricted from reps)
-  app.get('/api/export/csv', isAuthenticated, isNotRep, async (req: any, res) => {
+  // Export (admin only)
+  app.get('/api/export/csv', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const filters = {
         city: req.query.city as string,
@@ -2161,7 +2161,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get('/api/export/movvia', isAuthenticated, isNotRep, async (req: any, res) => {
+  app.get('/api/export/movvia', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const filters = {
         city: req.query.city as string,

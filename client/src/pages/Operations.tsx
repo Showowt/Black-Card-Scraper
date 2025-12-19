@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,7 @@ interface OperationLog {
 
 export default function Operations() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [logs, setLogs] = useState<OperationLog[]>([]);
   
   const [scanCities, setScanCities] = useState<string[]>([]);
@@ -267,9 +269,11 @@ export default function Operations() {
                 <TabsTrigger value="outreach" data-testid="tab-outreach">
                   <Mail className="h-4 w-4 mr-1" /> Outreach
                 </TabsTrigger>
-                <TabsTrigger value="export" data-testid="tab-export">
-                  <Download className="h-4 w-4 mr-1" /> Export
-                </TabsTrigger>
+                {user?.role === 'admin' && (
+                  <TabsTrigger value="export" data-testid="tab-export">
+                    <Download className="h-4 w-4 mr-1" /> Export
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="scan">
@@ -487,70 +491,72 @@ export default function Operations() {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="export">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Export Data
-                    </CardTitle>
-                    <CardDescription>Export business data in various formats</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+              {user?.role === 'admin' && (
+                <TabsContent value="export">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        Export Data
+                      </CardTitle>
+                      <CardDescription>Export business data in various formats</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>City (optional)</Label>
+                          <Select value={exportCity} onValueChange={setExportCity}>
+                            <SelectTrigger data-testid="select-export-city">
+                              <SelectValue placeholder="All cities" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover">
+                              <SelectItem value="all">All cities</SelectItem>
+                              {CITIES.map(city => (
+                                <SelectItem key={city.value} value={city.value}>{city.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Category (optional)</Label>
+                          <Select value={exportCategory} onValueChange={setExportCategory}>
+                            <SelectTrigger data-testid="select-export-category">
+                              <SelectValue placeholder="All categories" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover">
+                              <SelectItem value="all">All categories</SelectItem>
+                              {CATEGORIES.map(cat => (
+                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
                       <div className="space-y-2">
-                        <Label>City (optional)</Label>
-                        <Select value={exportCity} onValueChange={setExportCity}>
-                          <SelectTrigger data-testid="select-export-city">
-                            <SelectValue placeholder="All cities" />
+                        <Label>Format</Label>
+                        <Select value={exportFormat} onValueChange={(v: "csv" | "movvia") => setExportFormat(v)}>
+                          <SelectTrigger data-testid="select-export-format">
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-popover">
-                            <SelectItem value="all">All cities</SelectItem>
-                            {CITIES.map(city => (
-                              <SelectItem key={city.value} value={city.value}>{city.label}</SelectItem>
-                            ))}
+                            <SelectItem value="csv">CSV (Standard)</SelectItem>
+                            <SelectItem value="movvia">Movvia Vendor Format</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Category (optional)</Label>
-                        <Select value={exportCategory} onValueChange={setExportCategory}>
-                          <SelectTrigger data-testid="select-export-category">
-                            <SelectValue placeholder="All categories" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover">
-                            <SelectItem value="all">All categories</SelectItem>
-                            {CATEGORIES.map(cat => (
-                              <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label>Format</Label>
-                      <Select value={exportFormat} onValueChange={(v: "csv" | "movvia") => setExportFormat(v)}>
-                        <SelectTrigger data-testid="select-export-format">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover">
-                          <SelectItem value="csv">CSV (Standard)</SelectItem>
-                          <SelectItem value="movvia">Movvia Vendor Format</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button 
-                      className="w-full" 
-                      onClick={handleExport}
-                      data-testid="button-run-export"
-                    >
-                      <Download className="h-4 w-4 mr-2" /> Export as {exportFormat.toUpperCase()}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                      <Button 
+                        className="w-full" 
+                        onClick={handleExport}
+                        data-testid="button-run-export"
+                      >
+                        <Download className="h-4 w-4 mr-2" /> Export as {exportFormat.toUpperCase()}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
             </Tabs>
           </div>
 
