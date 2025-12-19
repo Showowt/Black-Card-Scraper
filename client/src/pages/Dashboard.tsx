@@ -23,7 +23,7 @@ import {
   Building2, Search, Download, BarChart3, Mail, Phone, Globe, 
   MapPin, Star, Zap, RefreshCw, ExternalLink, ChevronRight,
   Users, TrendingUp, LogOut, Filter, Layers, Terminal, Calendar,
-  MessageCircle, Brain, X, RotateCcw
+  MessageCircle, Brain, X, RotateCcw, Lock
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, Scan } from "@shared/schema";
@@ -82,6 +82,32 @@ export default function Dashboard() {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [batchCities, setBatchCities] = useState<string[]>([]);
   const [batchCategories, setBatchCategories] = useState<string[]>([]);
+  
+  // PIN lock for scan feature
+  const [scanPin, setScanPin] = useState("");
+  const [scanUnlocked, setScanUnlocked] = useState(false);
+  const [pinError, setPinError] = useState(false);
+  const SCAN_PIN = "3541";
+  
+  const handlePinSubmit = () => {
+    if (scanPin === SCAN_PIN) {
+      setScanUnlocked(true);
+      setPinError(false);
+    } else {
+      setPinError(true);
+      setScanPin("");
+    }
+  };
+  
+  const handleScanDialogClose = (open: boolean) => {
+    setScanDialogOpen(open);
+    if (!open) {
+      // Reset PIN state when dialog closes
+      setScanPin("");
+      setScanUnlocked(false);
+      setPinError(false);
+    }
+  };
 
   // Extract filter values from URL state
   const filterCity = filters.city || "";
@@ -257,16 +283,52 @@ export default function Dashboard() {
               </a>
             </Button>
             
-            <Dialog open={scanDialogOpen} onOpenChange={setScanDialogOpen}>
+            <Dialog open={scanDialogOpen} onOpenChange={handleScanDialogClose}>
               <DialogTrigger asChild>
                 <Button data-testid="button-new-scan">
-                  <Zap className="h-4 w-4 mr-1" /> New Scan
+                  <Lock className="h-4 w-4 mr-1" /> New Scan
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Start Business Scan</DialogTitle>
+                  <DialogTitle>{scanUnlocked ? "Start Business Scan" : "Enter PIN to Scan"}</DialogTitle>
                 </DialogHeader>
+                
+                {!scanUnlocked ? (
+                  <div className="space-y-4 py-4">
+                    <div className="text-center mb-4">
+                      <Lock className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        Scanning requires API credits. Enter the security PIN to continue.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="scan-pin">Security PIN</Label>
+                      <Input 
+                        id="scan-pin"
+                        type="password"
+                        placeholder="Enter 4-digit PIN"
+                        value={scanPin}
+                        onChange={(e) => setScanPin(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
+                        maxLength={4}
+                        className={pinError ? "border-red-500" : ""}
+                        data-testid="input-scan-pin"
+                      />
+                      {pinError && (
+                        <p className="text-sm text-red-500">Incorrect PIN. Please try again.</p>
+                      )}
+                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={handlePinSubmit}
+                      disabled={scanPin.length < 4}
+                      data-testid="button-unlock-scan"
+                    >
+                      <Lock className="h-4 w-4 mr-1" /> Unlock Scan
+                    </Button>
+                  </div>
+                ) : (
                 <Tabs defaultValue="single" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="single" data-testid="tab-single-scan">Single Scan</TabsTrigger>
@@ -408,6 +470,7 @@ export default function Dashboard() {
                     </Button>
                   </TabsContent>
                 </Tabs>
+                )}
               </DialogContent>
             </Dialog>
           </div>
