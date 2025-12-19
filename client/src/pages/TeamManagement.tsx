@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Users, Mail, Plus, Copy, Trash2, Clock, CheckCircle, XCircle, 
   Shield, User, Activity, Loader2, RefreshCw, ChevronLeft
@@ -57,19 +59,35 @@ interface ActivityLogEntry {
 
 export default function TeamManagement() {
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("team_member");
   const [inviteExpiry, setInviteExpiry] = useState("7");
 
+  // Redirect non-admins away from team management
+  useEffect(() => {
+    if (!authLoading && user && user.role !== 'admin') {
+      toast({
+        title: "Access Denied",
+        description: "Only admins can access team management",
+        variant: "destructive"
+      });
+      setLocation("/");
+    }
+  }, [user, authLoading, setLocation, toast]);
+
   // Fetch team members
   const { data: members, isLoading: loadingMembers } = useQuery<TeamMember[]>({
     queryKey: ["/api/team/members"],
+    enabled: user?.role === 'admin',
   });
 
   // Fetch invitations
   const { data: invitations, isLoading: loadingInvitations } = useQuery<TeamInvitation[]>({
     queryKey: ["/api/team/invites"],
+    enabled: user?.role === 'admin',
   });
 
   // Fetch activity log
