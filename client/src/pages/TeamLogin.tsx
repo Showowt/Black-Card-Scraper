@@ -225,10 +225,10 @@ export default function TeamLogin() {
                   <Label htmlFor="accessCode">Team Access Code</Label>
                   <Button
                     type="button"
-                    variant="link"
+                    variant="ghost"
                     size="sm"
                     onClick={goBack}
-                    className="text-xs h-auto p-0"
+                    className="text-xs"
                   >
                     <ArrowLeft className="h-3 w-3 mr-1" />
                     Change email
@@ -273,10 +273,10 @@ export default function TeamLogin() {
                   <Label htmlFor="password">Password</Label>
                   <Button
                     type="button"
-                    variant="link"
+                    variant="ghost"
                     size="sm"
                     onClick={goBack}
-                    className="text-xs h-auto p-0"
+                    className="text-xs"
                   >
                     <ArrowLeft className="h-3 w-3 mr-1" />
                     Change email
