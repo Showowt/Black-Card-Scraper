@@ -97,6 +97,125 @@ export async function registerRoutes(
 
   // Team Authentication Routes
   
+  // Pre-defined team members
+  const TEAM_MEMBERS = [
+    { email: 'machinemindconsulting@gmail.com', firstName: 'Phil', lastName: 'McGill', role: 'admin' },
+    { email: 'sesandoval702@gmail.com', firstName: 'Sergio', lastName: 'Sandoval', role: 'team_member' },
+    { email: 'camcorreaauto@hotmail.com', firstName: 'Cam', lastName: 'Correa', role: 'team_member' },
+    { email: 'alex.andrade2466@gmail.com', firstName: 'Alex', lastName: 'Andrade', role: 'team_member' },
+  ];
+
+  // Seed team members (auto-run on server start)
+  async function seedTeamMembers() {
+    for (const member of TEAM_MEMBERS) {
+      const existing = await storage.getUserByEmail(member.email);
+      if (!existing) {
+        const userId = cryptoRandomString({ length: 24 });
+        await storage.upsertUser({
+          id: userId,
+          email: member.email,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          role: member.role,
+          authProvider: 'email',
+          passwordHash: null, // Will be set on first login
+          isActive: true,
+        });
+        console.log(`Seeded team member: ${member.email}`);
+      }
+    }
+  }
+  
+  // Run seed on startup
+  seedTeamMembers().catch(err => console.error("Error seeding team members:", err));
+
+  // Check if email is a pre-approved team member
+  app.post('/api/team/check-email', async (req: any, res) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+      const user = await storage.getUserByEmail(normalizedEmail);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Email not found. Contact admin for access." });
+      }
+
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Account is disabled" });
+      }
+
+      // Check if password is already set
+      const needsPasswordSetup = !user.passwordHash;
+      
+      res.json({ 
+        exists: true, 
+        needsPasswordSetup,
+        firstName: user.firstName,
+        role: user.role
+      });
+    } catch (error) {
+      console.error("Check email error:", error);
+      res.status(500).json({ message: "Failed to check email" });
+    }
+  });
+
+  // Set password for first-time users
+  app.post('/api/team/setup-password', async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+      const user = await storage.getUserByEmail(normalizedEmail);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Email not found" });
+      }
+
+      if (user.passwordHash) {
+        return res.status(400).json({ message: "Password already set. Please login instead." });
+      }
+
+      // Hash and save password
+      const passwordHash = await bcrypt.hash(password, 10);
+      await storage.updateUser(user.id, { 
+        passwordHash,
+        lastLoginAt: new Date()
+      });
+
+      // Log activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: 'password_setup',
+        entityType: 'user',
+        entityId: user.id,
+        ipAddress: req.ip,
+      });
+
+      // Set session
+      req.login({ claims: { sub: user.id, email: user.email } }, (err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Password set but login failed" });
+        }
+        res.json({ user, message: "Password set successfully" });
+      });
+    } catch (error) {
+      console.error("Password setup error:", error);
+      res.status(500).json({ message: "Failed to set password" });
+    }
+  });
+
   // Team member login (email + password)
   app.post('/api/team/login', async (req: any, res) => {
     try {
@@ -106,9 +225,15 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const user = await storage.getUserByEmail(email);
-      if (!user || !user.passwordHash || user.authProvider !== 'email') {
+      const normalizedEmail = email.toLowerCase().trim();
+      const user = await storage.getUserByEmail(normalizedEmail);
+      
+      if (!user) {
         return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      if (!user.passwordHash) {
+        return res.status(400).json({ message: "Please set up your password first", needsPasswordSetup: true });
       }
 
       if (!user.isActive) {
@@ -574,7 +699,25 @@ export async function registerRoutes(
     }
   });
 
-  app.delete('/api/businesses/:id', isAuthenticated, async (req: any, res) => {
+  // Admin-only middleware
+  const isAdmin = async (req: any, res: any, next: any) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      next();
+    } catch (error) {
+      console.error("Admin check error:", error);
+      res.status(500).json({ message: "Authorization failed" });
+    }
+  };
+
+  app.delete('/api/businesses/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteBusiness(req.params.id);
       res.json({ message: "Business deleted" });
@@ -596,7 +739,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post('/api/scan', isAuthenticated, async (req: any, res) => {
+  app.post('/api/scan', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { city, category, enableAI = true, maxResults = 20 } = req.body;
@@ -642,7 +785,7 @@ export async function registerRoutes(
   });
 
   // Batch scan endpoint - scan multiple cities and categories at once
-  app.post('/api/scan/batch', isAuthenticated, async (req: any, res) => {
+  app.post('/api/scan/batch', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { cities, categories, enableAI = true, maxResults = 20 } = req.body;
@@ -982,8 +1125,8 @@ export async function registerRoutes(
     }
   });
 
-  // Delete outreach campaign
-  app.delete('/api/outreach/:id', isAuthenticated, async (req: any, res) => {
+  // Delete outreach campaign (admin only)
+  app.delete('/api/outreach/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteOutreachCampaign(req.params.id);
       res.json({ success: true });
@@ -2131,7 +2274,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete('/api/events/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/events/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteEvent(req.params.id);
       res.json({ message: "Event deleted" });
@@ -2208,7 +2351,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete('/api/intent-signals/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/intent-signals/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteIntentSignal(req.params.id);
       res.json({ message: "Intent signal deleted" });
@@ -2313,7 +2456,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete('/api/venue-monitors/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/venue-monitors/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteVenueMonitor(req.params.id);
       res.json({ message: "Venue monitor deleted" });
@@ -2478,7 +2621,7 @@ OUTPUT ONLY VALID JSON.`;
     }
   });
 
-  app.delete('/api/content/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/content/:id', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       await storage.deleteAuthorityContent(req.params.id);
       res.json({ message: "Content deleted" });
