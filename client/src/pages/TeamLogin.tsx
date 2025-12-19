@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Mail, Lock, ArrowRight, Loader2, ArrowLeft, Shield, Key } from "lucide-react";
 
 type LoginStep = "email" | "password" | "accessCode" | "setup";
@@ -72,7 +72,8 @@ export default function TeamLogin() {
     mutationFn: async (data: { email: string; password: string }) => {
       return await apiRequest("POST", "/api/team/login", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({ title: "Login successful", description: "Welcome back!" });
       setLocation("/");
     },
@@ -90,7 +91,8 @@ export default function TeamLogin() {
     mutationFn: async (data: { email: string; password: string; setupToken: string }) => {
       return await apiRequest("POST", "/api/team/setup-password", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({ title: "Password set successfully", description: "You are now logged in!" });
       setLocation("/");
     },
