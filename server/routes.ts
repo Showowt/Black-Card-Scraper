@@ -11,6 +11,7 @@ import {
   COLOMBIA_STATS, VERTICAL_TICKET_RANGES, COLOMBIA_PSYCHOLOGY_TRIGGERS, CONPES_POSITIONING,
   DECISION_MAKER_TYPES, BUYING_STYLES, PSYCHOLOGY_HOOKS, SIGNAL_OFFER_MATRIX,
   COLLECTION_MECHANISMS, BUYER_TYPES, URGENCY_LEVELS, AUTHORITY_LEVELS, BUDGET_LEVELS, OBJECTION_TYPES, CALL_DISPOSITIONS,
+  SCRIPT_CATEGORIES, ROLE_PERMISSIONS,
   type Business, type InsertBusiness, type OutreachCampaign,
   type Event, type InsertEvent, type IntentSignal, type InsertIntentSignal,
   type VenueMonitor, type InsertVenueMonitor, type InstagramPost, type InsertInstagramPost,
@@ -18,7 +19,8 @@ import {
   type BlackCardIntelligence, type DecisionMakerProfile, type ColombiaMarketIntel,
   insertEventSchema, insertIntentSignalSchema, insertVenueMonitorSchema, insertAuthorityContentSchema,
   insertGuestProfileSchema, insertGuestSignalSchema, insertGuestVipActivitySchema,
-  insertCallSessionSchema, insertCallObjectionSchema, insertCallPainPointSchema
+  insertCallSessionSchema, insertCallObjectionSchema, insertCallPainPointSchema,
+  insertSalesScriptSchema, insertUsageRecordSchema, insertUsageLimitSchema
 } from "@shared/schema";
 import OpenAI from "openai";
 import {
@@ -99,10 +101,11 @@ export async function registerRoutes(
   
   // Pre-defined team members
   const TEAM_MEMBERS = [
-    { email: 'machinemindconsulting@gmail.com', firstName: 'Phil', lastName: 'McGill', role: 'admin' },
-    { email: 'sesandoval702@gmail.com', firstName: 'Sergio', lastName: 'Sandoval', role: 'team_member' },
-    { email: 'camcorreaauto@hotmail.com', firstName: 'Cam', lastName: 'Correa', role: 'team_member' },
-    { email: 'alex.andrade2466@gmail.com', firstName: 'Alex', lastName: 'Andrade', role: 'team_member' },
+    { email: 'phil@machinemindconsulting.com', firstName: 'Phil', lastName: 'McGill', role: 'admin' },
+    { email: 'sergio@machinemindconsulting.com', firstName: 'Sergio', lastName: 'Sandoval', role: 'team_member' },
+    { email: 'alex@machinemindconsulting.com', firstName: 'Alex', lastName: 'Andrade', role: 'rep' },
+    { email: 'cam@machinemindconsulting.com', firstName: 'Cam', lastName: 'Correa', role: 'rep' },
+    { email: 'dezmin@machinemindconsulting.com', firstName: 'Dezmin', lastName: 'Staley', role: 'rep' },
   ];
 
   // Seed team members (auto-run on server start)
@@ -3405,6 +3408,171 @@ Respond in JSON format with these exact keys:
     } catch (error) {
       console.error("Error creating pain point:", error);
       res.status(500).json({ message: "Failed to create pain point" });
+    }
+  });
+
+  // ========== SALES SCRIPTS ROUTES ==========
+
+  app.get('/api/scripts', isAuthenticated, async (req: any, res) => {
+    try {
+      const { category, businessType, search } = req.query;
+      const scripts = await storage.getSalesScripts({ category, businessType, search });
+      res.json(scripts);
+    } catch (error) {
+      console.error("Error getting scripts:", error);
+      res.status(500).json({ message: "Failed to get scripts" });
+    }
+  });
+
+  app.get('/api/scripts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const script = await storage.getSalesScript(req.params.id);
+      if (!script) {
+        return res.status(404).json({ message: "Script not found" });
+      }
+      res.json(script);
+    } catch (error) {
+      console.error("Error getting script:", error);
+      res.status(500).json({ message: "Failed to get script" });
+    }
+  });
+
+  app.post('/api/scripts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validated = insertSalesScriptSchema.parse({ ...req.body, createdBy: userId });
+      const script = await storage.createSalesScript(validated);
+      res.json(script);
+    } catch (error: any) {
+      console.error("Error creating script:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create script" });
+    }
+  });
+
+  app.patch('/api/scripts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const script = await storage.updateSalesScript(req.params.id, req.body);
+      if (!script) {
+        return res.status(404).json({ message: "Script not found" });
+      }
+      res.json(script);
+    } catch (error) {
+      console.error("Error updating script:", error);
+      res.status(500).json({ message: "Failed to update script" });
+    }
+  });
+
+  app.delete('/api/scripts/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      await storage.deleteSalesScript(req.params.id);
+      res.json({ message: "Script deleted" });
+    } catch (error) {
+      console.error("Error deleting script:", error);
+      res.status(500).json({ message: "Failed to delete script" });
+    }
+  });
+
+  app.post('/api/scripts/:id/copy', isAuthenticated, async (req: any, res) => {
+    try {
+      await storage.incrementScriptUsage(req.params.id);
+      res.json({ message: "Usage tracked" });
+    } catch (error) {
+      console.error("Error tracking script usage:", error);
+      res.status(500).json({ message: "Failed to track usage" });
+    }
+  });
+
+  // ========== COST CONTROLS & USAGE ROUTES ==========
+
+  app.get('/api/usage', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user.claims;
+      const role = user.metadata?.role || 'rep';
+      
+      // Only admin can see all usage, others see their own
+      const userId = role === 'admin' ? req.query.userId : user.sub;
+      const { startDate, endDate, actionType } = req.query;
+      
+      const records = await storage.getUsageRecords({ 
+        userId, 
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        actionType 
+      });
+      res.json(records);
+    } catch (error) {
+      console.error("Error getting usage records:", error);
+      res.status(500).json({ message: "Failed to get usage records" });
+    }
+  });
+
+  app.get('/api/usage/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user.claims;
+      const role = user.metadata?.role || 'rep';
+      
+      if (role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const stats = await storage.getUsageStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting usage stats:", error);
+      res.status(500).json({ message: "Failed to get usage stats" });
+    }
+  });
+
+  app.get('/api/usage/limits', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limits = await storage.getUsageLimits(userId);
+      res.json(limits);
+    } catch (error) {
+      console.error("Error getting usage limits:", error);
+      res.status(500).json({ message: "Failed to get usage limits" });
+    }
+  });
+
+  app.post('/api/usage/limits', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const validated = insertUsageLimitSchema.parse(req.body);
+      const limit = await storage.createUsageLimit(validated);
+      res.json(limit);
+    } catch (error: any) {
+      console.error("Error creating usage limit:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create usage limit" });
+    }
+  });
+
+  app.patch('/api/usage/limits/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const limit = await storage.updateUsageLimit(req.params.id, req.body);
+      if (!limit) {
+        return res.status(404).json({ message: "Limit not found" });
+      }
+      res.json(limit);
+    } catch (error) {
+      console.error("Error updating usage limit:", error);
+      res.status(500).json({ message: "Failed to update usage limit" });
+    }
+  });
+
+  // Config endpoint to include script categories
+  app.get('/api/config/scripts', isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({
+        categories: SCRIPT_CATEGORIES,
+        businessTypes: CATEGORIES,
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get config" });
     }
   });
 

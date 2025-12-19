@@ -23,6 +23,8 @@ import CallCompanion from "@/pages/CallCompanion";
 import TeamLogin from "@/pages/TeamLogin";
 import TeamManagement from "@/pages/TeamManagement";
 import FollowUps from "@/pages/FollowUps";
+import Scripts from "@/pages/Scripts";
+import CostControls from "@/pages/CostControls";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -61,6 +63,8 @@ function Router() {
       {isAuthenticated && <Route path="/call-companion" component={CallCompanion} />}
       {isAuthenticated && <Route path="/team" component={TeamManagement} />}
       {isAuthenticated && <Route path="/follow-ups" component={FollowUps} />}
+      {isAuthenticated && <Route path="/scripts" component={Scripts} />}
+      {isAuthenticated && <Route path="/cost-controls" component={CostControls} />}
       
       <Route component={NotFound} />
     </Switch>

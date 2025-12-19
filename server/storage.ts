@@ -17,11 +17,15 @@ import {
   type CallSession, type InsertCallSession,
   type CallObjection, type InsertCallObjection,
   type CallPainPoint, type InsertCallPainPoint,
+  type SalesScript, type InsertSalesScript,
+  type UsageRecord, type InsertUsageRecord,
+  type UsageLimit, type InsertUsageLimit,
   users, businesses, scans, outreachCampaigns,
   events, intentSignals, venueMonitors, instagramPosts, authorityContent,
   teamInvitations, magicLinkTokens, activityLog,
   guestProfiles, guestSignals, guestVipActivity,
-  callSessions, callObjections, callPainPoints
+  callSessions, callObjections, callPainPoints,
+  salesScripts, usageRecords, usageLimits
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, like, and, or, gte, lte, sql, count, isNull, isNotNull } from "drizzle-orm";
@@ -134,6 +138,22 @@ export interface IStorage {
   updateCallObjection(id: string, addressed: boolean): Promise<CallObjection | undefined>;
   getCallPainPoints(sessionId: string): Promise<CallPainPoint[]>;
   createCallPainPoint(painPoint: InsertCallPainPoint): Promise<CallPainPoint>;
+  
+  // Sales Scripts
+  getSalesScripts(filters?: ScriptFilters): Promise<SalesScript[]>;
+  getSalesScript(id: string): Promise<SalesScript | undefined>;
+  createSalesScript(script: InsertSalesScript): Promise<SalesScript>;
+  updateSalesScript(id: string, updates: Partial<InsertSalesScript>): Promise<SalesScript | undefined>;
+  deleteSalesScript(id: string): Promise<void>;
+  incrementScriptUsage(id: string): Promise<void>;
+  
+  // Usage Tracking
+  getUsageRecords(filters?: UsageFilters): Promise<UsageRecord[]>;
+  createUsageRecord(record: InsertUsageRecord): Promise<UsageRecord>;
+  getUsageLimits(userId: string): Promise<UsageLimit[]>;
+  createUsageLimit(limit: InsertUsageLimit): Promise<UsageLimit>;
+  updateUsageLimit(id: string, updates: Partial<InsertUsageLimit>): Promise<UsageLimit | undefined>;
+  getUsageStats(): Promise<UsageStats>;
 }
 
 export interface BusinessFilters {
@@ -274,6 +294,28 @@ export interface CallSessionFilters {
   status?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface ScriptFilters {
+  category?: string;
+  businessType?: string;
+  search?: string;
+  limit?: number;
+}
+
+export interface UsageFilters {
+  userId?: string;
+  actionType?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+}
+
+export interface UsageStats {
+  totalRecords: number;
+  totalCost: number;
+  byActionType: Record<string, { count: number; cost: number }>;
+  byUser: Record<string, { count: number; cost: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1031,6 +1073,111 @@ export class DatabaseStorage implements IStorage {
   async createCallPainPoint(painPoint: InsertCallPainPoint): Promise<CallPainPoint> {
     const [created] = await db.insert(callPainPoints).values(painPoint).returning();
     return created;
+  }
+
+  // Sales Scripts
+  async getSalesScripts(filters?: ScriptFilters): Promise<SalesScript[]> {
+    const conditions = [];
+    if (filters?.category) conditions.push(eq(salesScripts.category, filters.category));
+    if (filters?.businessType) conditions.push(eq(salesScripts.businessType, filters.businessType));
+    if (filters?.search) conditions.push(like(salesScripts.name, `%${filters.search}%`));
+    conditions.push(eq(salesScripts.isActive, true));
+    let query = db.select().from(salesScripts);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(salesScripts.usageCount)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    return await query;
+  }
+
+  async getSalesScript(id: string): Promise<SalesScript | undefined> {
+    const [script] = await db.select().from(salesScripts).where(eq(salesScripts.id, id));
+    return script;
+  }
+
+  async createSalesScript(script: InsertSalesScript): Promise<SalesScript> {
+    const [created] = await db.insert(salesScripts).values(script).returning();
+    return created;
+  }
+
+  async updateSalesScript(id: string, updates: Partial<InsertSalesScript>): Promise<SalesScript | undefined> {
+    const [updated] = await db.update(salesScripts).set({ ...updates, updatedAt: new Date() }).where(eq(salesScripts.id, id)).returning();
+    return updated;
+  }
+
+  async deleteSalesScript(id: string): Promise<void> {
+    await db.update(salesScripts).set({ isActive: false }).where(eq(salesScripts.id, id));
+  }
+
+  async incrementScriptUsage(id: string): Promise<void> {
+    await db.update(salesScripts).set({ 
+      usageCount: sql`${salesScripts.usageCount} + 1` 
+    }).where(eq(salesScripts.id, id));
+  }
+
+  // Usage Tracking
+  async getUsageRecords(filters?: UsageFilters): Promise<UsageRecord[]> {
+    const conditions = [];
+    if (filters?.userId) conditions.push(eq(usageRecords.userId, filters.userId));
+    if (filters?.actionType) conditions.push(eq(usageRecords.actionType, filters.actionType));
+    if (filters?.startDate) conditions.push(gte(usageRecords.createdAt, filters.startDate));
+    if (filters?.endDate) conditions.push(lte(usageRecords.createdAt, filters.endDate));
+    let query = db.select().from(usageRecords);
+    if (conditions.length > 0) query = query.where(and(...conditions)) as any;
+    query = query.orderBy(desc(usageRecords.createdAt)) as any;
+    if (filters?.limit) query = query.limit(filters.limit) as any;
+    return await query;
+  }
+
+  async createUsageRecord(record: InsertUsageRecord): Promise<UsageRecord> {
+    const [created] = await db.insert(usageRecords).values(record).returning();
+    return created;
+  }
+
+  async getUsageLimits(userId: string): Promise<UsageLimit[]> {
+    return await db.select().from(usageLimits).where(eq(usageLimits.userId, userId));
+  }
+
+  async createUsageLimit(limit: InsertUsageLimit): Promise<UsageLimit> {
+    const [created] = await db.insert(usageLimits).values(limit).returning();
+    return created;
+  }
+
+  async updateUsageLimit(id: string, updates: Partial<InsertUsageLimit>): Promise<UsageLimit | undefined> {
+    const [updated] = await db.update(usageLimits).set({ ...updates, updatedAt: new Date() }).where(eq(usageLimits.id, id)).returning();
+    return updated;
+  }
+
+  async getUsageStats(): Promise<UsageStats> {
+    const records = await db.select().from(usageRecords);
+    const byActionType: Record<string, { count: number; cost: number }> = {};
+    const byUser: Record<string, { count: number; cost: number }> = {};
+    let totalCost = 0;
+    
+    for (const record of records) {
+      const cost = record.cost || 0;
+      totalCost += cost;
+      
+      if (!byActionType[record.actionType]) {
+        byActionType[record.actionType] = { count: 0, cost: 0 };
+      }
+      byActionType[record.actionType].count++;
+      byActionType[record.actionType].cost += cost;
+      
+      if (record.userId) {
+        if (!byUser[record.userId]) {
+          byUser[record.userId] = { count: 0, cost: 0 };
+        }
+        byUser[record.userId].count++;
+        byUser[record.userId].cost += cost;
+      }
+    }
+    
+    return {
+      totalRecords: records.length,
+      totalCost,
+      byActionType,
+      byUser,
+    };
   }
 }
 
