@@ -379,14 +379,16 @@ export default function VenueMonitors() {
                               </Button>
                             </a>
                           )}
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteVenueMutation.mutate(venue.id)}
-                            data-testid={`button-delete-${venue.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteVenueMutation.mutate(venue.id)}
+                              data-testid={`button-delete-${venue.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

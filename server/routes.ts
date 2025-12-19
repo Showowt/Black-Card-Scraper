@@ -129,10 +129,18 @@ export async function registerRoutes(
   // Run seed on startup
   seedTeamMembers().catch(err => console.error("Error seeding team members:", err));
 
+  // In-memory token store for password setup (expires after 10 minutes)
+  const setupTokens = new Map<string, { email: string; createdAt: number }>();
+  const SETUP_TOKEN_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
+  
+  // Team access code required for password setup (shared by admin out-of-band)
+  // Default is BLACKCARD2024, can be overridden via environment variable
+  const TEAM_ACCESS_CODE = process.env.TEAM_ACCESS_CODE || "BLACKCARD2024";
+
   // Check if email is a pre-approved team member
   app.post('/api/team/check-email', async (req: any, res) => {
     try {
-      const { email } = req.body;
+      const { email, accessCode } = req.body;
       if (!email) {
         return res.status(400).json({ message: "Email is required" });
       }
@@ -151,11 +159,37 @@ export async function registerRoutes(
       // Check if password is already set
       const needsPasswordSetup = !user.passwordHash;
       
+      // If needs password setup, require team access code and generate a secure token
+      let setupToken: string | undefined;
+      if (needsPasswordSetup) {
+        // Verify team access code for new password setup
+        if (!accessCode || accessCode.toUpperCase() !== TEAM_ACCESS_CODE) {
+          // Don't reveal whether code is wrong or missing - just indicate access code needed
+          return res.json({
+            exists: true,
+            needsPasswordSetup: true,
+            requiresAccessCode: true,
+            firstName: user.firstName,
+          });
+        }
+        
+        setupToken = cryptoRandomString({ length: 32 });
+        setupTokens.set(setupToken, { email: normalizedEmail, createdAt: Date.now() });
+        
+        // Clean up expired tokens
+        for (const [token, data] of setupTokens.entries()) {
+          if (Date.now() - data.createdAt > SETUP_TOKEN_EXPIRY_MS) {
+            setupTokens.delete(token);
+          }
+        }
+      }
+      
       res.json({ 
         exists: true, 
         needsPasswordSetup,
         firstName: user.firstName,
-        role: user.role
+        role: user.role,
+        setupToken, // Only included if access code verified
       });
     } catch (error) {
       console.error("Check email error:", error);
@@ -163,20 +197,38 @@ export async function registerRoutes(
     }
   });
 
-  // Set password for first-time users
+  // Set password for first-time users (requires valid setup token)
   app.post('/api/team/setup-password', async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, setupToken } = req.body;
       
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!email || !password || !setupToken) {
+        return res.status(400).json({ message: "Email, password, and setup token are required" });
       }
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
       }
 
+      // Validate setup token
+      const tokenData = setupTokens.get(setupToken);
+      if (!tokenData) {
+        return res.status(401).json({ message: "Invalid or expired setup token. Please start over." });
+      }
+
+      // Check token expiration
+      if (Date.now() - tokenData.createdAt > SETUP_TOKEN_EXPIRY_MS) {
+        setupTokens.delete(setupToken);
+        return res.status(401).json({ message: "Setup token expired. Please start over." });
+      }
+
       const normalizedEmail = email.toLowerCase().trim();
+      
+      // Verify token matches the email
+      if (tokenData.email !== normalizedEmail) {
+        return res.status(401).json({ message: "Setup token does not match email." });
+      }
+
       const user = await storage.getUserByEmail(normalizedEmail);
       
       if (!user) {
@@ -186,6 +238,9 @@ export async function registerRoutes(
       if (user.passwordHash) {
         return res.status(400).json({ message: "Password already set. Please login instead." });
       }
+
+      // Delete the token (one-time use)
+      setupTokens.delete(setupToken);
 
       // Hash and save password
       const passwordHash = await bcrypt.hash(password, 10);

@@ -329,9 +329,9 @@ export default function Events() {
                           {event.isFlagged && <Flag className="h-4 w-4 text-yellow-500" />}
                           <div>
                             <div className="font-medium max-w-[200px] truncate">{event.name}</div>
-                            {event.venue && getVenueName(event.venue) && (
-                              <div className="text-xs text-muted-foreground">{getVenueName(event.venue)}</div>
-                            )}
+                            {event.venue && getVenueName(event.venue) ? (
+                              <div className="text-xs text-muted-foreground">{String(getVenueName(event.venue))}</div>
+                            ) : null}
                           </div>
                         </div>
                       </TableCell>
@@ -390,14 +390,16 @@ export default function Events() {
                               </a>
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteEventMutation.mutate(event.id)}
-                            data-testid={`button-delete-${event.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteEventMutation.mutate(event.id)}
+                              data-testid={`button-delete-${event.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

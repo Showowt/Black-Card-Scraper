@@ -382,14 +382,16 @@ export default function AuthorityContentPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteContentMutation.mutate(content.id)}
-                            data-testid={`button-delete-${content.id}`}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteContentMutation.mutate(content.id)}
+                              data-testid={`button-delete-${content.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

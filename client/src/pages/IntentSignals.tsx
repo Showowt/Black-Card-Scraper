@@ -436,14 +436,16 @@ export default function IntentSignals() {
                             >
                               <CheckCircle className={`h-4 w-4 ${signal.isProcessed ? 'text-green-500' : ''}`} />
                             </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => deleteSignalMutation.mutate(signal.id)}
-                              data-testid={`button-delete-${signal.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            {user?.role === 'admin' && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => deleteSignalMutation.mutate(signal.id)}
+                                data-testid={`button-delete-${signal.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>

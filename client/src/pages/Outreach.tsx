@@ -39,6 +39,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 
 export default function Outreach() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignWithBusiness | null>(null);
   const [batchDialogOpen, setBatchDialogOpen] = useState(false);
@@ -463,15 +464,17 @@ export default function Outreach() {
                       <Copy className="h-4 w-4 mr-2" />
                       Copy All
                     </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="icon"
-                      onClick={() => deleteCampaignMutation.mutate(selectedCampaign.id)}
-                      disabled={deleteCampaignMutation.isPending}
-                      data-testid="button-delete-campaign"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {user?.role === 'admin' && (
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        onClick={() => deleteCampaignMutation.mutate(selectedCampaign.id)}
+                        disabled={deleteCampaignMutation.isPending}
+                        data-testid="button-delete-campaign"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
 
                   {selectedCampaign.business?.email && (
