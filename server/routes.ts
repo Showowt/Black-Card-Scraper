@@ -815,7 +815,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post('/api/scan', isAuthenticated, isAdmin, async (req: any, res) => {
+  app.post('/api/scan', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { city, category, enableAI = true, maxResults = 20 } = req.body;
@@ -861,7 +861,7 @@ export async function registerRoutes(
   });
 
   // Batch scan endpoint - scan multiple cities and categories at once
-  app.post('/api/scan/batch', isAuthenticated, isAdmin, async (req: any, res) => {
+  app.post('/api/scan/batch', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { cities, categories, enableAI = true, maxResults = 20 } = req.body;
