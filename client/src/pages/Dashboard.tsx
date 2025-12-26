@@ -754,7 +754,7 @@ export default function Dashboard() {
                         <div className="flex items-center gap-1">
                           {business.phone && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                              <a href={`tel:${business.phone}`}><Phone className="h-3 w-3" /></a>
+                              <a href={`https://wa.me/${business.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener" title="Open in WhatsApp"><Phone className="h-3 w-3" /></a>
                             </Button>
                           )}
                           {business.email && (

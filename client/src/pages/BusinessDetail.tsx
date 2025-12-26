@@ -639,8 +639,10 @@ export default function BusinessDetail() {
                   <div className="flex items-start gap-3">
                     <Phone className="h-4 w-4 mt-1 text-muted-foreground" />
                     <div>
-                      <div className="text-sm text-muted-foreground">Phone</div>
-                      <a href={`tel:${business.phone}`} className="hover:underline" data-testid="text-phone">{business.phone}</a>
+                      <div className="text-sm text-muted-foreground">Phone (WhatsApp)</div>
+                      <a href={`https://wa.me/${business.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener" className="hover:underline flex items-center gap-1" data-testid="text-phone">
+                        {business.phone} <ExternalLink className="h-3 w-3" />
+                      </a>
                     </div>
                   </div>
                 )}
