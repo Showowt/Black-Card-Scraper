@@ -3680,30 +3680,55 @@ async function processScan(
   maxResults: number
 ) {
   try {
-    // Standard nearby search
-    let places = await searchGooglePlaces(cityData, categoryData, maxResults);
+    let places: any[] = [];
     
-    // For categories with limited Places API coverage, also do text searches
-    const textSearchQueries = TEXT_SEARCH_SUPPLEMENTS[categoryData.value];
-    if (textSearchQueries && textSearchQueries.length > 0) {
-      console.log(`Running ${textSearchQueries.length} text searches for ${categoryData.value} in ${cityData.label}`);
+    // Check if this category should use text search only (unsupported Google Places types)
+    const isTextSearchOnly = TEXT_SEARCH_ONLY_CATEGORIES.includes(categoryData.value);
+    
+    if (isTextSearchOnly) {
+      // For categories with unsupported Place types, use text search exclusively
+      console.log(`Category ${categoryData.value} uses text search only (unsupported type)`);
+      const textSearchQueries = ELITE_SEARCH_TERMS[categoryData.value] || TEXT_SEARCH_SUPPLEMENTS[categoryData.value];
       
-      for (const query of textSearchQueries.slice(0, 3)) { // Limit to 3 queries to control costs
-        const textResults = await textSearchGooglePlaces(cityData, query, 5);
+      if (textSearchQueries && textSearchQueries.length > 0) {
+        console.log(`Running ${Math.min(textSearchQueries.length, 5)} text searches for ${categoryData.value} in ${cityData.label}`);
+        
+        for (const query of textSearchQueries.slice(0, 5)) { // Use up to 5 queries for text-only categories
+          const textResults = await textSearchGooglePlaces(cityData, query, Math.ceil(maxResults / 3));
+          places = places.concat(textResults);
+          await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
+        }
+      } else {
+        // Fallback: search with category label
+        const textResults = await textSearchGooglePlaces(cityData, categoryData.label, maxResults);
         places = places.concat(textResults);
-        await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
       }
+    } else {
+      // Standard nearby search for supported types
+      places = await searchGooglePlaces(cityData, categoryData, maxResults);
       
-      // Deduplicate by place ID
-      const seenIds = new Set<string>();
-      places = places.filter((p: any) => {
-        if (!p.id || seenIds.has(p.id)) return false;
-        seenIds.add(p.id);
-        return true;
-      });
-      
-      console.log(`Found ${places.length} unique places after text search for ${categoryData.value}`);
+      // Optionally supplement with text searches for additional coverage
+      const textSearchQueries = TEXT_SEARCH_SUPPLEMENTS[categoryData.value];
+      if (textSearchQueries && textSearchQueries.length > 0) {
+        console.log(`Supplementing with ${textSearchQueries.length} text searches for ${categoryData.value} in ${cityData.label}`);
+        
+        for (const query of textSearchQueries.slice(0, 3)) { // Limit to 3 queries to control costs
+          const textResults = await textSearchGooglePlaces(cityData, query, 5);
+          places = places.concat(textResults);
+          await new Promise(resolve => setTimeout(resolve, 200)); // Rate limiting
+        }
+      }
     }
+    
+    // Deduplicate by place ID
+    const seenIds = new Set<string>();
+    places = places.filter((p: any) => {
+      if (!p.id || seenIds.has(p.id)) return false;
+      seenIds.add(p.id);
+      return true;
+    });
+    
+    console.log(`Found ${places.length} unique places for ${categoryData.value} in ${cityData.label}`);
     
     await storage.updateScan(scanId, { totalFound: places.length });
 
