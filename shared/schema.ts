@@ -2799,3 +2799,165 @@ export type InsertUsageRecord = z.infer<typeof insertUsageRecordSchema>;
 export type UsageRecord = typeof usageRecords.$inferSelect;
 export type InsertUsageLimit = z.infer<typeof insertUsageLimitSchema>;
 export type UsageLimit = typeof usageLimits.$inferSelect;
+
+// MachineMind Colombia Pricing Strategy
+export const PRICING_TIERS = [
+  {
+    value: "despegue",
+    label: "Despegue",
+    labelEn: "Starter",
+    monthlyCOP: 990000,
+    monthlyUSD: 240,
+    setupCOP: 2900000,
+    setupUSD: 700,
+    annualCOP: 9900000,
+    annualUSD: 2400,
+    annualSetupDiscount: 0.5,
+    annualPrepayDiscount: 0.17,
+    inquiryLimit: "0-500",
+    target: "Solo operators",
+    features: ["WhatsApp AI Concierge", "Basic Lead Recovery", "Review Amplifier"],
+  },
+  {
+    value: "crecimiento",
+    label: "Crecimiento",
+    labelEn: "Growth",
+    monthlyCOP: 2400000,
+    monthlyUSD: 580,
+    setupCOP: 5900000,
+    setupUSD: 1430,
+    annualCOP: 24000000,
+    annualUSD: 5800,
+    annualSetupDiscount: 0.5,
+    annualPrepayDiscount: 0.17,
+    inquiryLimit: "500-2,000",
+    target: "Growing teams",
+    features: ["WhatsApp AI Concierge", "Lead Recovery Engine", "Review Amplifier", "Priority Support"],
+  },
+  {
+    value: "escala",
+    label: "Escala",
+    labelEn: "Scale",
+    monthlyCOP: 4500000,
+    monthlyUSD: 1090,
+    setupCOP: 9900000,
+    setupUSD: 2400,
+    annualCOP: 45000000,
+    annualUSD: 10900,
+    annualSetupDiscount: 0.5,
+    annualPrepayDiscount: 0.17,
+    inquiryLimit: "2,000+",
+    target: "Multi-location",
+    features: ["WhatsApp AI Concierge", "Lead Recovery Engine", "Review Amplifier", "Booking Command Center", "Dedicated Success Manager"],
+  },
+  {
+    value: "empresa",
+    label: "Empresa",
+    labelEn: "Enterprise",
+    monthlyCOP: null,
+    monthlyUSD: 2000,
+    monthlyUSDMax: 6000,
+    setupCOP: null,
+    setupUSD: null,
+    annualCOP: null,
+    annualUSD: null,
+    annualSetupDiscount: 0.5,
+    annualPrepayDiscount: 0.17,
+    inquiryLimit: "Custom",
+    target: "Chains, franchises",
+    features: ["Full Platform Access", "Custom Integrations", "White Label Options", "Enterprise SLA", "Dedicated Team"],
+  },
+] as const;
+
+export const MACHINEMIND_PRODUCTS = [
+  {
+    value: "whatsapp_concierge",
+    label: "WhatsApp AI Concierge",
+    priority: 1,
+    description: "Universal need, 100% of verticals, immediate pain relief",
+    type: "core",
+  },
+  {
+    value: "lead_recovery",
+    label: "Lead Recovery Engine",
+    priority: 2,
+    description: "15-30% revenue unlock, easy ROI story",
+    type: "module",
+  },
+  {
+    value: "review_amplifier",
+    label: "Review Amplifier",
+    priority: 3,
+    description: "Compounds over time, low-touch after setup, retention play",
+    type: "module",
+  },
+  {
+    value: "booking_command",
+    label: "Booking Command Center",
+    priority: 4,
+    description: "Stickiness, Scale tier differentiator, management visibility",
+    type: "dashboard",
+  },
+] as const;
+
+export const VERTICAL_TIER_RECOMMENDATIONS: Record<string, { tier: string; priority: "A" | "B" | "C"; avgBookingCOP: number; breakEvenBookings: number; notes: string }> = {
+  concierge: { tier: "escala", priority: "A", avgBookingCOP: 200000000, breakEvenBookings: 0.02, notes: "$200M+ COP client value, 1 booking every 4 years breaks even" },
+  boat_charter: { tier: "crecimiento", priority: "A", avgBookingCOP: 40000000, breakEvenBookings: 0.06, notes: "$40M COP/booking, 1 booking every 16 months breaks even" },
+  villa_rental: { tier: "crecimiento", priority: "A", avgBookingCOP: 16000000, breakEvenBookings: 0.15, notes: "$16M COP/booking, 1 booking every 6 months breaks even" },
+  club: { tier: "crecimiento", priority: "A", avgBookingCOP: 25000000, breakEvenBookings: 0.10, notes: "$25M COP average, high volume" },
+  event_planner: { tier: "crecimiento", priority: "B", avgBookingCOP: 15000000, breakEvenBookings: 0.16, notes: "Long sales cycles but high value" },
+  hotel: { tier: "despegue", priority: "B", avgBookingCOP: 2000000, breakEvenBookings: 0.50, notes: "Volume play, upgrade to Crecimiento" },
+  photographer: { tier: "despegue", priority: "B", avgBookingCOP: 3000000, breakEvenBookings: 0.33, notes: "Clear ROI, growing market" },
+  videographer: { tier: "despegue", priority: "B", avgBookingCOP: 4000000, breakEvenBookings: 0.25, notes: "Premium content demand" },
+  restaurant: { tier: "despegue", priority: "C", avgBookingCOP: 200000, breakEvenBookings: 5, notes: "High inquiry volume, 1 booking every 20 months" },
+  tour_operator: { tier: "despegue", priority: "C", avgBookingCOP: 3500000, breakEvenBookings: 0.28, notes: "Many operators, 1 booking every 3.5 months" },
+  chef: { tier: "despegue", priority: "C", avgBookingCOP: 5000000, breakEvenBookings: 0.20, notes: "Growing segment" },
+  dj: { tier: "despegue", priority: "C", avgBookingCOP: 4000000, breakEvenBookings: 0.25, notes: "Event-driven demand" },
+  bar: { tier: "despegue", priority: "C", avgBookingCOP: 500000, breakEvenBookings: 2, notes: "High volume, lower ticket" },
+  cafe: { tier: "despegue", priority: "C", avgBookingCOP: 100000, breakEvenBookings: 10, notes: "Volume play" },
+  spa: { tier: "despegue", priority: "B", avgBookingCOP: 800000, breakEvenBookings: 1.25, notes: "Recurring clients, upsell potential" },
+  transportation: { tier: "crecimiento", priority: "B", avgBookingCOP: 2000000, breakEvenBookings: 1.2, notes: "Airport/VIP transfers" },
+  coworking: { tier: "despegue", priority: "C", avgBookingCOP: 1500000, breakEvenBookings: 0.66, notes: "Membership model" },
+  gym: { tier: "despegue", priority: "C", avgBookingCOP: 300000, breakEvenBookings: 3.3, notes: "Membership focus" },
+  beauty_salon: { tier: "despegue", priority: "C", avgBookingCOP: 200000, breakEvenBookings: 5, notes: "Recurring appointments" },
+  museum: { tier: "despegue", priority: "C", avgBookingCOP: 50000, breakEvenBookings: 20, notes: "Cultural tourism" },
+  shopping: { tier: "despegue", priority: "C", avgBookingCOP: 500000, breakEvenBookings: 2, notes: "Retail traffic" },
+  real_estate: { tier: "escala", priority: "A", avgBookingCOP: 50000000, breakEvenBookings: 0.09, notes: "High commission value" },
+  car_rental: { tier: "crecimiento", priority: "B", avgBookingCOP: 3000000, breakEvenBookings: 0.8, notes: "Tourist demand" },
+};
+
+export const CITY_STRATEGY = [
+  { city: "cartagena", priority: 1, focusVerticals: ["boat_charter", "villa_rental", "club", "concierge"], entryTier: "crecimiento" },
+  { city: "medellin", priority: 2, focusVerticals: ["restaurant", "hotel", "tour_operator"], entryTier: "despegue" },
+  { city: "bogota", priority: 3, focusVerticals: ["event_planner", "hotel", "restaurant"], entryTier: "crecimiento" },
+  { city: "santa_marta", priority: 4, focusVerticals: ["tour_operator", "hotel", "boat_charter"], entryTier: "despegue" },
+  { city: "san_andres", priority: 5, focusVerticals: ["boat_charter", "hotel", "tour_operator"], entryTier: "crecimiento" },
+  { city: "barranquilla", priority: 6, focusVerticals: ["restaurant", "club", "hotel"], entryTier: "despegue" },
+  { city: "cali", priority: 7, focusVerticals: ["restaurant", "club", "spa"], entryTier: "despegue" },
+  { city: "bucaramanga", priority: 8, focusVerticals: ["restaurant", "hotel", "cafe"], entryTier: "despegue" },
+  { city: "pereira", priority: 9, focusVerticals: ["tour_operator", "cafe", "hotel"], entryTier: "despegue" },
+] as const;
+
+export const UNIT_ECONOMICS = {
+  blendedCAC_USD: { min: 150, max: 300 },
+  blendedMRR_USD: 450,
+  grossMargin: { min: 0.75, max: 0.85 },
+  avgRetentionMonths: 18,
+  ltv_USD: 8100,
+  ltvCacRatio: { min: 27, max: 54 },
+} as const;
+
+// Helper function to format COP currency
+export function formatCOP(amount: number): string {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount);
+}
+
+// Helper function to get tier recommendation for a business
+export function getTierRecommendation(category: string): typeof VERTICAL_TIER_RECOMMENDATIONS[string] | null {
+  return VERTICAL_TIER_RECOMMENDATIONS[category] || null;
+}
+
+// Helper function to get pricing tier details
+export function getPricingTier(tierValue: string) {
+  return PRICING_TIERS.find(t => t.value === tierValue);
+}
