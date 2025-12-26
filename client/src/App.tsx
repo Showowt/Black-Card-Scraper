@@ -25,6 +25,7 @@ import TeamManagement from "@/pages/TeamManagement";
 import FollowUps from "@/pages/FollowUps";
 import Scripts from "@/pages/Scripts";
 import CostControls from "@/pages/CostControls";
+import Pricing from "@/pages/Pricing";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -65,6 +66,7 @@ function Router() {
       {isAuthenticated && <Route path="/follow-ups" component={FollowUps} />}
       {isAuthenticated && <Route path="/scripts" component={Scripts} />}
       {isAuthenticated && <Route path="/cost-controls" component={CostControls} />}
+      {isAuthenticated && <Route path="/pricing" component={Pricing} />}
       
       <Route component={NotFound} />
     </Switch>

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Business, Scan } from "@shared/schema";
-import { CITIES, CATEGORIES, AI_READINESS_LEVELS } from "@shared/schema";
+import { CITIES, CATEGORIES, AI_READINESS_LEVELS, VERTICAL_TIER_RECOMMENDATIONS, PRICING_TIERS } from "@shared/schema";
 
 type DashboardFilters = {
   city: string;
@@ -194,6 +194,18 @@ export default function Dashboard() {
 
   const getCityLabel = (value: string) => CITIES.find(c => c.value === value)?.label || value;
   const getCategoryLabel = (value: string) => CATEGORIES.find(c => c.value === value)?.label || value;
+  
+  const getTierBadge = (category: string) => {
+    const rec = VERTICAL_TIER_RECOMMENDATIONS[category];
+    if (!rec) return null;
+    const tier = PRICING_TIERS.find(t => t.value === rec.tier);
+    const colors = {
+      A: "bg-green-500/10 text-green-600 border-green-500/20",
+      B: "bg-amber-500/10 text-amber-600 border-amber-500/20", 
+      C: "bg-blue-500/10 text-blue-600 border-blue-500/20"
+    };
+    return { tier: tier?.label || rec.tier, priority: rec.priority, color: colors[rec.priority] };
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -246,6 +258,11 @@ export default function Dashboard() {
             <Link href="/statistics">
               <Button variant="ghost" size="sm" data-testid="nav-statistics">
                 <BarChart3 className="h-4 w-4 mr-1" /> Stats
+              </Button>
+            </Link>
+            <Link href="/pricing">
+              <Button variant="ghost" size="sm" data-testid="nav-pricing">
+                <TrendingUp className="h-4 w-4 mr-1" /> Pricing
               </Button>
             </Link>
             {user?.role === 'admin' && (
@@ -724,7 +741,14 @@ export default function Dashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="text-xs">{getCategoryLabel(business.category)}</Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">{getCategoryLabel(business.category)}</Badge>
+                          {getTierBadge(business.category) && (
+                            <Badge variant="outline" className={`text-xs ${getTierBadge(business.category)?.color}`} title={`Priority ${getTierBadge(business.category)?.priority} - Recommended: ${getTierBadge(business.category)?.tier}`}>
+                              {getTierBadge(business.category)?.tier}
+                            </Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>{getCityLabel(business.city)}</TableCell>
                       <TableCell>
