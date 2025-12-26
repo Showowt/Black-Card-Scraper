@@ -17,6 +17,7 @@ import {
   AlertTriangle, CheckCircle, Clock, Zap, BarChart3, Calendar
 } from "lucide-react";
 import type { Business } from "@shared/schema";
+import { VERTICAL_TIER_RECOMMENDATIONS, PRICING_TIERS, CATEGORIES, formatCOP } from "@shared/schema";
 
 interface BlackCardIntelligence {
   business: {
@@ -313,6 +314,59 @@ export default function BlackCardIntel() {
           <IntelSkeleton />
         ) : intelligence ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Pricing Tier Recommendation Card */}
+            {intelligence?.business?.category && VERTICAL_TIER_RECOMMENDATIONS[intelligence.business.category] && (() => {
+              const rec = VERTICAL_TIER_RECOMMENDATIONS[intelligence.business.category];
+              const tier = PRICING_TIERS.find(t => t.value === rec.tier);
+              const priorityColors = { A: "bg-green-500", B: "bg-amber-500", C: "bg-blue-500" };
+              return (
+                <Card data-testid="card-pricing-recommendation">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Pricing Recommendation
+                    </CardTitle>
+                    <CardDescription>Recommended tier for {CATEGORIES.find(c => c.value === intelligence.business.category)?.label}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Recommended Tier</span>
+                      <Badge className="text-base font-bold">{tier?.label}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Priority</span>
+                      <Badge className={priorityColors[rec.priority]}>Tier {rec.priority}</Badge>
+                    </div>
+                    {tier?.monthlyCOP && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Monthly Investment</span>
+                        <span className="font-medium">{formatCOP(tier.monthlyCOP)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Avg Booking Value</span>
+                      <span className="font-medium">{formatCOP(rec.avgBookingCOP)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Break-Even</span>
+                      <span className="font-medium">
+                        {rec.breakEvenBookings < 1 
+                          ? `${Math.round(1/rec.breakEvenBookings)} months`
+                          : `${rec.breakEvenBookings.toFixed(1)} bookings`
+                        }
+                      </span>
+                    </div>
+                    <div className="p-3 bg-muted rounded-md text-sm mt-2">
+                      {rec.notes}
+                    </div>
+                    <Link href="/pricing">
+                      <Button variant="outline" className="w-full mt-2">View Full Pricing</Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             <Card data-testid="card-decision-maker">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
