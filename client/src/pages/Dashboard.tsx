@@ -145,7 +145,7 @@ export default function Dashboard() {
   });
 
   const scanMutation = useMutation({
-    mutationFn: async (data: { city: string; category: string; enableAI: boolean }) => {
+    mutationFn: async (data: { city: string; category: string; enableAI: boolean; pin: string }) => {
       const res = await apiRequest("POST", "/api/scan", data);
       return res.json();
     },
@@ -160,7 +160,7 @@ export default function Dashboard() {
   });
 
   const batchScanMutation = useMutation({
-    mutationFn: async (data: { cities: string[]; categories: string[]; enableAI: boolean }) => {
+    mutationFn: async (data: { cities: string[]; categories: string[]; enableAI: boolean; pin: string }) => {
       const res = await apiRequest("POST", "/api/scan/batch", data);
       return res.json();
     },
@@ -183,7 +183,7 @@ export default function Dashboard() {
       toast({ title: "Missing Selection", description: "Please select both city and category", variant: "destructive" });
       return;
     }
-    scanMutation.mutate({ city: selectedCity, category: selectedCategory, enableAI });
+    scanMutation.mutate({ city: selectedCity, category: selectedCategory, enableAI, pin: scanPin });
   };
 
   const getReadinessBadgeVariant = (readiness: string | null) => {
@@ -476,7 +476,7 @@ export default function Dashboard() {
                           toast({ title: "Missing Selection", description: "Select at least one city and category", variant: "destructive" });
                           return;
                         }
-                        batchScanMutation.mutate({ cities: batchCities, categories: batchCategories, enableAI });
+                        batchScanMutation.mutate({ cities: batchCities, categories: batchCategories, enableAI, pin: scanPin });
                       }}
                       disabled={batchScanMutation.isPending}
                       data-testid="button-start-batch-scan"

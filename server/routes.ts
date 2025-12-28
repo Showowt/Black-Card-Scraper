@@ -139,6 +139,9 @@ export async function registerRoutes(
   // Team access code required for password setup (shared by admin out-of-band)
   // Default is BLACKCARD2024, can be overridden via environment variable
   const TEAM_ACCESS_CODE = process.env.TEAM_ACCESS_CODE || "BLACKCARD2024";
+  
+  // Scan PIN for cost control (can be overridden via environment variable)
+  const SCAN_PIN = process.env.SCAN_PIN || "3541";
 
   // Check if email is a pre-approved team member
   app.post('/api/team/check-email', async (req: any, res) => {
@@ -815,10 +818,29 @@ export async function registerRoutes(
     }
   });
 
+  // Verify scan PIN endpoint
+  app.post('/api/scan/verify-pin', isAuthenticated, async (req: any, res) => {
+    try {
+      const { pin } = req.body;
+      if (pin === SCAN_PIN) {
+        res.json({ valid: true });
+      } else {
+        res.status(401).json({ valid: false, message: "Invalid PIN" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "PIN verification failed" });
+    }
+  });
+
   app.post('/api/scan', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { city, category, enableAI = true, maxResults = 20 } = req.body;
+      const { city, category, enableAI = true, maxResults = 20, pin } = req.body;
+      
+      // Verify PIN server-side
+      if (pin !== SCAN_PIN) {
+        return res.status(401).json({ message: "Invalid scan PIN" });
+      }
       
       const cityData = CITIES.find(c => c.value === city);
       const categoryData = CATEGORIES.find(c => c.value === category);
@@ -864,7 +886,12 @@ export async function registerRoutes(
   app.post('/api/scan/batch', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { cities, categories, enableAI = true, maxResults = 20 } = req.body;
+      const { cities, categories, enableAI = true, maxResults = 20, pin } = req.body;
+      
+      // Verify PIN server-side
+      if (pin !== SCAN_PIN) {
+        return res.status(401).json({ message: "Invalid scan PIN" });
+      }
       
       if (!Array.isArray(cities) || !Array.isArray(categories) || cities.length === 0 || categories.length === 0) {
         return res.status(400).json({ message: "Cities and categories must be non-empty arrays" });
@@ -907,7 +934,12 @@ export async function registerRoutes(
   app.post('/api/elite-scan', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { city, category, enableAI = false, maxTerms } = req.body;
+      const { city, category, enableAI = false, maxTerms, pin } = req.body;
+      
+      // Verify PIN server-side
+      if (pin !== SCAN_PIN) {
+        return res.status(401).json({ message: "Invalid scan PIN" });
+      }
       
       // Validate city
       const cityKey = city?.toLowerCase();
@@ -2211,48 +2243,6 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Error scraping website:", error);
       res.status(500).json({ message: "Failed to scrape website" });
-    }
-  });
-
-  // Batch scan for multiple cities
-  app.post('/api/scan/batch', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { cities, categories, enableAI = true, maxResults = 20 } = req.body;
-      
-      if (!cities?.length || !categories?.length) {
-        return res.status(400).json({ message: "Must provide at least one city and category" });
-      }
-
-      const scanIds: string[] = [];
-      
-      for (const cityValue of cities) {
-        for (const categoryValue of categories) {
-          const cityData = CITIES.find(c => c.value === cityValue);
-          const categoryData = CATEGORIES.find(c => c.value === categoryValue);
-          
-          if (cityData && categoryData) {
-            const scan = await storage.createScan({
-              userId,
-              city: cityValue,
-              category: categoryValue,
-              status: "scanning",
-            });
-            
-            scanIds.push(scan.id);
-            
-            processScan(scan.id, cityData, categoryData, enableAI, maxResults).catch(err => {
-              console.error("Batch scan error:", err);
-              storage.updateScan(scan.id, { status: "failed", errorMessage: err.message });
-            });
-          }
-        }
-      }
-
-      res.json({ scanIds, message: `Started ${scanIds.length} scans` });
-    } catch (error) {
-      console.error("Error starting batch scan:", error);
-      res.status(500).json({ message: "Failed to start batch scan" });
     }
   });
 
