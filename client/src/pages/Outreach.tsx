@@ -136,10 +136,15 @@ export default function Outreach() {
   const stats = {
     total: campaigns?.length || 0,
     draft: campaigns?.filter(c => c.status === "draft").length || 0,
+    ready: campaigns?.filter(c => c.status === "ready").length || 0,
     sent: campaigns?.filter(c => c.status === "sent").length || 0,
     responded: campaigns?.filter(c => c.status === "responded").length || 0,
     converted: campaigns?.filter(c => c.status === "converted").length || 0,
   };
+  
+  const conversionRate = stats.total > 0 
+    ? Math.round((stats.converted / stats.total) * 100) 
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -294,7 +299,7 @@ export default function Outreach() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-6 gap-4 mb-6">
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
@@ -304,7 +309,7 @@ export default function Outreach() {
               <p className="text-sm text-muted-foreground">Total Campaigns</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="cursor-pointer hover-elevate" onClick={() => setSelectedStatus("draft")}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-2xl font-bold">{stats.draft}</div>
@@ -313,7 +318,16 @@ export default function Outreach() {
               <p className="text-sm text-muted-foreground">Drafts</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="cursor-pointer hover-elevate" onClick={() => setSelectedStatus("ready")}>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-2xl font-bold">{stats.ready}</div>
+                <Mail className="h-5 w-5 text-blue-500" />
+              </div>
+              <p className="text-sm text-muted-foreground">Ready to Send</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover-elevate" onClick={() => setSelectedStatus("sent")}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-2xl font-bold">{stats.sent}</div>
@@ -322,7 +336,7 @@ export default function Outreach() {
               <p className="text-sm text-muted-foreground">Sent</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="cursor-pointer hover-elevate" onClick={() => setSelectedStatus("responded")}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-2xl font-bold">{stats.responded}</div>
@@ -331,13 +345,13 @@ export default function Outreach() {
               <p className="text-sm text-muted-foreground">Responded</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="cursor-pointer hover-elevate" onClick={() => setSelectedStatus("converted")}>
             <CardContent className="pt-4">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-2xl font-bold">{stats.converted}</div>
                 <TrendingUp className="h-5 w-5 text-emerald-500" />
               </div>
-              <p className="text-sm text-muted-foreground">Converted</p>
+              <p className="text-sm text-muted-foreground">Converted ({conversionRate}%)</p>
             </CardContent>
           </Card>
         </div>
