@@ -680,13 +680,27 @@ export default function BusinessDetail() {
                     </div>
                   </div>
                 )}
-                {business.googleMapsUrl && (
-                  <Button variant="outline" size="sm" asChild className="mt-2">
-                    <a href={business.googleMapsUrl} target="_blank" rel="noopener">
-                      <MapPin className="h-4 w-4 mr-1" /> View on Google Maps
-                    </a>
-                  </Button>
-                )}
+                <div className="flex gap-2 flex-wrap mt-2">
+                  {business.googleMapsUrl && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={business.googleMapsUrl} target="_blank" rel="noopener" data-testid="link-google-maps">
+                        <MapPin className="h-4 w-4 mr-1" /> View on Maps
+                      </a>
+                    </Button>
+                  )}
+                  {business.placeId && (
+                    <Button variant="default" size="sm" asChild>
+                      <a 
+                        href={`https://search.google.com/local/reviews?placeid=${business.placeId}`} 
+                        target="_blank" 
+                        rel="noopener"
+                        data-testid="link-google-reviews"
+                      >
+                        <Star className="h-4 w-4 mr-1" /> View Reviews
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
