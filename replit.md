@@ -196,11 +196,33 @@ The Black Card system provides complete closing intelligence:
 - **Psychology Triggers**: Phil McGill branded Spanish/English hooks
 - **WhatsApp Stats**: 66% purchase after WhatsApp, 50% abandon without fast response
 
+## Security Features
+
+### Authentication
+- **Team Login System**: Email-based login with password hashing (bcrypt, 10 rounds)
+- **Team Access Code**: Required for first-time password setup (default: BLACKCARD2024, configurable via TEAM_ACCESS_CODE env var)
+- **Session Security**: httpOnly cookies, secure flag, PostgreSQL-backed session store
+- **Role-Based Access**: Three roles - admin, team_member, rep
+
+### Protected Resources
+- **Scan PIN Protection**: Server-side PIN validation required for all scan operations (default: 3541, configurable via SCAN_PIN env var)
+- **Admin-Only Operations**: CSV export, business deletion, certain CRUD operations restricted to admin role
+- **API Key Security**: All secrets stored server-side, never exposed to frontend
+
+### Team Members (Pre-approved)
+- phil@machinemindconsulting.com (admin)
+- sergio@machinemindconsulting.com (team_member)
+- alex@machinemindconsulting.com (rep)
+- cam@machinemindconsulting.com (rep)
+- dezmin@machinemindconsulting.com (rep)
+
 ## Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string
 - `GOOGLE_PLACES_API_KEY` - Google Places API key
 - `OPENAI_API_KEY` - OpenAI API key
 - `SESSION_SECRET` - Session encryption secret
+- `TEAM_ACCESS_CODE` - Team registration code (default: BLACKCARD2024)
+- `SCAN_PIN` - PIN for scan operations (default: 3541)
 - `REPL_ID` - Replit project ID (auto-set)
 
 ## Design Guidelines
