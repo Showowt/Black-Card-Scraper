@@ -1103,33 +1103,59 @@ export async function registerRoutes(
   app.post('/api/outreach/generate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { businessId } = req.body;
+      const { businessId, tone = 'professional', autoReady = false } = req.body;
       
       const business = await storage.getBusiness(businessId);
       if (!business) {
         return res.status(404).json({ message: "Business not found" });
       }
 
-      const email = await generateOutreachEmail(business);
-      const campaign = await storage.createOutreachCampaign({
-        userId,
-        businessId,
-        emailSubject: email.subject,
-        emailBody: email.body,
-        status: "draft",
-      });
+      const validTones = ['professional', 'casual', 'urgency', 'value_focused', 'curiosity'];
+      const selectedTone = validTones.includes(tone) ? tone : 'professional';
 
-      res.json(campaign);
+      const email = await generateOutreachEmail(business, selectedTone as any);
+      
+      const existingCampaigns = await storage.getOutreachCampaigns(businessId);
+      let campaign;
+      
+      if (existingCampaigns.length > 0) {
+        campaign = await storage.updateOutreachCampaign(existingCampaigns[0].id, {
+          emailSubject: email.subject,
+          emailBody: email.body,
+          status: autoReady ? "ready" : "draft",
+        });
+      } else {
+        campaign = await storage.createOutreachCampaign({
+          userId,
+          businessId,
+          emailSubject: email.subject,
+          emailBody: email.body,
+          status: autoReady ? "ready" : "draft",
+        });
+      }
+
+      res.json({ ...campaign, tone: email.tone });
     } catch (error) {
       console.error("Error generating outreach:", error);
       res.status(500).json({ message: "Failed to generate outreach email" });
     }
   });
 
+  app.get('/api/outreach/tones', isAuthenticated, async (req: any, res) => {
+    res.json([
+      { value: 'professional', label: 'Professional', description: 'Polished and business-focused' },
+      { value: 'casual', label: 'Casual', description: 'Friendly and conversational' },
+      { value: 'urgency', label: 'Urgency', description: 'Create FOMO and time pressure' },
+      { value: 'value_focused', label: 'Value-Focused', description: 'Lead with ROI and numbers' },
+      { value: 'curiosity', label: 'Curiosity', description: 'Intriguing hooks and questions' },
+    ]);
+  });
+
   // Batch outreach generation with streaming progress
   app.post('/api/outreach/batch', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { tone = 'professional', autoReady = false } = req.body;
       
       // Validate input
       const parseResult = BatchOutreachSchema.safeParse(req.body);
@@ -1141,19 +1167,20 @@ export async function registerRoutes(
       }
       const { businessIds, filters } = parseResult.data;
       
+      const validTones = ['professional', 'casual', 'urgency', 'value_focused', 'curiosity'];
+      const selectedTone = validTones.includes(tone) ? tone : 'professional';
+      
       let targetBusinesses: Business[] = [];
       
       if (businessIds && businessIds.length > 0) {
-        // Get specific businesses by ID
         for (const id of businessIds) {
           const business = await storage.getBusiness(id);
           if (business) targetBusinesses.push(business);
         }
       } else if (filters) {
-        // Get businesses matching filters
         targetBusinesses = await storage.getBusinesses({
           ...filters,
-          limit: filters.limit || 50, // Default limit for batch
+          limit: filters.limit || 50,
         });
       }
       
@@ -1161,7 +1188,6 @@ export async function registerRoutes(
         return res.status(400).json({ message: "No businesses found for batch outreach" });
       }
       
-      // Filter to only high-value prospects (score >= 60, or all if no scores yet)
       const prospects = targetBusinesses.filter(b => 
         b.isEnriched && (b.aiScore === null || b.aiScore >= 60)
       );
@@ -1172,7 +1198,6 @@ export async function registerRoutes(
         });
       }
       
-      // Generate outreach for each prospect
       const results: { success: OutreachCampaign[]; errors: { businessId: string; error: string }[] } = {
         success: [],
         errors: [],
@@ -1180,24 +1205,21 @@ export async function registerRoutes(
       
       for (const business of prospects) {
         try {
-          // Check if campaign already exists for this business
           const existingCampaigns = await storage.getOutreachCampaigns(business.id);
           if (existingCampaigns.length > 0) {
-            // Skip if already has outreach
             continue;
           }
           
-          const email = await generateOutreachEmail(business);
+          const email = await generateOutreachEmail(business, selectedTone as any);
           const campaign = await storage.createOutreachCampaign({
             userId,
             businessId: business.id,
             emailSubject: email.subject,
             emailBody: email.body,
-            status: "draft",
+            status: autoReady ? "ready" : "draft",
           });
           results.success.push(campaign);
           
-          // Rate limiting between generations
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error: any) {
           results.errors.push({
@@ -1214,6 +1236,7 @@ export async function registerRoutes(
         errors: results.errors.length,
         campaigns: results.success,
         errorDetails: results.errors,
+        tone: selectedTone,
       });
     } catch (error) {
       console.error("Error in batch outreach:", error);
@@ -4012,46 +4035,78 @@ Respond ONLY with valid JSON, no markdown.`;
   };
 }
 
-async function generateOutreachEmail(business: Business): Promise<{ subject: string; body: string }> {
-  // Get vertical intelligence for this category
+type OutreachTone = 'professional' | 'casual' | 'urgency' | 'value_focused' | 'curiosity';
+
+const TONE_INSTRUCTIONS: Record<OutreachTone, string> = {
+  professional: "Write in a polished, business-professional tone. Be respectful and formal but not stiff. Focus on credibility and expertise.",
+  casual: "Write in a friendly, conversational tone. Be warm and approachable. Use shorter sentences and natural language like you're messaging a friend who owns a business.",
+  urgency: "Create a sense of urgency without being pushy. Emphasize limited-time opportunities, competitive threats, or market timing. Make them feel they might miss out.",
+  value_focused: "Lead with specific numbers and ROI. Focus heavily on the financial impact - cost savings, revenue increase, time saved. Be concrete with percentages and dollar amounts.",
+  curiosity: "Use intriguing questions and hooks that make them want to learn more. Create an information gap. Don't give away everything - tease the solution.",
+};
+
+async function generateOutreachEmail(
+  business: Business, 
+  tone: OutreachTone = 'professional'
+): Promise<{ subject: string; body: string; tone: string }> {
   const verticalIntel = VERTICAL_INTELLIGENCE[business.category] || {
     painPoints: ["Customer inquiries across multiple channels", "Manual booking and scheduling", "Follow-up and retention is inconsistent"],
     automations: ["AI-powered inquiry handling", "Automated booking system", "Customer follow-up sequences"],
     hookAngles: ["customer communication", "booking process", "online presence"],
   };
 
+  const toneInstruction = TONE_INSTRUCTIONS[tone];
+  
+  const hasContactInfo = business.email || business.phone || business.whatsapp;
+  const hasStrongOnlinePresence = business.website && (business.instagram || business.facebook);
+  const reviewSentiment = business.reviewCount && business.rating 
+    ? (business.rating >= 4.5 ? "excellent reviews" : business.rating >= 4 ? "good reviews" : "room to improve reviews")
+    : "limited online presence";
+
   const prompt = `Generate a personalized cold outreach email for an AI automation agency targeting this business.
 
-BUSINESS:
+BUSINESS INTELLIGENCE:
 - Name: ${business.name}
 - Type: ${business.aiClassification || business.category}
-- City: ${business.city}
-- Website: ${business.website || "None"}
-- Rating: ${business.rating || "N/A"} (${business.reviewCount || 0} reviews)
-- Has Instagram: ${!!business.instagram}
-- Has WhatsApp: ${!!business.whatsapp}
-- AI Summary: ${business.aiSummary || "Local business"}
-- Outreach Hook: ${business.aiOutreachHook || ""}
+- City: ${business.city}, Colombia
+- Website: ${business.website || "No website found"}
+- Rating: ${business.rating || "N/A"} (${business.reviewCount || 0} reviews) - ${reviewSentiment}
+- Instagram: ${business.instagram || "None"}
+- WhatsApp: ${business.whatsapp ? "Yes" : "No"}
+- Contact Info Available: ${hasContactInfo ? "Yes" : "Limited"}
+- Online Presence: ${hasStrongOnlinePresence ? "Strong" : "Needs improvement"}
+- AI Summary: ${business.aiSummary || "Local business in Colombia"}
+- Key Hook: ${business.aiOutreachHook || "Help them modernize operations"}
+- AI Readiness: ${business.aiReadiness || "Unknown"}
+- AI Score: ${business.aiScore || "Not scored"}/100
 
 VERTICAL INTELLIGENCE FOR ${business.category.toUpperCase()}:
-- Common Pain Points: ${JSON.stringify(verticalIntel.painPoints.slice(0, 3))}
-- Relevant Automations: ${JSON.stringify(verticalIntel.automations.slice(0, 3))}
-- Hook Angles: ${JSON.stringify(verticalIntel.hookAngles)}
+- Pain Points: ${JSON.stringify(verticalIntel.painPoints.slice(0, 3))}
+- Solutions We Offer: ${JSON.stringify(verticalIntel.automations.slice(0, 3))}
+- Angles That Work: ${JSON.stringify(verticalIntel.hookAngles)}
+
+TONE & STYLE:
+${toneInstruction}
+
+COLOMBIA CONTEXT:
+- WhatsApp is king in Colombia - 66% of purchases happen after WhatsApp contact
+- Reference that we work with other ${business.category} businesses in ${business.city}
+- Spanish phrases like "vale" or "listo" can add authenticity if casual tone
 
 REQUIREMENTS:
-1. Subject line: Under 50 chars, specific to their business
-2. Opening: Reference something specific about THEIR business (not generic)
-3. Pain point: Pick ONE pain point most relevant to their situation
+1. Subject line: Under 50 chars, specific to their business name or situation
+2. Opening: Reference something SPECIFIC about THEIR business (rating, location, category)
+3. Pain point: Pick the ONE pain point most relevant based on their data
 4. Solution: One specific automation that solves it
-5. CTA: Free 15-min audit call
-6. Length: Under 120 words total
-7. No buzzwords like "leverage", "synergy", "game-changer"
-8. Sound human, not like a template
+5. CTA: Free 15-min WhatsApp call or video audit
+6. Length: 80-120 words total (short and punchy)
+7. BANNED words: leverage, synergy, game-changer, revolutionize, cutting-edge
+8. Include a P.S. line with an extra hook or social proof
 
 OUTPUT JSON:
 {
     "subject": "Subject line here",
-    "body": "Full email body here"
+    "body": "Full email body with paragraphs separated by \\n\\n"
 }
 
 OUTPUT ONLY VALID JSON.`;
@@ -4067,7 +4122,12 @@ OUTPUT ONLY VALID JSON.`;
     throw new Error("No response from OpenAI");
   }
 
-  return JSON.parse(content);
+  const result = JSON.parse(content);
+  return {
+    subject: result.subject,
+    body: result.body,
+    tone: tone,
+  };
 }
 
 async function scrapeWebsiteMetadata(websiteUrl: string): Promise<Partial<InsertBusiness>> {

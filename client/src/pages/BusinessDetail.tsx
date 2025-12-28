@@ -62,6 +62,15 @@ export default function BusinessDetail() {
   const [selectedDisposition, setSelectedDisposition] = useState<string>("");
   const [notesInput, setNotesInput] = useState("");
   const [nextActionInput, setNextActionInput] = useState("");
+  const [selectedTone, setSelectedTone] = useState<string>("professional");
+
+  const OUTREACH_TONES = [
+    { value: 'professional', label: 'Professional', description: 'Polished and business-focused' },
+    { value: 'casual', label: 'Casual', description: 'Friendly and conversational' },
+    { value: 'urgency', label: 'Urgency', description: 'Create FOMO and time pressure' },
+    { value: 'value_focused', label: 'Value-Focused', description: 'Lead with ROI and numbers' },
+    { value: 'curiosity', label: 'Curiosity', description: 'Intriguing hooks and questions' },
+  ];
 
   const calculateDealScore = (session: CallSessionWithDetails) => {
     let score = 50;
@@ -145,12 +154,17 @@ export default function BusinessDetail() {
   });
 
   const generateEmailMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/outreach/generate", { businessId });
+    mutationFn: async ({ tone, autoReady }: { tone?: string; autoReady?: boolean } = {}) => {
+      const res = await apiRequest("POST", "/api/outreach/generate", { 
+        businessId, 
+        tone: tone || selectedTone,
+        autoReady: autoReady || false,
+      });
       return res.json();
     },
-    onSuccess: () => {
-      toast({ title: "Email Generated", description: "AI-powered outreach email is ready" });
+    onSuccess: (result) => {
+      const statusMsg = result.status === 'ready' ? ' and marked Ready to Send' : '';
+      toast({ title: "Email Generated", description: `AI-powered ${result.tone || 'professional'} email is ready${statusMsg}` });
       queryClient.invalidateQueries({ queryKey: ['/api/outreach', 'byBusiness', businessId] });
       setEmailDialogOpen(true);
     },
@@ -875,21 +889,44 @@ export default function BusinessDetail() {
 
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <CardTitle className="text-lg">Outreach</CardTitle>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => generateEmailMutation.mutate()}
-                    disabled={generateEmailMutation.isPending}
-                    data-testid="button-generate-email"
-                  >
-                    {generateEmailMutation.isPending ? (
-                      <><RefreshCw className="h-4 w-4 mr-1 animate-spin" /> Generating...</>
-                    ) : (
-                      <><Mail className="h-4 w-4 mr-1" /> Generate Email</>
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Select value={selectedTone} onValueChange={setSelectedTone}>
+                      <SelectTrigger className="w-32" data-testid="select-email-tone">
+                        <SelectValue placeholder="Tone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OUTREACH_TONES.map(t => (
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => generateEmailMutation.mutate({})}
+                      disabled={generateEmailMutation.isPending}
+                      data-testid="button-generate-email"
+                    >
+                      {generateEmailMutation.isPending ? (
+                        <><RefreshCw className="h-4 w-4 mr-1 animate-spin" /> Generating...</>
+                      ) : (
+                        <><Mail className="h-4 w-4 mr-1" /> Generate</>
+                      )}
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => generateEmailMutation.mutate({ autoReady: true })}
+                      disabled={generateEmailMutation.isPending}
+                      data-testid="button-generate-ready"
+                    >
+                      <Sparkles className="h-4 w-4 mr-1" /> Generate & Ready
+                    </Button>
+                  </div>
                 </div>
                 {business.aiOutreachHook && (
                   <CardDescription className="mt-2" data-testid="text-outreach-hook">

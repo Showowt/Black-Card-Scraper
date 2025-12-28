@@ -46,6 +46,16 @@ export default function Outreach() {
   const [batchCity, setBatchCity] = useState<string>("");
   const [batchCategory, setBatchCategory] = useState<string>("");
   const [batchLimit, setBatchLimit] = useState<number>(25);
+  const [batchTone, setBatchTone] = useState<string>("professional");
+  const [batchAutoReady, setBatchAutoReady] = useState(false);
+
+  const OUTREACH_TONES = [
+    { value: 'professional', label: 'Professional', description: 'Polished and business-focused' },
+    { value: 'casual', label: 'Casual', description: 'Friendly and conversational' },
+    { value: 'urgency', label: 'Urgency', description: 'Create FOMO and time pressure' },
+    { value: 'value_focused', label: 'Value-Focused', description: 'Lead with ROI and numbers' },
+    { value: 'curiosity', label: 'Curiosity', description: 'Intriguing hooks and questions' },
+  ];
 
   const { data: campaigns, isLoading } = useQuery<CampaignWithBusiness[]>({
     queryKey: ["/api/outreach/all", selectedStatus],
@@ -87,16 +97,17 @@ export default function Outreach() {
   });
 
   const batchOutreachMutation = useMutation({
-    mutationFn: async (data: { filters: { city?: string; category?: string; limit: number } }) => {
+    mutationFn: async (data: { filters: { city?: string; category?: string; limit: number }; tone?: string; autoReady?: boolean }) => {
       const res = await apiRequest("POST", "/api/outreach/batch", data);
       return res.json();
     },
     onSuccess: (result: any) => {
       setBatchDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["/api/outreach/all"] });
+      const statusLabel = result.tone ? ` (${result.tone} tone)` : '';
       toast({ 
         title: "Batch Outreach Complete", 
-        description: `Generated ${result.generated} emails, ${result.skipped} skipped, ${result.errors} errors` 
+        description: `Generated ${result.generated} emails${statusLabel}, ${result.skipped} skipped, ${result.errors} errors` 
       });
     },
     onError: (error: Error) => {
@@ -221,6 +232,37 @@ export default function Outreach() {
                         data-testid="input-batch-limit"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email Tone</label>
+                      <Select value={batchTone} onValueChange={setBatchTone}>
+                        <SelectTrigger data-testid="select-batch-tone">
+                          <SelectValue placeholder="Select tone" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {OUTREACH_TONES.map(tone => (
+                            <SelectItem key={tone.value} value={tone.value}>
+                              <div className="flex flex-col">
+                                <span>{tone.label}</span>
+                                <span className="text-xs text-muted-foreground">{tone.description}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id="autoReady"
+                        checked={batchAutoReady}
+                        onChange={(e) => setBatchAutoReady(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300"
+                        data-testid="checkbox-auto-ready"
+                      />
+                      <label htmlFor="autoReady" className="text-sm font-medium">
+                        Auto-mark as Ready to Send
+                      </label>
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button variant="outline" onClick={() => setBatchDialogOpen(false)}>Cancel</Button>
@@ -230,7 +272,9 @@ export default function Outreach() {
                           city: batchCity && batchCity !== "all" ? batchCity : undefined,
                           category: batchCategory && batchCategory !== "all" ? batchCategory : undefined,
                           limit: batchLimit 
-                        } 
+                        },
+                        tone: batchTone,
+                        autoReady: batchAutoReady,
                       })}
                       disabled={batchOutreachMutation.isPending}
                       data-testid="button-start-batch"
