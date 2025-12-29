@@ -691,6 +691,11 @@ export async function registerRoutes(
   // Business routes
   app.get('/api/businesses', isAuthenticated, async (req: any, res) => {
     try {
+      // Prevent caching to ensure fresh data
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       // Always return all businesses - no artificial limits
       const defaultLimit = 5000;
       const filters = {
@@ -719,7 +724,13 @@ export async function registerRoutes(
 
   app.get('/api/businesses/stats', isAuthenticated, async (req: any, res) => {
     try {
+      // Prevent caching to ensure fresh stats
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
+      
       const stats = await storage.getBusinessStats();
+      console.log(`[Stats] Returning stats: total=${stats.total}`);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);

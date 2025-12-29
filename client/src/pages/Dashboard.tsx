@@ -134,10 +134,14 @@ export default function Dashboard() {
 
   const { data: businesses, isLoading: loadingBusinesses } = useQuery<Business[]>({
     queryKey: [businessesUrl],
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
   });
 
   const { data: stats, isLoading: loadingStats } = useQuery<BusinessStats>({
     queryKey: ["/api/businesses/stats"],
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: 'always',
   });
 
   const { data: scans } = useQuery<Scan[]>({
