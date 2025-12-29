@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import { z } from "zod";
 import bcrypt from "bcrypt";
-import cryptoRandomString from "crypto-random-string";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, getSession } from "./replitAuth";
 import { 
@@ -113,7 +113,7 @@ export async function registerRoutes(
     for (const member of TEAM_MEMBERS) {
       const existing = await storage.getUserByEmail(member.email);
       if (!existing) {
-        const userId = cryptoRandomString({ length: 24 });
+        const userId = crypto.randomBytes(12).toString('hex');
         await storage.upsertUser({
           id: userId,
           email: member.email,
@@ -179,7 +179,7 @@ export async function registerRoutes(
           });
         }
         
-        setupToken = cryptoRandomString({ length: 32 });
+        setupToken = crypto.randomBytes(16).toString('hex');
         setupTokens.set(setupToken, { email: normalizedEmail, createdAt: Date.now() });
         
         // Clean up expired tokens
@@ -371,7 +371,7 @@ export async function registerRoutes(
       const passwordHash = await bcrypt.hash(password, 10);
 
       // Create user
-      const userId = cryptoRandomString({ length: 24 });
+      const userId = crypto.randomBytes(12).toString('hex');
       const user = await storage.upsertUser({
         id: userId,
         email,
@@ -433,7 +433,7 @@ export async function registerRoutes(
       }
 
       // Generate magic link token
-      const token = cryptoRandomString({ length: 64 });
+      const token = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
       await storage.createMagicLinkToken({
@@ -540,7 +540,7 @@ export async function registerRoutes(
 
       const { email, role = 'team_member', expiresInDays = 7 } = req.body;
 
-      const code = cryptoRandomString({ length: 12, type: 'alphanumeric' }).toUpperCase();
+      const code = crypto.randomBytes(6).toString('hex').toUpperCase();
       const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
       const invitation = await storage.createTeamInvitation({
