@@ -554,8 +554,16 @@ export default function BusinessDetail() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-7 w-7 text-primary" />
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => window.history.back()}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Building2 className="h-6 w-6 text-primary" />
             <span className="text-lg font-medium">Black Card Scanner</span>
           </div>
           <div className="flex items-center gap-3">
