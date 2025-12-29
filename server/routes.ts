@@ -2327,7 +2327,16 @@ export async function registerRoutes(
           }
 
           // Create business without the id field (let DB generate new id)
-          const { id, ...businessData } = business;
+          // Also convert date strings to Date objects
+          const { id, createdAt, updatedAt, scannedAt, enrichedAt, lastContactedAt, followUpDate, ...rest } = business;
+          const businessData: any = { ...rest };
+          
+          // Convert date strings to Date objects
+          if (scannedAt) businessData.scannedAt = new Date(scannedAt);
+          if (enrichedAt) businessData.enrichedAt = new Date(enrichedAt);
+          if (lastContactedAt) businessData.lastContactedAt = new Date(lastContactedAt);
+          if (followUpDate) businessData.followUpDate = new Date(followUpDate);
+          
           await storage.createBusiness(businessData);
           imported++;
         } catch (err) {
