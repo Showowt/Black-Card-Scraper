@@ -2264,6 +2264,93 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== DATA MIGRATION ENDPOINTS ====================
+  // Secure migration token for data sync between environments (REQUIRED - no default)
+  const MIGRATION_TOKEN = process.env.MIGRATION_TOKEN;
+
+  // Export all businesses for migration (admin only)
+  app.get('/api/admin/export-businesses', async (req, res) => {
+    try {
+      if (!MIGRATION_TOKEN) {
+        return res.status(503).json({ message: "Migration not configured" });
+      }
+      const token = req.headers['x-migration-token'];
+      if (token !== MIGRATION_TOKEN) {
+        return res.status(401).json({ message: "Invalid migration token" });
+      }
+
+      const businesses = await storage.getBusinesses({ limit: 10000 });
+      console.log(`Exporting ${businesses.length} businesses for migration`);
+      
+      res.json({
+        count: businesses.length,
+        exportedAt: new Date().toISOString(),
+        businesses: businesses
+      });
+    } catch (error) {
+      console.error("Error exporting businesses:", error);
+      res.status(500).json({ message: "Failed to export businesses" });
+    }
+  });
+
+  // Import businesses from migration (admin only)
+  app.post('/api/admin/import-businesses', async (req, res) => {
+    try {
+      if (!MIGRATION_TOKEN) {
+        return res.status(503).json({ message: "Migration not configured" });
+      }
+      const token = req.headers['x-migration-token'];
+      if (token !== MIGRATION_TOKEN) {
+        return res.status(401).json({ message: "Invalid migration token" });
+      }
+
+      const { businesses } = req.body;
+      if (!Array.isArray(businesses)) {
+        return res.status(400).json({ message: "businesses array required" });
+      }
+
+      console.log(`Starting import of ${businesses.length} businesses`);
+      
+      let imported = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (const business of businesses) {
+        try {
+          // Check if business already exists by placeId
+          if (business.placeId) {
+            const existing = await storage.getBusinessByPlaceId(business.placeId);
+            if (existing) {
+              skipped++;
+              continue;
+            }
+          }
+
+          // Create business without the id field (let DB generate new id)
+          const { id, ...businessData } = business;
+          await storage.createBusiness(businessData);
+          imported++;
+        } catch (err) {
+          console.error(`Error importing business ${business.name}:`, err);
+          errors++;
+        }
+      }
+
+      console.log(`Migration complete: ${imported} imported, ${skipped} skipped, ${errors} errors`);
+      
+      res.json({
+        success: true,
+        imported,
+        skipped,
+        errors,
+        total: businesses.length
+      });
+    } catch (error) {
+      console.error("Error importing businesses:", error);
+      res.status(500).json({ message: "Failed to import businesses" });
+    }
+  });
+
   // Website metadata scraper
   app.post('/api/businesses/:id/scrape', isAuthenticated, async (req: any, res) => {
     try {
