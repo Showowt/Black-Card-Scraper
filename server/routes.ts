@@ -691,8 +691,8 @@ export async function registerRoutes(
   // Business routes
   app.get('/api/businesses', isAuthenticated, async (req: any, res) => {
     try {
-      const hasSpecificFilter = req.query.category || req.query.city || req.query.search;
-      const defaultLimit = hasSpecificFilter ? 500 : 200;
+      // Always return all businesses - no artificial limits
+      const defaultLimit = 5000;
       const filters = {
         city: req.query.city as string,
         category: req.query.category as string,
