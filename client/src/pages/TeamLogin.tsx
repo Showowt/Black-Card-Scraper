@@ -156,8 +156,8 @@ export default function TeamLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 overflow-auto">
+      <Card className="w-full max-w-md mx-auto my-4">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             <div className="p-3 rounded-full bg-primary/10">

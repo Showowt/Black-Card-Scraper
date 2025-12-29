@@ -286,3 +286,58 @@
     inset: -1px;
   }
 }
+
+/* Older browser and device compatibility */
+@supports not (inset: 0) {
+  .hover-elevate::after,
+  .active-elevate::after,
+  .hover-elevate-2::after,
+  .active-elevate-2::after {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+/* Ensure touch targets are large enough on mobile */
+@media (max-width: 768px) {
+  input, button, select, textarea {
+    min-height: 44px;
+    font-size: 16px !important;
+  }
+}
+
+/* Prevent zoom on input focus for iOS */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  input[type="email"],
+  input[type="text"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Fallback for browsers that don't support gap in flexbox */
+@supports not (gap: 1rem) {
+  .flex > * + * {
+    margin-left: 0.5rem;
+  }
+  .flex-col > * + * {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}
+
+/* Ensure scrolling works on older iOS */
+html, body {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Better text rendering on all devices */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
