@@ -183,11 +183,13 @@ export async function registerRoutes(
         setupTokens.set(setupToken, { email: normalizedEmail, createdAt: Date.now() });
         
         // Clean up expired tokens
-        for (const [token, data] of setupTokens.entries()) {
+        const tokensToDelete: string[] = [];
+        setupTokens.forEach((data, token) => {
           if (Date.now() - data.createdAt > SETUP_TOKEN_EXPIRY_MS) {
-            setupTokens.delete(token);
+            tokensToDelete.push(token);
           }
-        }
+        });
+        tokensToDelete.forEach(token => setupTokens.delete(token));
       }
       
       res.json({ 
