@@ -689,6 +689,8 @@ export async function registerRoutes(
   // Business routes
   app.get('/api/businesses', isAuthenticated, async (req: any, res) => {
     try {
+      const hasSpecificFilter = req.query.category || req.query.city || req.query.search;
+      const defaultLimit = hasSpecificFilter ? 500 : 200;
       const filters = {
         city: req.query.city as string,
         category: req.query.category as string,
@@ -700,7 +702,7 @@ export async function registerRoutes(
         hasEmail: req.query.hasEmail === 'true',
         hasWebsite: req.query.hasWebsite === 'true',
         isEnriched: req.query.isEnriched === 'true' ? true : req.query.isEnriched === 'false' ? false : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 100,
+        limit: req.query.limit ? parseInt(req.query.limit as string) : defaultLimit,
         offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
         sortBy: req.query.sortBy as string,
         sortOrder: req.query.sortOrder as 'asc' | 'desc',
