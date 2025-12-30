@@ -2360,6 +2360,47 @@ export async function registerRoutes(
     }
   });
 
+  // Fix user role via migration token (for syncing production with approved team list)
+  app.post('/api/admin/fix-user-role', async (req, res) => {
+    try {
+      if (!MIGRATION_TOKEN) {
+        return res.status(503).json({ message: "Migration not configured" });
+      }
+      const token = req.headers['x-migration-token'];
+      if (token !== MIGRATION_TOKEN) {
+        return res.status(401).json({ message: "Invalid migration token" });
+      }
+
+      const { email, role, firstName, lastName } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email required" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update role and name
+      const updates: any = {};
+      if (role) updates.role = role;
+      if (firstName) updates.firstName = firstName;
+      if (lastName) updates.lastName = lastName;
+
+      const updatedUser = await storage.updateUser(user.id, updates);
+      console.log(`Fixed user ${email}: role=${role}, firstName=${firstName}, lastName=${lastName}`);
+      
+      res.json({ 
+        success: true, 
+        user: { ...updatedUser, passwordHash: undefined } 
+      });
+    } catch (error) {
+      console.error("Error fixing user role:", error);
+      res.status(500).json({ message: "Failed to fix user role" });
+    }
+  });
+
   // Website metadata scraper
   app.post('/api/businesses/:id/scrape', isAuthenticated, async (req: any, res) => {
     try {
